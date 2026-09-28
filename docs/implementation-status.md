@@ -24,7 +24,7 @@ The product acceptance goal is a short, intuitive setup that creates a cohesive 
 - Configure the protected GitHub `release` environment; publish a first verified draft release, attestations and a separately reviewed Homebrew tap. No production installation channel has been published.
 - Complete broader terminal usability/accessibility sessions, including screen readers, below-minimum terminals, long Unicode paths, and signal/panic behavior on each platform.
 - Expand curated option validation, profile/catalog migrations, dependency probe evidence and comparative metadata. Unknown schema/catalog versions are rejected today.
-- Rewrite the interface specification for the guided-section design; its transcript/composer sections describe the replaced interface.
+- Run the interface specification's usability tests with first-time users; the guided setup has only been exercised by automated and developer tests.
 
 ## Catalog boundary
 
