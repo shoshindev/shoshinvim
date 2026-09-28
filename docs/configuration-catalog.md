@@ -1,504 +1,657 @@
-# nvim-configurator configuration catalog
+# ShoshinVim configuration catalog
 
-- Status: authoritative product scope
-- Reference: [`nvim-lua/kickstart.nvim`](https://github.com/nvim-lua/kickstart.nvim)
-- Audited upstream commit: [`80743df53d8f7058fc5b60e41f1081d11df9c880`](https://github.com/nvim-lua/kickstart.nvim/tree/80743df53d8f7058fc5b60e41f1081d11df9c880) (2026-09-14)
-- Target: Neovim 0.12+
+- Status: authoritative product and configuration scope
+- Target: Neovim 0.12+ with version-aware fallbacks where documented
+- Catalog snapshot: 2026-09-28
+- Interface: [conversational TUI specification](interface-spec-v0.1.md)
 
-This catalog defines everything `nvim-configurator` must be able to represent, explain, preview, generate, validate, and recover. The catalog covers the complete current Kickstart configuration, its optional example modules, and the native editor choices already defined by this project.
+This catalog defines what the standalone ShoshinVim application must be able to represent, compare, explain, generate, validate, install, and recover. Its scope is Neovim itself plus the editor and IDE capabilities people commonly add through plugins and external tools.
 
-The catalog is comprehensive; onboarding is not. A user may accept a profile and reach Review without visiting every section. Later settings expose every decision independently.
+No starter configuration is the product model. Profiles are editable proposals assembled from this catalog.
 
-## 1. Scope rules
+## 1. Catalog rules
 
-1. **Kickstart parity is a coverage target, not a blind copy.** Every meaningful Kickstart choice must be representable, but generated code must be validated against the supported Neovim version and the selected plugin versions.
-2. **Kickstart defaults and optional examples remain distinct.** Optional modules never become enabled merely because they exist in the catalog.
-3. **Every implication is visible.** Selecting a feature shows its plugins, external tools, keymaps, generated files, installation phase, and failure impact.
-4. **Local configuration and external acquisition remain separate.** A verified Lua write may succeed even when a plugin, parser, language server, formatter, linter, or debugger installation fails.
-5. **No silent external-tool installation.** Mason and parser automation may be selected, but Review must disclose every requested download and require explicit confirmation.
-6. **Generated Lua remains ordinary and independent.** Removing the configurator must not break the generated Neovim configuration.
-7. **Unmanaged configurations remain read-only.** Complete catalog coverage does not authorize importing or rewriting arbitrary existing Lua.
-8. **Upstream drift is intentional, not automatic.** A future Kickstart change updates this catalog only after review; it never silently changes an existing user's selected or persisted state.
+1. **Choices before prescriptions.** When several maintained options solve the same problem, show the strongest general recommendation and the meaningful alternatives.
+2. **Recommendations are contextual.** A choice may be recommended for balanced, minimal, maximum-feature, remote, or language-specific use. There is no universal winner.
+3. **Recommendations are explainable.** Each mark stores rationale, tradeoffs, compatibility, external requirements, and the date it was reviewed.
+4. **Recommendations never overwrite intent.** Applying or updating a profile previews every affected value and preserves manual choices by default.
+5. **Native capability stays visible.** A plugin must not hide a good built-in Neovim option. “Built in” and “none” are valid choices.
+6. **One owner per capability.** Completion, formatting, linting, file exploration, statusline, and similar families select one primary implementation unless combinations are known to compose safely.
+7. **Configuration and acquisition are separate.** Generated Lua may be safely committed even when a plugin, parser, server, formatter, linter, test adapter, or debugger is unavailable.
+8. **External actions require review.** Git clones, builds, package-manager commands, parser downloads, and tool installations are listed before confirmation and reported per item.
+9. **Generated Lua is ordinary Lua.** It remains readable and functional without the configurator installed.
+10. **Unmanaged configurations are read only.** Broad coverage does not authorize importing or rewriting arbitrary existing Lua.
+11. **Catalog changes are migrations, not surprises.** Refreshing recommendations or plugin metadata never silently changes persisted user state.
 
 Catalog labels:
 
-- `[KICKSTART DEFAULT]` — enabled in the audited Kickstart `init.lua`.
-- `[KICKSTART OPTIONAL]` — shipped as a commented example or optional module.
-- `[CONDITIONAL]` — enabled only when a dependency or capability is present.
-- `[NATIVE]` — Neovim behavior requiring no plugin.
-- `[PROJECT BASELINE]` — an existing nvim-configurator choice that remains in scope even when Kickstart does not set it explicitly.
+- `[RECOMMENDED]` — balanced default for most users in the stated context.
+- `[RECOMMENDED: MINIMAL]` — best fit when dependencies and surface area should stay small.
+- `[RECOMMENDED: ADVANCED]` — best fit when control matters more than setup complexity.
+- `[ALTERNATIVE]` — maintained option with a distinct and valid tradeoff.
+- `[BUILT-IN]` — provided by Neovim without a plugin.
+- `[EXTERNAL]` — requires a program or service outside Neovim.
+- `[OPT-IN]` — disabled until explicitly selected because it adds cost, credentials, network access, or substantial complexity.
+- `[EXPERIMENTAL]` — upstream stability or API guarantees require an explicit warning.
 
-## 2. Profiles
+## 2. Recommendation and comparison model
 
-Profiles are starting proposals, not permanent modes.
+Every replaceable capability records:
 
-### Kickstart
+- stable capability and choice IDs;
+- friendly name and repository/source;
+- recommendation contexts and rationale;
+- Neovim version range;
+- plugin-manager and build compatibility;
+- required and optional dependencies;
+- feature coverage;
+- configuration complexity;
+- startup/runtime implications;
+- accessibility and icon assumptions;
+- conflicts and safe combinations;
+- migration notes;
+- last-reviewed date and evidence link.
 
-Reproduces the audited Kickstart defaults, including its native options, default plugins, mappings, Lua tooling, completion, search, formatting infrastructure, and Treesitter policy. Optional Kickstart modules remain off until explicitly selected.
+`/compare <capability>` shows choices in a consistent table. The recommended mark must not be based only on popularity. An option may lose the mark while remaining supported; persisted configurations remain unchanged until the user chooses a migration.
 
-### General editing
+## 3. Profiles
 
-Native editor behavior, diagnostics, a restrained appearance, text objects, surroundings, search, and Git signs. Language-specific tools are not implied.
+Profiles are starting proposals, never permanent modes.
 
-### Web development
+### Balanced IDE `[RECOMMENDED]`
 
-Kickstart-style editor and search behavior plus JavaScript/TypeScript, HTML, CSS, JSON, completion, snippets, formatting choices, and relevant parsers.
+Sensible native behavior, Treesitter, LSP, diagnostics, completion, snippets, formatting, linting, fuzzy search, file navigation, Git signs, debugging hooks, test/task integration, and health checks. Only selected language toolchains are installed.
 
-### Lua development
+### Minimal native `[RECOMMENDED: MINIMAL]`
 
-Kickstart-style Lua setup with `lua_ls`, Stylua, LuaSnip, completion, Neovim runtime-library awareness, and Lua-related parsers.
+Native options, keymaps, commenting, completion, packages, LSP, diagnostics, quickfix, terminal, sessions, and spelling wherever Neovim already provides them. Plugins appear only when a selected capability has no adequate built-in path.
+
+### Full IDE
+
+Balanced IDE plus symbol outline, breadcrumbs, project/session restore, task runner, test UI, debugger UI, richer Git workflow, code actions, refactoring, database/HTTP tools, and optional AI assistance.
+
+### Writing and notes
+
+Prose-friendly wrapping, spelling/grammar, Markdown rendering, tables, link navigation, distraction reduction, and optional knowledge-base integrations.
+
+### Remote and low-resource
+
+Reduced animation, icons, background jobs, watchers, large previews, and network-managed features. Prefers built-in or minimal implementations and explicit loading.
+
+### Language-focused
+
+Starts from Balanced or Minimal, then applies one or more language recipes. Each recipe is independently editable.
 
 ### Custom
 
-Begins with native editor defaults and no optional plugins. The user selects sections individually.
+Starts with Neovim defaults and no optional plugins. The user selects capabilities individually.
 
-Changing a profile previews affected values. Manually changed values are preserved unless the user explicitly chooses to replace them with the new profile.
+## 4. Neovim core coverage
 
-## 3. Editor
+### Complete native-option registry
 
-### Native behavior
+The configurator must expose every stable, user-settable option documented for the selected Neovim version, not only the curated choices below. The registry is versioned from Neovim help metadata and records:
 
-| Setting | Kickstart proposal | Supported choices |
+- option name, short name, type, scope, and default;
+- allowed values or validation rules;
+- global, buffer-local, window-local, or global-local semantics;
+- whether changing it is safe during the current session;
+- modeline and security restrictions;
+- related options and known invalid combinations;
+- generated `vim.opt`, `vim.opt_local`, or API form;
+- exact help tag and version provenance.
+
+Read-only, terminal-derived, obsolete, or internal options are searchable documentation but not editable. Unknown custom values require schema validation; the interface never accepts arbitrary Lua as an option value.
+
+### Guided editor behavior
+
+| Capability | Recommended proposal | Alternatives |
 | --- | --- | --- |
-| Lua module cache | On | On; Off |
-| Leader key | Space | Any valid non-conflicting mapping |
-| Local leader key | Space | Any valid non-conflicting mapping |
-| Line number style | Absolute | Absolute; Relative with absolute current line; Off |
-| Mouse | All modes | All modes; Normal and Visual; Off |
-| Show current mode | Off | On; Off |
-| System clipboard | On after UI startup | Use system clipboard; Neovim only |
-| Wrap long lines | Neovim default | On; Off |
-| Break indent | On | On; Off |
-| Highlight current line | On | On; Off |
-| Persistent undo | On | On; Off |
-| Search case | Smart | Smart; Ignore case; Exact |
-| Sign column | Always | Auto; Always; Never |
-| Update time | 250 ms | Valid positive duration |
-| Mapping timeout | 300 ms | Valid positive duration |
-| Vertical split direction | Right | Right; Left |
-| Horizontal split direction | Below | Below; Above |
-| Visible whitespace | On | On; Off |
-| Whitespace characters | `» `, `·`, `␣` | Editable tab, trail, and non-breaking-space text |
-| Live substitution preview | Split | Split; Inline; Off |
-| Scroll offset | 10 | Non-negative integer |
-| Confirm before abandoning changes | On | On; Off |
-| Indentation source | Detect automatically | Detect automatically; Explicit |
-| Indentation width | Profile-dependent | 2; 4; 8; custom validated value |
-| Indent with | Spaces | Spaces; Tabs |
+| Leader/local leader | Space | Any valid non-conflicting mapping |
+| Line numbers | Absolute | Relative with absolute current line; Off |
+| Mouse | All modes | Normal/Visual only; Off |
+| Clipboard | System clipboard when available | Neovim registers only; custom provider |
+| Search case | Smart case | Ignore case; exact case |
+| Incremental search | On | Off |
+| Search highlighting | On with clear action | Always on; Off |
+| Live substitution | Split preview | Inline; Off |
+| Wrapping | Filetype/profile-aware | Always on; always off |
+| Break indent | On | Off |
+| Scroll context | 8–10 lines | Any validated non-negative value |
+| Horizontal scroll context | 5 columns | Any validated non-negative value |
+| Split direction | Right and below | Left and/or above |
+| Equalize resized splits | On | Off |
+| Confirmation before abandon | On | Off |
+| Update time | 250 ms | Custom positive duration |
+| Mapping timeout | 300 ms | Custom positive duration |
+| Persistent undo | On | Off; custom undo directory |
+| Swap files | On for recovery | Off; custom directory |
+| Backups | Off by default | On; writebackup only; custom directory |
+| External file changes | Autoread with notification | Manual checktime |
+| Session/history | ShaDa on | Reduced; custom item limits; Off |
 
-System clipboard activation is delayed until the UI is available when that avoids startup cost. Clipboard-provider availability is tracked separately from the selected intent.
+### Indentation and whitespace
 
-### Editing helpers
+- Spaces, tabs, or filetype-specific indentation.
+- Width, shift width, soft-tab width, smart tab, round indent, and backspace behavior.
+- Automatic indentation: native, Treesitter/indent plugin, detected, or explicit.
+- Indentation detection: `NMAC427/guess-indent.nvim` `[RECOMMENDED]`; `tpope/vim-sleuth` `[ALTERNATIVE]`; explicit only `[BUILT-IN]`.
+- Visible whitespace, editable `listchars`, trailing-space policy, non-breaking spaces, and end-of-line markers.
+- Color column: off, fixed columns, or filetype/text-width derived.
+- Text width, format options, join behavior, virtual edit, and paste behavior.
 
-- `guess-indent.nvim` `[KICKSTART DEFAULT]` — automatically detect indentation.
-- `mini.ai` `[KICKSTART DEFAULT]` — enhanced around/inside text objects, configurable mappings, and search range.
-- `mini.surround` `[KICKSTART DEFAULT]` — add, delete, and replace surroundings.
-- `nvim-autopairs` `[KICKSTART OPTIONAL]` — automatically insert matching brackets and quotes.
-- `indent-blankline.nvim` `[KICKSTART OPTIONAL]` — indentation guides, including blank lines.
+### Files, buffers, windows, and tabs
 
-## 4. Appearance
+- Encoding, file format, end-of-line, backup, swap, undo, autoread, autowrite, hidden buffers, and modified-buffer confirmation.
+- Current working directory policy: global, tab-local, window-local, project-root, or unchanged.
+- Split placement, resize behavior, minimum sizes, winbar/statusline/tabline visibility, last window behavior, and diff options.
+- Buffer switching: native list, picker, bufferline, or tabline.
+- Tab pages remain distinct from buffers; the UI explains the difference.
+- Session save/restore includes buffers, tabs, windows, folds, cwd, terminal policy, and excluded paths.
 
-- Nerd Font availability flag and plain-text fallback.
-- `tokyonight.nvim` `[KICKSTART DEFAULT]`.
-- Tokyo Night variant: night, storm, moon, or day.
-- Comment italics on or off.
-- Built-in colorscheme alternative and extensible validated colorscheme selection.
-- `mini.statusline` `[KICKSTART DEFAULT]`.
-- Statusline icons on or off.
-- Cursor location format.
-- `mini.icons` `[CONDITIONAL]` when a Nerd Font is selected.
-- `todo-comments.nvim` `[KICKSTART DEFAULT]` with comment signs on or off.
+### Command line, completion, spelling, and folds
 
-The configurator UI itself continues to use semantic highlight links rather than forcing its own colorscheme.
+- `wildmenu`, `wildmode`, `wildoptions`, command history, abbreviations, aliases, and command-line completion.
+- Native insert completion sources, automatic completion, delay/timeout, popup behavior, and LSP completion.
+- Spell languages, dictionaries, suggestions, capitalization, and per-filetype activation.
+- Fold method: manual, indent, marker, expression, syntax, Treesitter expression, or LSP expression.
+- Fold level, fold column, fold text, open/close behavior, and persistence.
 
-## 5. Diagnostics
+### Keymaps, commands, and automatic behavior
 
-| Decision | Kickstart proposal |
-| --- | --- |
-| Update while inserting | Off |
-| Sort by severity | On |
-| Float border | Rounded |
-| Show source | When several sources exist |
-| Underline threshold | Warning and above |
-| Virtual text | On |
-| Virtual lines | Off |
-| Open details after diagnostic jump | On |
-| Diagnostic list action | Location list |
+The configurator supports:
 
-The catalog also supports disabling diagnostics, choosing quickfix instead of location list, configuring float focus, and selecting severity thresholds independently.
+- Normal, Insert, Visual, Select, Operator-pending, Command, Terminal, and language-map modes;
+- global and buffer-local mappings;
+- descriptions, nowait, silent, expression, remap, and replace-keycodes flags;
+- conflict detection across generated mappings;
+- mapping families and leader groups;
+- user commands with arguments, ranges, completion, and descriptions;
+- autocmds grouped by named augroup, event, pattern, buffer, nested, once, and description;
+- filetype-specific options and actions;
+- abbreviations and custom menu entries.
 
-## 6. Keymaps and automatic behavior
+Advanced custom Lua belongs in the user-owned extension file and is never round-tripped through form fields.
 
-Every keymap record contains action ID, modes, key sequence, scope, description, source feature, enabled state, and conflict status. Generated feature-local mappings are buffer-local whenever possible.
+## 5. Plugin and package management
 
-### Native defaults
+| Choice | Recommendation | Best for | Tradeoff |
+| --- | --- | --- | --- |
+| Native `vim.pack` | `[RECOMMENDED: MINIMAL] [EXPERIMENTAL]` | Neovim 0.12+, direct Git sources, native lockfile | Still officially experimental; limited high-level lazy-loading policy |
+| `folke/lazy.nvim` | `[RECOMMENDED]` | Mature dependency graph, lazy loading, rich UI and profiling | Adds a bootstrap dependency and manager-specific spec |
+| `nvim-mini/mini.deps` | `[ALTERNATIVE]` | Small Lua-native dependency management | Fewer lifecycle/UI conveniences |
+| Native packages/manual Git | `[ALTERNATIVE]` | Fully explicit expert-managed setups | Updates, dependencies, and lock state are manual |
 
-| Key | Action |
-| --- | --- |
-| `Esc` | Clear search highlighting |
-| `<leader>q` | Open diagnostic location list |
-| `Esc Esc` | Leave terminal mode |
-| `Ctrl-h/j/k/l` | Move between windows |
+Supported controls:
 
-Optional native mappings include moving windows with `Ctrl-Shift-h/j/k/l` and disabling arrow keys in Normal mode.
+- source URL and display name;
+- branch, tag, semantic range, or exact commit;
+- required and optional dependencies;
+- eager, event, command, filetype, key, or module loading where the manager supports it;
+- conditional inclusion by OS, executable, environment, or feature;
+- build/update hook with explicit shell review;
+- lockfile and update policy;
+- pin, update, rollback, retry, disable, and removal plan;
+- requested, resolving, downloading, building, installed, update-available, failed, disabled, and unknown states.
 
-### Automatic behavior
+The user selects the manager before plugin-backed features are generated. Changing managers is a reviewed migration, not a profile toggle.
 
-- Highlight yanked text.
-- Run feature-specific actions on LSP attach/detach.
-- Build selected plugins after `vim.pack` install/update.
-- Attach and optionally install Treesitter parsers on filetype detection.
-- Run selected linters on configured events.
-- Open and close debugging UI with debugger lifecycle events.
+## 6. Appearance and interface components
 
-## 7. Plugin management
+| Capability | Recommended | Alternatives |
+| --- | --- | --- |
+| Colorscheme | Built-in default until chosen | Tokyo Night; Catppuccin; Kanagawa; Rose Pine; Gruvbox variants; Nightfox; Everforest; any validated colorscheme |
+| Icon provider | `nvim-mini/mini.icons` | `nvim-tree/nvim-web-devicons`; none |
+| Statusline | `nvim-lualine/lualine.nvim` | `nvim-mini/mini.statusline` for minimal; `rebelot/heirline.nvim` for advanced; native format |
+| Tab/buffer line | Native tabline or none | `akinsho/bufferline.nvim`; `romgrk/barbar.nvim`; custom heirline |
+| Winbar/breadcrumbs | Off by default | `Bekaboo/dropbar.nvim`; `SmiteshP/nvim-navic`; custom native winbar |
+| Indent guides | `lukas-reineke/indent-blankline.nvim` | `mini.indentscope`; `snacks.indent`; none |
+| Scope/context | `nvim-treesitter/nvim-treesitter-context` | native winbar/breadcrumbs; none |
+| Notifications | Native `vim.notify` | `folke/snacks.nvim` notifier; `rcarriga/nvim-notify` |
+| Command/message UI | Native `[RECOMMENDED]` | `folke/noice.nvim` `[OPT-IN]` |
+| Startup screen | None `[RECOMMENDED: MINIMAL]` | Snacks dashboard; `goolord/alpha-nvim`; `nvimdev/dashboard-nvim` |
+| Cursor/scroll animation | None `[RECOMMENDED]` | `sphamba/smear-cursor.nvim`; `karb94/neoscroll.nvim` `[OPT-IN]` |
 
-`vim.pack` is the generated plugin mechanism. The adapter supports:
+Appearance also covers background mode, transparency, true color, syntax/semantic highlight precedence, cursor shapes, sign definitions, fill characters, popup borders, floating-window style, concealment, and Nerd Font availability with plain-text fallbacks.
 
-- Git source URL.
-- Friendly display name.
-- Default branch, named branch, tag/version range, or exact commit.
-- Required and optional dependencies.
-- Conditional inclusion.
-- Post-install/update build command.
-- Lockfile entry and availability state.
-- Requested, downloading, installed, update available, failed, and unknown states.
-- Retry without rewriting verified local configuration.
-- Removal planning without silently deleting plugin data.
+## 7. Editing ergonomics
 
-The Review screen lists Git use, resolved plugin directories, lockfile changes, build commands, and network actions.
+| Capability | Recommended | Alternatives |
+| --- | --- | --- |
+| Commenting | Native `gc` `[BUILT-IN]` | `mini.comment`; `numToStr/Comment.nvim`; `tpope/vim-commentary` |
+| Embedded-language comments | `JoosepAlviste/nvim-ts-context-commentstring` when needed | Filetype defaults only |
+| Surroundings | `nvim-mini/mini.surround` | `kylechui/nvim-surround`; `tpope/vim-surround` |
+| Text objects | `nvim-mini/mini.ai` | Treesitter textobjects; `wellle/targets.vim`; native only |
+| Autopairs | `windwp/nvim-autopairs` | `mini.pairs`; none |
+| Fast motion | `folke/flash.nvim` | `ggandor/leap.nvim`; `smoka7/hop.nvim`; native search |
+| Multiple cursors | None `[RECOMMENDED]` | `jake-stewart/multicursor.nvim`; `mg979/vim-visual-multi` |
+| Split/join structures | `Wansmer/treesj` | `AndrewRadev/splitjoin.vim`; language formatter |
+| Alignment | Native/manual | `echasnovski/mini.align`; `junegunn/vim-easy-align` |
+| Increment/decrement | Native `Ctrl-A/Ctrl-X` | `monaqa/dial.nvim` |
+| Yank history | Native registers | `gbprod/yanky.nvim`; picker integration |
+| Substitute/exchange | Native operators | `gbprod/substitute.nvim`; `tommcdo/vim-exchange` |
 
-## 8. Search and navigation
+All plugin mappings are previewed, conflict-checked, and individually editable.
 
-### Telescope `[KICKSTART DEFAULT]`
+## 8. Search, navigation, files, and projects
 
-Plugins:
+### Picker
 
-- `nvim-lua/plenary.nvim`
-- `nvim-telescope/telescope.nvim`
-- `nvim-telescope/telescope-ui-select.nvim`
-- `nvim-telescope/telescope-fzf-native.nvim` `[CONDITIONAL]` when `make` is available
+| Choice | Recommendation | Best for |
+| --- | --- | --- |
+| `folke/snacks.nvim` picker | `[RECOMMENDED]` | Broad modern source coverage and integrated UI |
+| `ibhagwan/fzf-lua` | `[RECOMMENDED: MINIMAL]` | Fast picker with fzf semantics |
+| `nvim-telescope/telescope.nvim` | `[ALTERNATIVE]` | Large extension ecosystem and familiar workflows |
+| `nvim-mini/mini.pick` | `[ALTERNATIVE]` | Small integrated setup |
+| Native commands/quickfix | `[BUILT-IN]` | No picker dependency |
 
-Actions:
-
-- Search help.
-- Search keymaps.
-- Find files.
-- Select a Telescope picker.
-- Search the current word or visual selection.
-- Live grep.
-- Search diagnostics.
-- Resume the last picker.
-- Search recent files.
-- Search commands.
-- Search open buffers.
-- Fuzzy-search the current buffer.
-- Grep only open files.
-- Search Neovim configuration files.
-- Find LSP references, implementations, definitions, document symbols, workspace symbols, and type definitions.
-
-Configuration includes picker mappings, dropdown theme, preview visibility, transparency, native sorter availability, and UI-select integration.
+Picker actions cover files, recent files, buffers, grep, current-buffer search, help, commands, keymaps, options, registers, marks, jumps, tags, diagnostics, quickfix, locations, symbols, references, implementations, Git files/branches/commits/status, colorschemes, projects, sessions, and configuration files.
 
 ### File explorer
 
-- Built-in file commands.
-- `neo-tree.nvim` `[KICKSTART OPTIONAL]` with `plenary.nvim` and `nui.nvim`.
-- Reveal-current-file mapping and close mapping.
-- Filesystem window behavior.
+| Choice | Recommendation | Best for |
+| --- | --- | --- |
+| `stevearc/oil.nvim` | `[RECOMMENDED]` | Editing directories like ordinary buffers |
+| `nvim-neo-tree/neo-tree.nvim` | `[RECOMMENDED: SIDEBAR]` | Tree/sidebar workflows and multiple sources |
+| `nvim-mini/mini.files` | `[ALTERNATIVE]` | Compact column-based navigation |
+| `nvim-tree/nvim-tree.lua` | `[ALTERNATIVE]` | Traditional file tree |
+| Native directory editing | `[BUILT-IN]` | Minimal dependency footprint |
 
-Search/picker and file-tree choices are independent.
+### Projects, buffers, and sessions
 
-## 9. Git
+- Project root: LSP root, Git root, marker files, cwd, manual choice, or per-language policy.
+- Project selection: picker sources, recent directories, bookmarks, or custom roots.
+- Sessions: native `:mksession` `[BUILT-IN]`; `folke/persistence.nvim` `[RECOMMENDED: SIMPLE]`; `rmagatti/auto-session` `[RECOMMENDED: AUTOMATIC]`; `stevearc/resession.nvim` `[ALTERNATIVE]`; `echasnovski/mini.sessions` `[ALTERNATIVE]`.
+- Buffer cleanup: native delete; `snacks.bufdelete`; `mini.bufremove`.
+- Bookmarks/marks: native marks, `ThePrimeagen/harpoon`, or `cbochs/grapple.nvim`.
+- Large-file mode: threshold, disabled subsystems, syntax limit, preview limit, and warning policy.
 
-`gitsigns.nvim` and its full recommended action set are `[KICKSTART DEFAULT]` in the current upstream snapshot.
+## 9. Syntax, parsing, and code structure
 
-Configurable signs:
+### Treesitter
 
-- Add.
-- Change.
-- Delete.
-- Top delete.
-- Change-delete.
+`nvim-treesitter/nvim-treesitter` is `[RECOMMENDED]` for installed languages, with native regex syntax as the fallback.
 
-Configurable actions:
+Configurable behavior:
 
-- Next and previous hunk with native-diff fallback.
-- Stage and reset hunk in Normal or Visual mode.
-- Stage and reset buffer.
-- Preview hunk normally or inline.
-- Blame current line.
-- Diff against the index or previous commit.
-- Send repository or current-file hunks to quickfix.
-- Toggle current-line blame.
-- Toggle word-level diff.
-- Select a hunk as a text object.
+- explicit parser list and version-aware parser availability;
+- manual, prompt, or reviewed automatic installation;
+- highlighting, indentation, folds, injections, locals, and queries;
+- parser build tool and compiler checks;
+- safe fallback when a parser is absent or broken;
+- parser updates separate from local config writes.
 
-## 10. Which-key
+Related choices:
 
-`which-key.nvim` is `[KICKSTART DEFAULT]`.
+- text objects: `nvim-treesitter/nvim-treesitter-textobjects` or `mini.ai`;
+- context: `nvim-treesitter/nvim-treesitter-context`;
+- autotag: `windwp/nvim-ts-autotag` or LSP/editor features;
+- structural selection: incremental selection, textobjects, or native motions;
+- playground/query inspection: built-in inspect tools and `:InspectTree`.
 
-- Enable or disable.
-- Popup delay.
-- Mapping icons with Nerd Font fallback.
-- Search, Toggle, Git Hunk, and LSP Action groups.
-- Groups derived from generated mappings rather than maintained as an unrelated second source of truth.
+## 10. LSP and language intelligence
 
-## 11. Languages and LSP
+Neovim's native LSP client is always the execution layer.
 
-Infrastructure:
+| Capability | Recommended | Alternatives |
+| --- | --- | --- |
+| Server configurations | `neovim/nvim-lspconfig` | Handwritten `vim.lsp.config()` files `[BUILT-IN]`; language-specific client plugin |
+| Tool acquisition | `mason-org/mason.nvim` with explicit review | System/package-manager tools; project-local tools; containers; manual paths |
+| Mason/server bridge | `mason-org/mason-lspconfig.nvim` | Explicit executable mapping |
+| Tool-list installation | `WhoIsSethDaniel/mason-tool-installer.nvim` | Mason UI/manual install; system bootstrap script |
+| LSP progress | Native `vim.lsp.status()` | `j-hui/fidget.nvim`; statusline integration |
 
-- Neovim native LSP client.
-- `nvim-lspconfig`.
-- `mason.nvim`.
-- `mason-lspconfig.nvim`.
-- `mason-tool-installer.nvim`.
-- `fidget.nvim` for progress.
+Every server record exposes command, environment, filetypes, root markers, workspace requirement, single-file behavior, settings, initialization options, capabilities, handlers, commands, logging, trace level, offset encoding, and workspace folders.
 
-Each language record supports server choice, external command, filetypes, root markers, server settings, initialization behavior, capabilities, installation provider, dependency status, formatting ownership, and parser/formatter/linter/debugger companions.
+LSP features are independently configurable:
 
-Kickstart coverage includes:
+- definition, declaration, implementation, references, type definition;
+- hover, signature help, code actions, rename, call/type hierarchy;
+- document/workspace symbols and symbol outline;
+- document highlights, semantic tokens, inlay hints, code lens;
+- document/range/on-type formatting ownership;
+- completion and resolve capabilities;
+- workspace folders, file watchers, progress, and restart behavior;
+- per-server feature disablement when another tool owns the capability.
 
-- Lua: `lua_ls` and Stylua `[KICKSTART DEFAULT]`.
-- C/C++: `clangd` example.
-- Go: `gopls` example.
-- Python: `pyright` example.
-- TypeScript: current upstream example name `tsc`.
-- Rust: `rust_analyzer` example, with Rustaceanvim mentioned as an alternative.
+Language-specific wrappers are offered when they add material functionality, including `folke/lazydev.nvim`, `mrcjkb/rustaceanvim`, `mfussenegger/nvim-jdtls`, `scalameta/nvim-metals`, `nvim-flutter/flutter-tools.nvim`, and `mrcjkb/haskell-tools.nvim`. The underlying native server configuration remains an alternative.
 
-Lua behavior includes LuaJIT runtime paths, Neovim runtime-library awareness, suppression of third-party workspace prompts, respect for `.luarc.json`/`.luarc.jsonc`, and disabling `lua_ls` formatting when Stylua owns formatting.
+## 11. Completion and snippets
 
-Mason may install selected servers and tools only after the Review screen lists them and the user confirms the external phase.
+| Choice | Recommendation | Tradeoff |
+| --- | --- | --- |
+| `saghen/blink.cmp` | `[RECOMMENDED]` | Broad completion UX and sources; plugin/build compatibility must be checked |
+| Native completion and LSP completion | `[RECOMMENDED: MINIMAL] [BUILT-IN]` | Smallest stack; fewer source/UI integrations |
+| `hrsh7th/nvim-cmp` | `[ALTERNATIVE]` | Mature source ecosystem; more source plugins and configuration |
+| No automatic menu | `[ALTERNATIVE]` | Manual completion only |
 
-### LSP actions
+Configurable sources include LSP, buffer, path, snippets, command line, tags, dictionary, spell, Git, emoji, database, AI, and filetype-specific providers. Users choose source order, trigger policy, minimum prefix, fuzzy matching, documentation, signature help, ghost text, item layout, preselection, acceptance key, and fallback behavior.
 
-- Rename.
-- Code action in Normal and Visual mode.
-- Go to declaration.
-- References.
-- Implementation.
-- Definition.
-- Type definition.
-- Document symbols.
-- Workspace symbols.
-- Document-reference highlighting and cleanup.
-- Inlay-hint toggle when supported.
+Snippet choices:
 
-## 12. Completion and snippets
+- Blink's built-in snippet support `[RECOMMENDED]`;
+- `L3MON4D3/LuaSnip` `[RECOMMENDED: ADVANCED]`;
+- `nvim-mini/mini.snippets` `[ALTERNATIVE]`;
+- native snippets/manual templates `[BUILT-IN]`;
+- `rafamadriz/friendly-snippets` as an optional snippet collection.
 
-`blink.cmp` and LuaSnip are `[KICKSTART DEFAULT]`. `friendly-snippets` is `[KICKSTART OPTIONAL]`.
+Enter is never mapped to accept without an explicit warning and visible fallback behavior.
 
-Completion choices:
+## 12. Diagnostics, lists, and code actions
 
-- Native completion.
-- `blink.cmp`.
-- None.
+Native `vim.diagnostic` is the source of truth. Configure virtual text, virtual lines, signs, underline, severity sorting/filtering, float border/header/source, update timing, jump behavior, and per-namespace overrides.
 
-Blink settings:
+Presentation choices:
 
-- Default, Super-Tab, Enter, or no preset mappings.
-- LSP, path, and snippet sources.
-- LuaSnip integration.
-- Documentation auto-show and delay.
-- Nerd Font Mono or normal spacing.
-- Lua fuzzy matching or the optional Rust matcher.
-- Signature help.
+- native quickfix/location list `[BUILT-IN]`;
+- `folke/trouble.nvim` `[RECOMMENDED]` for a unified diagnostics/references/list view;
+- picker integration `[ALTERNATIVE]`;
+- inline-only or signs-only minimal modes.
 
-The UI spells out the resulting completion keys and warns before mapping Enter to acceptance.
+Code-action choices include native selection, preview/diff before applying workspace edits, lightbulb indicators, action-kind filtering, source actions on save, and explicit organize-imports/fix-all ownership.
 
-## 13. Formatting
+## 13. Formatting and linting
 
-`conform.nvim` is `[KICKSTART DEFAULT]`.
+### Formatting
 
-- Manual asynchronous formatting in Normal or Visual mode.
-- Per-filetype formatter lists.
-- Sequential formatters.
-- First-available formatter fallback.
-- Optional format on save by filetype.
-- Save timeout.
-- LSP fallback or LSP formatting disabled.
-- Error-notification policy.
+| Choice | Recommendation | Best for |
+| --- | --- | --- |
+| `stevearc/conform.nvim` | `[RECOMMENDED]` | Multiple formatters, fallback policy, async/manual/save flows |
+| Native LSP formatting | `[BUILT-IN]` | One trusted server owns formatting |
+| `nvimtools/none-ls.nvim` | `[ALTERNATIVE: ADVANCED]` | Exposing CLI tools through LSP semantics |
+| External command/task | `[ALTERNATIVE]` | Project-controlled scripts |
 
-Kickstart examples include Stylua, `rustfmt`, `isort`, `black`, `prettierd`, and `prettier`. Example lines do not become selected defaults merely because they appear upstream.
+Support per-filetype formatter chains, first-available choices, working directory, environment, stdin/file mode, timeout, range formatting, embedded languages, format-on-save, format-after-save, manual-only, and LSP fallback/never/first/last policies.
 
-## 14. Linting
+### Linting
 
-`nvim-lint` is `[KICKSTART OPTIONAL]`.
+| Choice | Recommendation | Alternatives |
+| --- | --- | --- |
+| `mfussenegger/nvim-lint` | `[RECOMMENDED]` | LSP diagnostics only; none-ls; project task; no editor linting |
 
-- Per-filetype linter selection.
-- Multiple linters.
-- Run on buffer entry, after write, and/or after leaving Insert mode.
-- Skip non-modifiable buffers.
-- Manual lint action.
+Configure filetype linters, multiple linters, stdin/file mode, cwd/env, events, debounce, modified-buffer policy, exit-code interpretation, parser, diagnostic namespace, and manual action.
 
-The shipped example enables Markdown with `markdownlint` and documents possible linters for Clojure, Dockerfile, Inko, Janet, JSON, Markdown, reStructuredText, Ruby, Terraform, and plain text.
+Formatting, linting, and LSP diagnostics have separate ownership. Selecting two tools that produce the same result triggers a conflict explanation rather than silent duplication.
 
-## 15. Treesitter
+## 14. Git and collaboration
 
-`nvim-treesitter` on its `main` branch is `[KICKSTART DEFAULT]`.
+| Capability | Recommended | Alternatives |
+| --- | --- | --- |
+| Buffer hunks/blame | `lewis6991/gitsigns.nvim` | Native `:diffthis`; mini.diff |
+| Git command workflow | `NeogitOrg/neogit` | `tpope/vim-fugitive`; terminal Git; LazyGit integration |
+| Repository diff/history | Gitsigns diff or `sindrets/diffview.nvim` | Native diff; Fugitive views |
+| GitHub issues/PRs | `pwntester/octo.nvim` `[OPT-IN]` | `gh` in terminal; browser |
+| Conflict resolution | Native diff3 | `akinsho/git-conflict.nvim`; Diffview merge tools |
 
-- Parser selection and installation state.
-- Baseline parsers: Bash, C, Diff, HTML, Lua, LuaDoc, Markdown, Markdown inline, Query, Vim, and VimDoc.
-- Automatic installation for recognized filetypes.
-- Highlighting.
-- Indentation when an indent query exists.
-- Optional expression-based folding.
-- Safe buffer-validity check after asynchronous installation.
-- Parser update build hook.
+Configurable actions include hunk navigation/stage/reset/preview, buffer stage/reset, blame, word diff, deleted lines, revision comparison, commit log, status, branches, stash, push/pull, merge/rebase, conflict markers, and quickfix export.
 
-The catalog may expose additional parsers returned by the supported `nvim-treesitter` version, but generated state stores explicit parser IDs rather than depending on a remote catalog at startup.
+Remote operations and authentication are never performed without an explicit command and review. Credentials are not written into generated Lua.
 
-## 16. Debugging
+## 15. Debugging, testing, tasks, and terminals
 
-The Go-focused DAP example is `[KICKSTART OPTIONAL]`.
+### Debugging
 
-Plugins:
+- `mfussenegger/nvim-dap` `[RECOMMENDED]` as the DAP client.
+- `rcarriga/nvim-dap-ui` plus `nvim-neotest/nvim-nio` for a full UI.
+- `theHamsta/nvim-dap-virtual-text` for inline values.
+- `jay-babu/mason-nvim-dap.nvim` or explicit adapter paths for acquisition/configuration.
+- Vimspector `[ALTERNATIVE]` for users preferring its integrated workflow.
 
-- `nvim-dap`
-- `nvim-dap-ui`
-- `nvim-nio`
-- `mason-nvim-dap.nvim`
-- `nvim-dap-go`
-- Existing `mason.nvim`
+Support launch/attach configurations, arguments/env/cwd, breakpoints and conditions, log points, stepping, stack/scopes/watches, REPL, exception filters, run-to-cursor, adapter install state, and per-language recipes.
 
-Behavior:
+### Testing
 
-- Install and configure Delve.
-- Start or continue.
-- Step into, over, and out.
-- Toggle breakpoint.
-- Conditional breakpoint.
-- Toggle debugging UI.
-- Open/close UI with debugger lifecycle.
-- Plain and Nerd Font breakpoint/control icons.
-- Windows-specific attached Delve mode.
+- `nvim-neotest/neotest` `[RECOMMENDED]` with explicit language adapters.
+- `vim-test/vim-test` `[ALTERNATIVE]` for command-oriented workflows.
+- Project-native test commands `[BUILT-IN]` through terminal or task runner.
 
-Debuggers are selected per language. Go is the first complete recipe, not a permanent product limit.
+Support nearest/file/suite/last, watch mode, output, summary, diagnostics, coverage integration, debug-test handoff, and adapter health.
 
-## 17. Dependency and health catalog
+### Tasks and builds
+
+- `stevearc/overseer.nvim` `[RECOMMENDED]` for templates, task state, dependencies, and output.
+- Native `:make`, `makeprg`, `errorformat`, quickfix, and terminal `[BUILT-IN]`.
+- `tpope/vim-dispatch` or `skywind3000/asyncrun.vim` `[ALTERNATIVE]`.
+- Project scripts from npm, Make, Cargo, Go, Gradle, Maven, just, task, VS Code tasks, and custom commands.
+
+### Terminal
+
+- Native `:terminal` `[BUILT-IN]`.
+- Snacks terminal/toggle `[RECOMMENDED]` when Snacks is selected.
+- `akinsho/toggleterm.nvim` `[ALTERNATIVE]`.
+- Shell, direction, size, persistence, cwd, environment, close behavior, and terminal mappings are configurable.
+
+## 16. Symbols, refactoring, and navigation aids
+
+| Capability | Recommended | Alternatives |
+| --- | --- | --- |
+| Symbol outline | `stevearc/aerial.nvim` | Trouble symbols; picker; `hedyhli/outline.nvim` |
+| Breadcrumbs | `Bekaboo/dropbar.nvim` | `nvim-navic`; winbar text; off |
+| Rename UI | Native rename | `smjonas/inc-rename.nvim` |
+| Refactoring | Native LSP code actions | `ThePrimeagen/refactoring.nvim`; language-specific tools |
+| References preview | Picker/Trouble | `dnlhc/glance.nvim`; location list |
+| Code context | Treesitter Context | breadcrumbs; folds; off |
+
+The product distinguishes protocol-standard actions from plugin-specific transformations and previews edits when the provider supports it.
+
+## 17. Specialized IDE capabilities
+
+These are optional topics, not default profile requirements.
+
+| Area | Recommended option | Alternatives |
+| --- | --- | --- |
+| Database | `kristijanhusak/vim-dadbod-ui` + `tpope/vim-dadbod` | terminal clients; DB completion add-on |
+| HTTP/API | `mistweaverco/kulala.nvim` | `rest-nvim/rest.nvim`; curl in terminal |
+| Markdown rendering | `MeanderingProgrammer/render-markdown.nvim` | browser preview; plain Markdown |
+| Markdown preview | `iamcco/markdown-preview.nvim` | live server/browser; none |
+| LaTeX | `lervag/vimtex` | texlab-only; terminal build |
+| Notes/wiki | `epwalsh/obsidian.nvim` | `zk-org/zk-nvim`; `nvim-neorg/neorg`; plain files |
+| Grammar | Harper or LTeX LSP | built-in spell; LanguageTool integration |
+| Containers | Docker/Compose LSP plus terminal tools | `lazydocker` terminal integration |
+| Kubernetes | YAML/Helm LSP and schemas | `kubectl`/`k9s` terminal integration |
+| REPL/notebooks | `Vigemus/iron.nvim` | `jupyter-vim`; Molten; terminal REPL |
+| Remote development | SSH-launched Neovim | remote filesystem plugins; terminal multiplexer |
+
+## 18. AI assistance `[OPT-IN]`
+
+AI is part of the broad catalog but never part of a default profile. The recommendation is **Off** until the user explicitly chooses a provider, privacy policy, data scope, and credential source.
+
+Choices:
+
+- `olimorris/codecompanion.nvim` `[RECOMMENDED: PROVIDER-NEUTRAL]` for chat, inline workflows, multiple providers, and agent protocols;
+- `avante-corp/avante.nvim` `[ALTERNATIVE]` for an IDE-like AI editing workflow;
+- GitHub Copilot completion/chat plugins `[ALTERNATIVE]` for Copilot users;
+- local-model integrations through Ollama-compatible providers `[ALTERNATIVE]`;
+- no AI `[RECOMMENDED DEFAULT]`.
+
+The configurator may generate plugin settings and environment-variable references. It must not collect, display, persist, or migrate API keys. Review discloses provider, network access, context sources, automatic actions, and files eligible to be sent.
+
+## 19. Language and filetype recipes
+
+Recipes are starting combinations. Every server, formatter, linter, debugger, test adapter, parser, and language-specific plugin remains independently selectable.
+
+| Language/domain | Recommended intelligence | Alternatives | Format/lint/debug notes |
+| --- | --- | --- | --- |
+| Lua/Neovim | `lua_ls` + `folke/lazydev.nvim` | EmmyLua analyzer | Stylua; luacheck; local-lua-debugger |
+| JavaScript/TypeScript | `tsgo`/official TypeScript server when project-compatible | `vtsls`; `ts_ls`; Deno separately | Biome or Prettier; ESLint/Biome; js-debug-adapter |
+| Deno | `denols` | TypeScript server with Deno exclusions | `deno fmt`; `deno lint`; js-debug-adapter |
+| HTML/CSS/JSON | VS Code language servers | Emmet LSP; Biome where supported | Prettier/Biome; stylelint; browser debugger |
+| Tailwind CSS | `tailwindcss` | framework integration only | class sorting via Prettier plugin |
+| Vue | `vue_ls` | vtsls Vue plugin combinations | Prettier/Biome; ESLint; browser debugger |
+| Svelte | `svelte` | TypeScript-only fallback | Prettier Svelte; ESLint; browser debugger |
+| Astro | `astro` | TypeScript/HTML fallbacks | Prettier Astro; ESLint |
+| Angular | `angularls` | `ng.nvim` enhanced client | Prettier; ESLint; browser debugger |
+| Python | BasedPyright | Pyright; ty; Jedi LSP | Ruff format or Black; Ruff; debugpy; neotest-python |
+| Rust | `rust_analyzer` + Rustaceanvim | Native server config | rustfmt; Clippy; CodeLLDB; neotest-rust |
+| Go | `gopls` | language-specific Go plugin | gofmt/goimports/gofumpt; golangci-lint; Delve; neotest-go |
+| C/C++ | `clangd` | ccls | clang-format; clang-tidy; CodeLLDB/cpptools; CMake tools |
+| CMake | `neocmake` or cmake-language-server | filetype support only | cmake-format/lint; build task integration |
+| Java | `jdtls` + `nvim-jdtls` | native jdtls config | google-java-format; Checkstyle; java-debug; neotest-java |
+| Kotlin | Kotlin language server | IntelliJ/external workflow | ktfmt; detekt; JVM debugger |
+| C# | `roslyn_ls` | OmniSharp; csharp_ls | CSharpier/dotnet format; analyzers; netcoredbg |
+| F# | FsAutoComplete/Ionide | native config | Fantomas; analyzers; netcoredbg |
+| Ruby | Ruby LSP | Solargraph | RuboCop format/lint; rdbg; neotest-rspec |
+| PHP | Intelephense | Phpactor | Pint/php-cs-fixer; PHPStan/Psalm; vscode-php-debug |
+| Elixir | Expert or ElixirLS | Next LS | `mix format`; Credo; ExUnit adapters |
+| Erlang | Erlang LS | lexical where supported | rebar3 format; Elvis; EUnit/Common Test |
+| Gleam | Gleam language server | none | `gleam format/check/test` |
+| Haskell | HLS + haskell-tools | native HLS config | Fourmolu/Ormolu; HLint; haskell-debug-adapter |
+| Scala | Metals + nvim-metals | native Metals config | Scalafmt; Scalafix; JVM debugger |
+| Zig | ZLS | none | `zig fmt`; compiler checks; CodeLLDB |
+| Swift | SourceKit-LSP | Xcode external workflow | swift-format; SwiftLint; LLDB |
+| Dart/Flutter | Dart LSP + flutter-tools | native Dart config | dart format/analyze; Dart debug/test |
+| Bash/sh | bash-language-server | shellharden assistance | shfmt; ShellCheck; bash-debug |
+| Fish | fish LSP where available | syntax/filetype only | fish_indent; fish checks |
+| PowerShell | PowerShell Editor Services | filetype only | PSScriptAnalyzer; PowerShell debugger |
+| SQL | SQLS or sql-language-server | database-client completion | SQLFluff; dialect-specific clients |
+| JSON/YAML | jsonls/yamlls + SchemaStore | Biome for JSON | Prettier; yamlfmt; yamllint |
+| TOML | Taplo | filetype only | Taplo format/lint |
+| XML | lemminx | filetype only | xmllint; schema validation |
+| Markdown | Marksman | Harper; LTeX | Prettier/mdformat; markdownlint; render/preview |
+| LaTeX | texlab + VimTeX | texlab only | latexindent; ChkTeX; compiler/viewer selection |
+| Terraform/OpenTofu | terraformls/tofu_ls | filetype only | terraform/tofu fmt; TFLint; Trivy |
+| Docker/Compose | dockerls + compose LS | filetype only | dockerfmt where used; Hadolint |
+| Nix | nixd | nil | nixfmt/alejandra; statix; deadnix |
+| OCaml | ocamllsp | Merlin workflow | ocamlformat; dune tasks; test integration |
+| Clojure | clojure-lsp | Conjure without LSP | cljfmt/zprint; clj-kondo; REPL tests |
+| R | R language server + R.nvim | terminal R | air/styler; lintr; testthat |
+| Julia | Julia LSP | terminal Julia | JuliaFormatter; static analysis; Julia debug/test |
+| Protobuf | buf LS | protobuf-language-server | buf format/lint; protoc tasks |
+| GraphQL | GraphQL LSP | framework plugins | Prettier; graphql-eslint |
+| Prisma | Prisma language server | schema/filetype support | `prisma format/validate` |
+| Ansible | ansible-language-server | YAML-only | ansible-lint; yamllint |
+| Helm/Kubernetes | helm_ls + yamlls schemas | YAML-only | helm lint/template; kubeconform/kube-linter |
+
+The catalog may add recipes without changing the schema. A recipe becomes recommended only after its commands, root rules, filetypes, tool ownership, and health checks are validated.
+
+## 20. Dependencies and health
 
 Base checks:
 
-- Neovim 0.12+.
-- Git.
-- `make`.
-- `unzip`.
-- C compiler.
-- `rg`.
-- `fd`.
-- Tree-sitter CLI.
-- System clipboard provider.
-- Optional Nerd Font.
+- supported Neovim version and build features;
+- Git and selected plugin manager requirements;
+- compiler/build tools, `make`, CMake, Rust, Node, Python, unzip/tar as selected plugins require;
+- `rg`, `fd`, `fzf`, Tree-sitter CLI, clipboard provider, image protocol/tooling, and Nerd Font where selected;
+- selected language runtimes and project package managers;
+- servers, formatters, linters, debug adapters, test runners, task runners, database clients, and AI provider command/API environment.
 
-Feature checks:
+Each dependency records purpose, provider, install scope, selected features, path, version, check command, status, last check, and whether absence blocks saving or only leaves a feature pending.
 
-- Selected language runtimes and package managers such as Node/npm, Go, Rust/Cargo, or Python.
-- Selected language servers.
-- Selected formatters.
-- Selected linters.
-- Selected debugger adapters.
-- Plugin build tools.
+Installation providers may include Mason, system package manager, project-local package manager, language toolchain, container, manual path, or copyable instructions. The configurator never assumes these providers are interchangeable.
 
-Health reports purpose, status, impact, provider, last-check time, and the exact selected feature affected. A missing optional dependency never becomes a generic configuration failure.
+## 21. Generated file groups
 
-## 18. Plugin inventory
+The deterministic generator may emit only the modules required by selected state:
 
-### Default or conditional Kickstart repositories
+```text
+init.lua
+lua/user_config/core.lua
+lua/user_config/options.lua
+lua/user_config/keymaps.lua
+lua/user_config/autocmds.lua
+lua/user_config/appearance.lua
+lua/user_config/plugins.lua
+lua/user_config/navigation.lua
+lua/user_config/editing.lua
+lua/user_config/treesitter.lua
+lua/user_config/lsp.lua
+lua/user_config/completion.lua
+lua/user_config/diagnostics.lua
+lua/user_config/formatting.lua
+lua/user_config/linting.lua
+lua/user_config/git.lua
+lua/user_config/debugging.lua
+lua/user_config/testing.lua
+lua/user_config/tasks.lua
+lua/user_config/languages/<id>.lua
+lua/user_config/specialized.lua
+lua/user_config/ai.lua
+lua/user_config/user.lua
+.shoshinvim/state.json
+.shoshinvim/manifest.json
+<selected-manager-lockfile>
+```
 
-1. `NMAC427/guess-indent.nvim`
-2. `lewis6991/gitsigns.nvim`
-3. `folke/which-key.nvim`
-4. `folke/tokyonight.nvim`
-5. `folke/todo-comments.nvim`
-6. `nvim-mini/mini.nvim`
-7. `nvim-lua/plenary.nvim`
-8. `nvim-telescope/telescope.nvim`
-9. `nvim-telescope/telescope-ui-select.nvim`
-10. `nvim-telescope/telescope-fzf-native.nvim` `[CONDITIONAL]`
-11. `j-hui/fidget.nvim`
-12. `neovim/nvim-lspconfig`
-13. `mason-org/mason.nvim`
-14. `mason-org/mason-lspconfig.nvim`
-15. `WhoIsSethDaniel/mason-tool-installer.nvim`
-16. `stevearc/conform.nvim`
-17. `L3MON4D3/LuaSnip`
-18. `saghen/blink.cmp`
-19. `nvim-treesitter/nvim-treesitter`
+`user.lua` is created once and never overwritten. Empty modules are not generated. Optional feature modules must fail safely when a plugin or external tool is absent.
 
-### Optional Kickstart repositories
+## 22. Conversational topic routing
 
-20. `rafamadriz/friendly-snippets`
-21. `windwp/nvim-autopairs`
-22. `mfussenegger/nvim-dap`
-23. `rcarriga/nvim-dap-ui`
-24. `nvim-neotest/nvim-nio`
-25. `jay-babu/mason-nvim-dap.nvim`
-26. `leoluz/nvim-dap-go`
-27. `lukas-reineke/indent-blankline.nvim`
-28. `mfussenegger/nvim-lint`
-29. `nvim-neo-tree/neo-tree.nvim`
-30. `MunifTanjim/nui.nvim`
+`/configure <topic>` supports:
 
-Custom plugins are allowed only through the user-owned extension file in the initial product. A generic remote marketplace, arbitrary setup-schema inference, and automatic two-way editing of custom plugin code are outside this catalog.
+1. `profiles`
+2. `core`
+3. `options`
+4. `keymaps`
+5. `autocmds`
+6. `appearance`
+7. `editing`
+8. `navigation`
+9. `files`
+10. `projects`
+11. `sessions`
+12. `plugins`
+13. `treesitter`
+14. `lsp`
+15. `completion`
+16. `diagnostics`
+17. `formatting`
+18. `linting`
+19. `git`
+20. `debugging`
+21. `testing`
+22. `tasks`
+23. `terminal`
+24. `languages`
+25. `specialized`
+26. `ai`
+27. `dependencies`
+28. `recovery`
 
-## 19. Generated file groups
+`/compare <capability>` is the primary way to evaluate recommended and alternative implementations. `/search`, `/show`, `/review`, `/files`, `/lua`, `/diff`, `/health`, and `/recovery` provide discovery and inspection without requiring a navigation tree.
 
-The deterministic generator may emit:
+## 23. Extension boundary
 
-- `init.lua`
-- `lua/user_config/editor.lua`
-- `lua/user_config/diagnostics.lua`
-- `lua/user_config/keymaps.lua`
-- `lua/user_config/appearance.lua`
-- `lua/user_config/plugins.lua`
-- `lua/user_config/search.lua`
-- `lua/user_config/git.lua`
-- `lua/user_config/languages.lua`
-- `lua/user_config/completion.lua`
-- `lua/user_config/formatting.lua`
-- `lua/user_config/linting.lua`
-- `lua/user_config/treesitter.lua`
-- `lua/user_config/debugging.lua`
-- `lua/user_config/user.lua`, created once and never overwritten
-- `nvim-pack-lock.json` when plugin state is recorded
+Broad capability coverage does not mean pretending every plugin has a machine-readable setup schema.
 
-Only files required by the selected state are created. Every generated module is safe to require when its optional plugin or external tool is unavailable; the affected feature becomes pending rather than making Neovim fail to start.
+- The curated catalog supports validated, versioned adapters for listed choices.
+- A custom Git plugin can be added with source, version, dependencies, loading conditions, and a user-owned Lua configuration block.
+- The configurator owns the plugin declaration only when explicitly requested; it never rewrites the user-owned block.
+- Unsupported plugin settings remain ordinary Lua and are not represented as structured state.
+- Curated adapters and recommendations can be updated independently from user state.
 
-## 20. Settings navigation
+## 24. Explicit safety boundaries
 
-After onboarding, the settings workspace contains:
+The broad catalog still forbids:
 
-1. Overview
-2. Profiles
-3. Editor
-4. Appearance
-5. Diagnostics
-6. Keymaps
-7. Search
-8. File explorer
-9. Git
-10. Languages and LSP
-11. Completion and snippets
-12. Formatting
-13. Linting
-14. Treesitter
-15. Debugging
-16. Dependencies and Health
-17. Plugins
-18. Recovery
+- automatic import or merge of unmanaged Lua;
+- automatic adoption of manually edited generated files;
+- silent shell, Git, package-manager, parser, or network actions;
+- credentials or tokens in generated configuration or state;
+- live application of uncommitted draft settings;
+- simultaneous conflicting owners for one capability without an explicit advanced override;
+- deletion of plugin/tool data as part of configuration rollback;
+- claiming support from a plugin name alone without a validated adapter;
+- changing a persisted choice merely because the recommendation changed.
 
-Review, Generated Lua, Diff, key help, and removal guidance remain contextual utilities rather than catalog sections.
+These boundaries keep the configurator broad without turning it into an unsafe plugin marketplace or an unreliable two-way Lua editor.
 
-## 21. Explicit boundaries
+## 25. Primary references
 
-The complete Kickstart catalog does not include:
+The catalog snapshot uses first-party documentation as the baseline:
 
-- AI assistants or cloud synchronization.
-- A generic plugin marketplace.
-- Automatic import or merge of an unmanaged configuration.
-- Automatic adoption of manually changed generated files.
-- Silent shell/package-manager commands outside an explicitly reviewed external phase.
-- Credentials written into generated configuration.
-- Live application of draft settings.
-- Deleting unused plugin data as part of local configuration rollback.
+- [Neovim options](https://neovim.io/doc/user/options/)
+- [Neovim LSP](https://neovim.io/doc/user/lsp/)
+- [Neovim diagnostics](https://neovim.io/doc/user/diagnostic/)
+- [Neovim packages and `vim.pack`](https://neovim.io/doc/user/pack/)
+- [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig)
+- [Mason](https://github.com/mason-org/mason.nvim)
+- [lazy.nvim](https://github.com/folke/lazy.nvim)
+- [blink.cmp](https://github.com/saghen/blink.cmp)
+- [Conform](https://github.com/stevearc/conform.nvim)
+- [nvim-lint](https://github.com/mfussenegger/nvim-lint)
+- [nvim-dap](https://github.com/mfussenegger/nvim-dap)
+- [Neotest](https://github.com/nvim-neotest/neotest)
+- [Overseer](https://github.com/stevearc/overseer.nvim)
+- [Gitsigns](https://github.com/lewis6991/gitsigns.nvim)
 
-These boundaries preserve a transparent, reversible configuration generator while allowing full Kickstart-level capability coverage.
+Individual catalog adapters must link their own upstream documentation and record when that evidence was last reviewed.
