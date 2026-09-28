@@ -1,0 +1,43 @@
+version: 2
+project_name: shoshinvim
+before:
+  hooks:
+    - go mod download
+    - go run ./cmd/shoshinvim man bin/man
+    - sh scripts/generate-completions.sh
+builds:
+  - main: ./cmd/shoshinvim
+    binary: shoshinvim
+    env: [CGO_ENABLED=0]
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+    flags: [-trimpath, -mod=readonly]
+    ldflags: ['-s -w -X main.version={{ .Version }}']
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ if eq .Arch "arm64" }}aarch64{{ else }}x86_64{{ end }}-{{ if eq .Os "darwin" }}apple-darwin{{ else if eq .Os "windows" }}pc-windows-msvc{{ else }}unknown-linux-gnu{{ end }}'
+    files:
+      - README.md
+      - src: bin/completions/*
+        dst: completions
+      - src: bin/man/*
+        dst: man
+checksum:
+  name_template: SHA256SUMS
+release:
+  github:
+    owner: shoshindev
+    name: shoshinvim
+  draft: true
+  prerelease: auto
+  extra_files:
+    - glob: scripts/shoshinvim-installer.sh
+    - glob: scripts/shoshinvim-installer.ps1
+changelog:
+  sort: asc

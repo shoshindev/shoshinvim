@@ -1,0 +1,62 @@
+{
+  "lazy": {
+    "repository": "folke/lazy.nvim",
+    "revision": "306a05526ada86a7b30af95c5cc81ffba93fef97",
+    "reviewed": "2026-09-28"
+  },
+  "snacks": {
+    "repository": "folke/snacks.nvim",
+    "revision": "882c996cf28183f4d63640de0b4c02ec886d01f2",
+    "reviewed": "2026-09-28"
+  },
+  "mini.pick": {
+    "repository": "nvim-mini/mini.pick",
+    "revision": "360c1bb33610e030698d07ed15969ab4762dbcd6",
+    "reviewed": "2026-09-28"
+  },
+  "oil": {
+    "repository": "stevearc/oil.nvim",
+    "revision": "b73018b75affd13fa38e2fc94ef753b465f770d7",
+    "reviewed": "2026-09-28"
+  },
+  "gitsigns": {
+    "repository": "lewis6991/gitsigns.nvim",
+    "revision": "070a5d7b985546cc57e1fc61e5bc507fecac6045",
+    "reviewed": "2026-09-28"
+  },
+  "conform": {
+    "repository": "stevearc/conform.nvim",
+    "revision": "016802de402556da54c36bd7359b441266b01cdd",
+    "reviewed": "2026-09-28"
+  },
+  "lspconfig": {
+    "repository": "neovim/nvim-lspconfig",
+    "revision": "a9bb4d5f4276aa5cddc015faa3ecc5a7b5a26b14",
+    "reviewed": "2026-09-28"
+  },
+  "mason": {
+    "repository": "mason-org/mason.nvim",
+    "revision": "2a6940af80375532e5e9e7c1f2fc6319a1b7a69d",
+    "reviewed": "2026-09-28"
+  },
+  "tokyonight": {
+    "repository": "folke/tokyonight.nvim",
+    "revision": "cdc07ac78467a233fd62c493de29a17e0cf2b2b6",
+    "reviewed": "2026-09-28"
+  },
+  "lualine": {
+    "repository": "nvim-lualine/lualine.nvim",
+    "revision": "221ce6b2d999187044529f49da6554a92f740a96",
+    "reviewed": "2026-09-28"
+  },
+  "bufferline": {
+    "repository": "akinsho/bufferline.nvim",
+    "revision": "655133c3b4c3e5e05ec549b9f8cc2894ac6f51b3",
+    "reviewed": "2026-09-28"
+  },
+  "which-key": {
+    "repository": "folke/which-key.nvim",
+    "revision": "3aab2147e74890957785941f0c1ad87d0a44c15a",
+    "reviewed": "2026-09-28"
+  }
+}

@@ -1,5 +1,7 @@
 # ShoshinVim v0.1 interface specification
 
+> Staged implementation: see [current alpha coverage and release gates](implementation-status.md). This specification includes planned capabilities; a listed plugin or installation channel does not imply released support.
+
 - Status: authoritative interaction, safety, state, and responsive-design specification
 - Audience: the developer implementing the standalone terminal application
 - Product line: **Build your Neovim from the terminal.**

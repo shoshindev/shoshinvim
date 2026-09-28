@@ -1,0 +1,380 @@
+{
+  "settings": [
+    {
+      "id": "editor.wrap",
+      "label": "Wrap long lines",
+      "type": "boolean",
+      "option": "wrap",
+      "description": "Wrap long lines at the window edge."
+    },
+    {
+      "id": "editor.number",
+      "label": "Line numbers",
+      "type": "boolean",
+      "option": "number",
+      "description": "Show absolute line numbers."
+    },
+    {
+      "id": "editor.relativenumber",
+      "label": "Relative numbers",
+      "type": "boolean",
+      "option": "relativenumber",
+      "description": "Show distances from the cursor line."
+    },
+    {
+      "id": "editor.expandtab",
+      "label": "Indent with spaces",
+      "type": "boolean",
+      "option": "expandtab",
+      "description": "Insert spaces instead of a tab character."
+    },
+    {
+      "id": "editor.tabstop",
+      "label": "Tab width",
+      "type": "number",
+      "option": "tabstop",
+      "description": "Visual width of a tab character."
+    },
+    {
+      "id": "editor.shiftwidth",
+      "label": "Indent width",
+      "type": "number",
+      "option": "shiftwidth",
+      "description": "Width of one indentation step."
+    },
+    {
+      "id": "editor.mouse",
+      "label": "Mouse modes",
+      "type": "string",
+      "option": "mouse",
+      "description": "Modes in which mouse input is enabled; empty disables it."
+    },
+    {
+      "id": "editor.ignorecase",
+      "label": "Ignore search case",
+      "type": "boolean",
+      "option": "ignorecase",
+      "description": "Ignore letter case in searches."
+    },
+    {
+      "id": "editor.smartcase",
+      "label": "Smart search case",
+      "type": "boolean",
+      "option": "smartcase",
+      "description": "Use exact case when the search contains uppercase letters."
+    },
+    {
+      "id": "editor.scrolloff",
+      "label": "Scroll context",
+      "type": "number",
+      "option": "scrolloff",
+      "description": "Keep context lines above and below the cursor."
+    },
+    {
+      "id": "editor.undofile",
+      "label": "Persistent undo",
+      "type": "boolean",
+      "option": "undofile",
+      "description": "Keep undo history between Neovim sessions."
+    },
+    {
+      "id": "editor.confirm",
+      "label": "Confirm abandoning changes",
+      "type": "boolean",
+      "option": "confirm",
+      "description": "Ask before abandoning a modified buffer."
+    },
+    {
+      "id": "editor.splitright",
+      "label": "Split to the right",
+      "type": "boolean",
+      "option": "splitright",
+      "description": "Open vertical splits to the right."
+    },
+    {
+      "id": "editor.splitbelow",
+      "label": "Split below",
+      "type": "boolean",
+      "option": "splitbelow",
+      "description": "Open horizontal splits below."
+    },
+    {
+      "id": "appearance.colorscheme",
+      "label": "Colorscheme",
+      "type": "enum",
+      "choices": [
+        "tokyonight",
+        "default",
+        "habamax",
+        "slate",
+        "desert",
+        "elflord",
+        "industry",
+        "evening",
+        "quiet",
+        "retrobox",
+        "sorbet",
+        "wildcharm",
+        "zaibatsu"
+      ],
+      "description": "Tokyo Night gives Rich IDE a cohesive dark palette; built-in themes need no downloads."
+    },
+    {
+      "id": "plugins.manager",
+      "label": "Plugin manager",
+      "type": "enum",
+      "choices": [
+        "none",
+        "lazy"
+      ],
+      "description": "Choose before enabling plugin-backed features."
+    },
+    {
+      "id": "navigation.picker",
+      "label": "Fuzzy finder",
+      "type": "enum",
+      "choices": [
+        "native",
+        "snacks",
+        "mini.pick"
+      ],
+      "description": "Native commands have no dependencies; Snacks offers broad sources; mini.pick is compact."
+    },
+    {
+      "id": "navigation.explorer",
+      "label": "File explorer",
+      "type": "enum",
+      "choices": [
+        "native",
+        "oil",
+        "snacks"
+      ],
+      "description": "Native directories, Oil editable directories, or a Snacks sidebar with search and file operations."
+    },
+    {
+      "id": "git.hunks",
+      "label": "Git hunks",
+      "type": "enum",
+      "choices": [
+        "native",
+        "gitsigns"
+      ],
+      "description": "Native diff or inline Git changes with Gitsigns."
+    },
+    {
+      "id": "lsp.provider",
+      "label": "LSP configurations",
+      "type": "enum",
+      "choices": [
+        "native",
+        "lspconfig"
+      ],
+      "description": "Generated native configurations or nvim-lspconfig definitions."
+    },
+    {
+      "id": "language.typescript.lsp",
+      "label": "TypeScript / JavaScript LSP",
+      "type": "boolean",
+      "description": "Use ts_ls; skip Deno projects."
+    },
+    {
+      "id": "language.lua.lsp",
+      "label": "Lua LSP",
+      "type": "boolean",
+      "description": "Use lua_ls with Neovim runtime awareness."
+    },
+    {
+      "id": "language.html.lsp",
+      "label": "HTML LSP",
+      "type": "boolean",
+      "description": "Use the VS Code HTML language server."
+    },
+    {
+      "id": "language.css.lsp",
+      "label": "CSS LSP",
+      "type": "boolean",
+      "description": "Use the VS Code CSS language server."
+    },
+    {
+      "id": "language.json.lsp",
+      "label": "JSON LSP",
+      "type": "boolean",
+      "description": "Use the VS Code JSON language server."
+    },
+    {
+      "id": "completion.native",
+      "label": "Native LSP completion",
+      "type": "boolean",
+      "description": "Automatic native LSP completion; Enter is not remapped."
+    },
+    {
+      "id": "diagnostics.virtual_text",
+      "label": "Diagnostic text",
+      "type": "boolean",
+      "description": "Show diagnostic messages beside code."
+    },
+    {
+      "id": "formatting.provider",
+      "label": "Formatting owner",
+      "type": "enum",
+      "choices": [
+        "native",
+        "conform"
+      ],
+      "description": "One formatting owner: native LSP or Conform with Prettier and StyLua."
+    },
+    {
+      "id": "formatting.on_save",
+      "label": "Format on save",
+      "type": "boolean",
+      "description": "Format selected filetypes on save; off unless explicitly selected."
+    },
+    {
+      "id": "tools.provider",
+      "label": "Tool acquisition",
+      "type": "enum",
+      "choices": [
+        "system",
+        "mason"
+      ],
+      "description": "Use existing PATH programs or explicitly reviewed Mason installations."
+    },
+    {
+      "id": "appearance.statusline",
+      "label": "Statusline",
+      "type": "enum",
+      "choices": [
+        "native",
+        "lualine"
+      ],
+      "description": "Mode, Git branch, diagnostics, active language servers and cursor position."
+    },
+    {
+      "id": "appearance.buffers",
+      "label": "Buffer tabs",
+      "type": "enum",
+      "choices": [
+        "native",
+        "bufferline"
+      ],
+      "description": "Visible open buffers with diagnostic counts; Shift-H / Shift-L switch files."
+    },
+    {
+      "id": "navigation.shortcuts",
+      "label": "Shortcut guidance",
+      "type": "enum",
+      "choices": [
+        "native",
+        "which-key"
+      ],
+      "description": "Press Space and pause to see available commands grouped by task."
+    },
+    {
+      "id": "experience.layout",
+      "label": "Workspace layout",
+      "type": "enum",
+      "choices": [
+        "native",
+        "rich"
+      ],
+      "description": "Rich adds a welcome screen, sidebar, floating input and terminal, indentation guides and consistent shortcuts."
+    }
+  ],
+  "profiles": {
+    "custom": {},
+    "minimal": {
+      "editor.number": true,
+      "editor.wrap": false,
+      "editor.ignorecase": true,
+      "editor.smartcase": true,
+      "editor.confirm": true,
+      "editor.undofile": true,
+      "editor.splitright": true,
+      "editor.splitbelow": true,
+      "editor.scrolloff": 8,
+      "completion.native": true,
+      "diagnostics.virtual_text": true
+    },
+    "web": {
+      "editor.number": true,
+      "editor.wrap": false,
+      "editor.expandtab": true,
+      "editor.tabstop": 2,
+      "editor.shiftwidth": 2,
+      "editor.confirm": true,
+      "completion.native": true,
+      "diagnostics.virtual_text": true,
+      "plugins.manager": "lazy",
+      "navigation.picker": "mini.pick",
+      "git.hunks": "gitsigns",
+      "language.typescript.lsp": true,
+      "language.html.lsp": true,
+      "language.css.lsp": true,
+      "language.json.lsp": true,
+      "formatting.provider": "conform",
+      "tools.provider": "mason"
+    },
+    "lua": {
+      "editor.number": true,
+      "editor.wrap": false,
+      "editor.expandtab": true,
+      "editor.tabstop": 2,
+      "editor.shiftwidth": 2,
+      "editor.confirm": true,
+      "completion.native": true,
+      "diagnostics.virtual_text": true,
+      "plugins.manager": "lazy",
+      "language.lua.lsp": true,
+      "formatting.provider": "conform",
+      "tools.provider": "mason"
+    },
+    "rich-ide": {
+      "editor.number": true,
+      "editor.wrap": false,
+      "editor.ignorecase": true,
+      "editor.smartcase": true,
+      "editor.confirm": true,
+      "editor.undofile": true,
+      "editor.splitright": true,
+      "editor.splitbelow": true,
+      "editor.scrolloff": 8,
+      "completion.native": true,
+      "diagnostics.virtual_text": true,
+      "editor.expandtab": true,
+      "editor.tabstop": 2,
+      "editor.shiftwidth": 2,
+      "plugins.manager": "lazy",
+      "navigation.picker": "snacks",
+      "git.hunks": "gitsigns",
+      "language.typescript.lsp": true,
+      "language.html.lsp": true,
+      "language.css.lsp": true,
+      "language.json.lsp": true,
+      "formatting.provider": "conform",
+      "tools.provider": "mason",
+      "language.lua.lsp": true,
+      "appearance.colorscheme": "tokyonight",
+      "appearance.statusline": "lualine",
+      "appearance.buffers": "bufferline",
+      "navigation.shortcuts": "which-key",
+      "experience.layout": "rich",
+      "navigation.explorer": "snacks",
+      "editor.mouse": "a",
+      "options.termguicolors": true,
+      "options.cursorline": true,
+      "options.signcolumn": "yes",
+      "options.laststatus": 3,
+      "options.showmode": false,
+      "options.updatetime": 250,
+      "options.timeoutlen": 400,
+      "options.completeopt": "menu,menuone,noselect,popup",
+      "options.pumheight": 12,
+      "options.winborder": "rounded",
+      "options.clipboard": "unnamedplus",
+      "options.sidescrolloff": 8,
+      "options.list": true,
+      "options.listchars": "tab:  ,trail:·,nbsp:␣",
+      "options.inccommand": "split"
+    }
+  }
+}
