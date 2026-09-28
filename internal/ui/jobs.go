@@ -152,6 +152,10 @@ func (m *Model) finishJob(msg jobMsg) {
 		return
 	case "save":
 		m.result, m.resultErr = msg.result, msg.err
+		if msg.err == nil && msg.result != nil && msg.result.LocalCommitted {
+			// A save without downloads never reports LOCAL_COMMITTED as progress.
+			m.persisted, m.ownership = engine.Clone(m.draft), "SAVED"
+		}
 	case "retry":
 		m.result, m.resultErr = &engine.ApplyResult{LocalCommitted: true, External: msg.retry}, msg.err
 	case "restore":

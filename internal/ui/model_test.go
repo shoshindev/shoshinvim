@@ -2,6 +2,7 @@ package ui
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -329,5 +330,46 @@ func TestLaunchCommandMatchesWherePluginsAre(t *testing.T) {
 		if got := launchCommand(target); !strings.HasPrefix(got, want) {
 			t.Fatalf("%s: %q, want %q", target, got, want)
 		}
+	}
+}
+
+func TestReviewKnowsWhatIsAlreadyInstalled(t *testing.T) {
+	needNeovim(t)
+	m := newModel(t)
+	acceptAll(t, m)
+	for _, a := range m.plan.Actions {
+		marker := filepath.Join(a.Destination, ".git")
+		if a.Kind == "mason" {
+			marker = filepath.Join(a.Destination, "packages", a.Package)
+		}
+		if err := os.MkdirAll(marker, 0700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	run(m, m.openReview())
+	if m.menu[0].label != "Save" || !m.menu[0].recommended {
+		t.Fatalf("expected a plain Save once everything is installed, got %q", m.menu[0].label)
+	}
+	if text := screenText(m); !strings.Contains(text, fmt.Sprintf("all %d installed", len(m.plan.Actions))) {
+		t.Fatalf("review does not report installed downloads:\n%s", text)
+	}
+}
+
+func TestDoneScreenWrapsAtEightyColumns(t *testing.T) {
+	needNeovim(t)
+	m := newModel(t)
+	acceptAll(t, m)
+	press(m, "2") // Save without downloading.
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	text := screenText(m)
+	if !strings.Contains(text, "the guide.") || !strings.Contains(text, "init.lua") {
+		t.Fatalf("hint or launch command cut off:\n%s", text)
+	}
+	if m.dirty() || m.ownership != "SAVED" || !strings.Contains(text, "saved") {
+		t.Fatal("a save without downloads must count as saved")
+	}
+	press(m, "enter") // Quit must not ask about unsaved choices.
+	if !m.quit {
+		t.Fatal("quitting after a save asked about unsaved choices")
 	}
 }

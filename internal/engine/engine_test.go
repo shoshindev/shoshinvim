@@ -535,3 +535,39 @@ func TestDataDirectoryFollowsTheTarget(t *testing.T) {
 		}
 	}
 }
+
+func TestOneFailingModuleDoesNotDisableTheRest(t *testing.T) {
+	_, s := fixture(t)
+	files, err := Generate(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files["lua/user_config/options.lua"] = "error('simulated plugin failure')\n"
+	files[userPath] = "-- user extensions\n"
+	bin, _, err := Neovim(context.Background(), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = Probe(context.Background(), bin, files); err == nil {
+		t.Fatal("validation must still reject a failing module")
+	}
+	dir := t.TempDir()
+	for name, content := range files {
+		p := filepath.Join(dir, filepath.FromSlash(name))
+		if err = os.MkdirAll(filepath.Dir(p), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err = os.WriteFile(p, []byte(content), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	tmp := t.TempDir()
+	cmd := exec.Command(bin, "--headless", "-i", "NONE", "-n", "-u", filepath.Join(dir, "init.lua"),
+		"+lua vim.wait(200); io.stdout:write(vim.fn.exists(':ShoshinFormat') .. '|' .. vim.api.nvim_exec2('messages', { output = true }).output)", "+qa!")
+	cmd.Dir = tmp
+	cmd.Env = isolatedEnv(tmp)
+	out, err := cmd.CombinedOutput()
+	if err != nil || !strings.Contains(string(out), "2|") || !strings.Contains(string(out), "options did not load") {
+		t.Fatalf("later modules must load and the failure must be reported: %v %q", err, out)
+	}
+}

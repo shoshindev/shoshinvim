@@ -342,10 +342,10 @@ func (m *Model) reviewMenu() []menuItem {
 	var items []menuItem
 	created, updated, removed := m.fileChanges()
 	changes := created + updated + removed
+	recommendChange := false
 	if m.plan != nil {
 		files := plural(changes, "file", "files")
-		plugins, tools := actionCounts(m.plan.Actions)
-		downloads := downloadText(plugins, tools)
+		downloads := downloadText(actionCounts(pendingActions(m.plan.Actions)))
 		switch {
 		case changes > 0 && downloads != "":
 			items = append(items,
@@ -354,14 +354,16 @@ func (m *Model) reviewMenu() []menuItem {
 		case changes > 0:
 			items = append(items, menuItem{"Save", fmt.Sprintf("Write %d %s", changes, files), "save", true})
 		case downloads != "":
-			items = append(items, menuItem{"Download plugins and tools", "Nothing to save; fetch anything missing (" + downloads + ")", "download", true})
+			items = append(items, menuItem{"Download plugins and tools", "Nothing to save; fetch what is missing (" + downloads + ")", "download", true})
+		default:
+			recommendChange = true // Saved, complete and unchanged: the likely intent is to change something.
 		}
 	}
 	items = append(items, menuItem{"Preview the generated Lua", "Every file ShoshinVim would write", "lua", false})
 	if changes > 0 {
 		items = append(items, menuItem{"See file changes", "A diff against what is on disk", "diff", false})
 	}
-	items = append(items, menuItem{"Change a section", "Jump to any section, then come back here", "sections", false}, menuItem{"Quit", "", "quit", false})
+	items = append(items, menuItem{"Change a section", "Jump to any section, then come back here", "sections", recommendChange}, menuItem{"Quit", "", "quit", false})
 	return items
 }
 

@@ -65,6 +65,22 @@ func Actions(s State, target string) ([]Action, error) {
 	return out, nil
 }
 
+// Installed reports whether an action's result is already on disk: a cloned plugin or
+// a Mason package. Running an installed action again is harmless but not needed.
+func Installed(a Action) bool {
+	var marker string
+	switch a.Kind {
+	case "git":
+		marker = filepath.Join(a.Destination, ".git")
+	case "mason":
+		marker = filepath.Join(a.Destination, "packages", a.Package)
+	default:
+		return false
+	}
+	_, err := os.Stat(marker)
+	return err == nil
+}
+
 func run(ctx context.Context, dir string, name string, args ...string) error {
 	cmd := exec.CommandContext(ctx, name, args...)
 	boundProcess(cmd)

@@ -150,8 +150,18 @@ end })
 	if Value(s, "experience.layout", "native") == "rich" {
 		init.WriteString("vim.g.mapleader = ' '\nvim.g.maplocalleader = ','\n")
 	}
+	// Each module loads on its own so one failure (a broken plugin, an unwritable cache)
+	// cannot disable the modules after it. Validation probes stay strict.
+	init.WriteString(`local function load(name)
+  if vim.g.shoshinvim_probe then return require('user_config.' .. name) end
+  local ok, err = pcall(require, 'user_config.' .. name)
+  if not ok then
+    vim.schedule(function() vim.notify('ShoshinVim: ' .. name .. ' did not load: ' .. tostring(err), vim.log.levels.ERROR) end)
+  end
+end
+`)
 	for _, mod := range modules {
-		fmt.Fprintf(&init, "require('user_config.%s')\n", mod)
+		fmt.Fprintf(&init, "load('%s')\n", mod)
 	}
 	init.WriteString("if not vim.g.shoshinvim_probe then\n  local ok, err = pcall(require, 'user_config.user')\n  if not ok then vim.notify(tostring(err), vim.log.levels.WARN) end\nend\n")
 	files["init.lua"] = init.String()

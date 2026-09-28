@@ -480,7 +480,12 @@ func (m *Model) reviewContent(cw, h int) []string {
 			lines = append(lines, m.th.Dim(label+text))
 			continue
 		}
-		lines = append(lines, m.th.Dim(label)+ansi.Truncate(text, max(10, cw-13), "…"))
+		for i, part := range wrap(text, max(10, cw-13)) {
+			if i > 0 {
+				label = strings.Repeat(" ", 13)
+			}
+			lines = append(lines, m.th.Dim(label)+part)
+		}
 	}
 	lines = append(lines, "")
 	switch {
@@ -505,12 +510,7 @@ func (m *Model) reviewContent(cw, h int) []string {
 			files = strings.Join(parts, " · ") + " in " + shortPath(m.target)
 		}
 		lines = append(lines, m.th.Dim(padRight("Files", 13))+ansi.Truncate(files, max(10, cw-13), "…"))
-		plugins, tools := actionCounts(m.plan.Actions)
-		downloads := downloadText(plugins, tools)
-		if downloads == "" {
-			downloads = "none"
-		}
-		lines = append(lines, m.th.Dim(padRight("Downloads", 13))+downloads)
+		lines = append(lines, m.th.Dim(padRight("Downloads", 13))+m.downloadSummary())
 		for i, w := range m.missingTools() {
 			label := ""
 			if i == 0 {
@@ -594,7 +594,7 @@ func (m *Model) welcomeContent(cw, h int) []string {
 	var body []string
 	switch m.ownership {
 	case "SAVED":
-		body = []string{"Welcome back.", m.th.Dim("This configuration was made with ShoshinVim. Change any part of it;"), m.th.Dim("your manual Lua in user.lua is never touched.")}
+		body = []string{"Welcome back.", m.th.Dim("This configuration was made with ShoshinVim. Change any part of it; your manual Lua in user.lua is never touched.")}
 	case "READ ONLY":
 		body = []string{m.th.Warn("This folder already holds a Neovim configuration"), m.th.Warn("that ShoshinVim did not create. It will not be changed."), "",
 			m.th.Dim("To build a separate configuration next to it, run:"), m.th.Blue("NVIM_APPNAME=shoshin shoshinvim")}
@@ -673,9 +673,13 @@ func (m *Model) doneContent(cw, h int) []string {
 		} else {
 			lines = append(lines, m.th.Ok("✓ Your Neovim is ready"))
 		}
-		lines = append(lines, "", m.th.Dim("Start it with"), "  "+m.th.Accent(launchCommand(m.target)))
+		lines = append(lines, "", m.th.Dim("Start it with"))
+		for _, part := range strings.Split(ansi.Wrap(launchCommand(m.target), max(10, cw-2), "/"), "\n") {
+			lines = append(lines, "  "+m.th.Accent(part))
+		}
 		if engine.Value(m.draft, "experience.layout", "native") == "rich" {
-			lines = append(lines, "", m.th.Dim("Inside Neovim, press Space and pause to discover shortcuts; Space ? opens the guide."))
+			lines = append(lines, "")
+			lines = append(lines, wrap(m.th.Dim("Inside Neovim, press Space and pause to discover shortcuts; Space ? opens the guide."), cw)...)
 		}
 	}
 	if len(m.log) > 0 {
@@ -810,6 +814,34 @@ func plural(n int, one, many string) string {
 		return one
 	}
 	return many
+}
+
+// pendingActions are the downloads not yet on disk.
+func pendingActions(actions []engine.Action) []engine.Action {
+	var out []engine.Action
+	for _, a := range actions {
+		if !engine.Installed(a) {
+			out = append(out, a)
+		}
+	}
+	return out
+}
+
+// downloadSummary says what still needs downloading and what is already installed.
+func (m *Model) downloadSummary() string {
+	if len(m.plan.Actions) == 0 {
+		return "none"
+	}
+	pending := pendingActions(m.plan.Actions)
+	installed := len(m.plan.Actions) - len(pending)
+	if len(pending) == 0 {
+		return fmt.Sprintf("all %d installed", installed)
+	}
+	text := downloadText(actionCounts(pending))
+	if installed > 0 {
+		text += fmt.Sprintf(" · %d already installed", installed)
+	}
+	return text
 }
 
 func actionCounts(actions []engine.Action) (plugins, tools int) {
