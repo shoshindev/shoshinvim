@@ -29,6 +29,9 @@ type Journal struct {
 type ApplyOptions struct {
 	Hook     func(string) error
 	Progress func(string)
+	// Neovim is the executable the user chose, as --nvim; empty means PATH. The plan
+	// must have been reviewed with the same Neovim.
+	Neovim string
 }
 
 func AtomicWrite(path string, b []byte, mode os.FileMode) error {
@@ -164,7 +167,8 @@ func Apply(ctx context.Context, p Plan, opts ApplyOptions) (ApplyResult, error) 
 		return result, err
 	}
 	defer unlock()
-	if err = VerifyPlan(ctx, p); err != nil {
+	nvim, err := VerifyPlan(ctx, p, opts.Neovim)
+	if err != nil {
 		return result, err
 	}
 	if opts.Hook != nil {
@@ -277,7 +281,7 @@ func Apply(ctx context.Context, p Plan, opts ApplyOptions) (ApplyResult, error) 
 				actual[f.Path] = string(b)
 			}
 		}
-		if err := Probe(context.WithoutCancel(ctx), p.Neovim, actual); err != nil {
+		if err := Probe(context.WithoutCancel(ctx), nvim, actual); err != nil {
 			return err
 		}
 		if err := writeFiles(true); err != nil {
@@ -309,7 +313,7 @@ func Apply(ctx context.Context, p Plan, opts ApplyOptions) (ApplyResult, error) 
 		if opts.Progress != nil {
 			opts.Progress("LOCAL_COMMITTED")
 		}
-		result.External = RunActions(ctx, p.Target, p.Actions, opts.Progress)
+		result.External = RunActions(ctx, p.Target, nvim, p.Actions, opts.Progress)
 	}
 	return result, nil
 }

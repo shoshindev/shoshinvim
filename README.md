@@ -23,7 +23,7 @@ NVIM_APPNAME=shoshin-demo ./bin/shoshinvim
 NVIM_APPNAME=shoshin-demo nvim
 ```
 
-The `NVIM_APPNAME` must be the same when configuring and launching Neovim. Existing unmanaged configurations are read only; ShoshinVim will not replace them. `--config-dir /absolute/path` selects an explicit target instead. All work in this repository has been tested against temporary targets, not the developer's personal Neovim configuration.
+The `NVIM_APPNAME` must be the same when configuring and launching Neovim. Existing unmanaged configurations are read only; ShoshinVim will not replace them. `--config-dir /absolute/path` selects an explicit target instead: a folder such as `~/.config/work` is started with `NVIM_APPNAME=work nvim`, and a folder outside the configuration home with `nvim -u <folder>/init.lua`. Plugins and tools are stored in the data directory that launch uses, and the final screen shows the exact command. All work in this repository has been tested against temporary targets, not the developer's personal Neovim configuration.
 
 Move with the arrow keys (or `j`/`k`), choose with Enter, and go back with Esc; number keys pick an option directly. The Editor section is a single form that holds every text and editing setting — change a row with ←/→, and `r` restores its recommendation. The review summarizes each section, validates the draft in an isolated Neovim, and lists the files and downloads before offering **Save and download** or **Save without downloading**. Downloads never happen merely by reviewing a configuration or starting Neovim. Press `/` anywhere for the command menu: preview the generated Lua or the file diff, check dependencies, set any setting, retry failed downloads, or open recovery. Ctrl+C cancels work; pressing it twice quits.
 
@@ -45,7 +45,7 @@ Inside the Rich IDE workspace, press **Space** and pause to discover commands. *
 ./bin/shoshinvim uninstall
 ```
 
-Plans bind the target identity, catalog, Neovim version, exact file contents/hashes and external actions. `--yes` is accepted only with an exported plan. A stale plan is rejected. `--include-external` authorizes the action list in that plan; inspect it before applying. Exporting refuses to overwrite an existing file.
+Plans bind the target identity, catalog, Neovim version, exact file contents/hashes and external actions. `apply` rebuilds the plan with the Neovim you choose (`--nvim`, the `neovim` preference, or PATH); a plan reviewed with a different Neovim is rejected without running the program it names, because a plan's digest is a checksum, not a signature. `--yes` is accepted only with an exported plan. A stale plan is rejected. `--include-external` authorizes the action list in that plan; inspect it before applying. Exporting refuses to overwrite an existing file.
 
 `--no-alt-screen` asks the same questions line by line with normal terminal scrollback; Enter accepts the recommended answer. `--no-color` / `NO_COLOR` and `--no-progress` support simpler output. `--output json` is available for inspection, health and planning/application results. Commands return nonzero on failed operations; a successful local save can still have failed external actions, reported separately.
 
@@ -57,7 +57,7 @@ A save locks the target, rechecks the plan, backs up changes, writes adjacent te
 
 Preflight executes controlled generated core code. It does not execute `user.lua`, plugin code or language servers. Isolated XDG directories are not a sandbox for arbitrary Lua. The real plugin/LSP integration test is separate.
 
-Plugin revisions are pinned in the embedded catalog. Explicitly approved Mason downloads use the registry's resolved package versions and record their own receipts. Dependencies live under Neovim's data directory in `shoshinvim/`; manager lockfiles are separate from generated-file ownership. Native startup never bootstraps a plugin manager or installs missing plugins.
+Plugin revisions are pinned in the embedded catalog. Explicitly approved Mason downloads use the registry's resolved package versions and record their own receipts. Dependencies live under `shoshinvim/` in the data directory of the Neovim that loads the target, and Mason runs inside your chosen Neovim; manager lockfiles are separate from generated-file ownership. Native startup never bootstraps a plugin manager or installs missing plugins.
 
 Application preferences are optional TOML in `$XDG_CONFIG_HOME/shoshinvim/config.toml` (normally `~/.config/shoshinvim/config.toml` on macOS/Linux):
 

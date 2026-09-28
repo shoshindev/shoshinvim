@@ -132,7 +132,7 @@ func New(version string) *cobra.Command {
 			Inspection   engine.Inspection   `json:"inspection"`
 			Dependencies []engine.Dependency `json:"dependencies"`
 			Probe        string              `json:"probe"`
-		}{ins, engine.Dependencies(s), "not run"}
+		}{ins, engine.Dependencies(s, ins.Target), "not run"}
 		n, v, e := engine.Neovim(cmd.Context(), bin)
 		if e != nil {
 			r.Probe = e.Error()
@@ -207,7 +207,7 @@ func New(version string) *cobra.Command {
 				return fmt.Errorf("explicit target does not match plan")
 			}
 		}
-		if err := engine.VerifyPlan(cmd.Context(), p); err != nil {
+		if _, err := engine.VerifyPlan(cmd.Context(), p, bin); err != nil {
 			return err
 		}
 		if !yes {
@@ -219,7 +219,7 @@ func New(version string) *cobra.Command {
 		if !noProgress && output != "json" {
 			progress = func(s string) { fmt.Fprintln(cmd.ErrOrStderr(), "[..] "+s) }
 		}
-		r, err := engine.Apply(cmd.Context(), p, engine.ApplyOptions{Progress: progress})
+		r, err := engine.Apply(cmd.Context(), p, engine.ApplyOptions{Progress: progress, Neovim: bin})
 		if err != nil {
 			return err
 		}
@@ -270,7 +270,7 @@ func New(version string) *cobra.Command {
 	rollback.Flags().StringVar(&txn, "transaction", "", "Transaction ID; requires confirmation")
 	rollback.Flags().BoolVar(&generated, "generated", false, "Archive drift and restore the last generated version")
 	retry := &cobra.Command{Use: "retry", Short: "Retry previously approved failed acquisitions only", RunE: func(cmd *cobra.Command, args []string) error {
-		r, err := engine.Retry(cmd.Context(), target, nil)
+		r, err := engine.Retry(cmd.Context(), target, bin, nil)
 		if err != nil {
 			return err
 		}

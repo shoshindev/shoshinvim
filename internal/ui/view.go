@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -72,7 +73,7 @@ func (m *Model) showDiff() {
 
 func (m *Model) showHealth() {
 	var b strings.Builder
-	for _, d := range engine.Dependencies(m.draft) {
+	for _, d := range m.dependencies() {
 		if d.Status == "present" {
 			fmt.Fprintf(&b, "%s %s  %s\n  %s\n\n", m.th.Ok("✓"), m.th.Bold(d.ID), m.th.Dim(d.Purpose), m.th.Dim(d.Path))
 		} else {
@@ -530,12 +531,25 @@ func (m *Model) reviewContent(cw, h int) []string {
 	return window(all, h, focus)
 }
 
+// dependencies reports required programs, finding Neovim where --nvim points.
+func (m *Model) dependencies() []engine.Dependency {
+	deps := engine.Dependencies(m.draft, m.target)
+	for i, d := range deps {
+		if d.ID == "nvim" && m.bin != "" {
+			if p, err := exec.LookPath(m.bin); err == nil {
+				deps[i].Path, deps[i].Status = p, "present"
+			}
+		}
+	}
+	return deps
+}
+
 // missingTools lists programs the user must install; Mason downloads language tools itself.
 func (m *Model) missingTools() []string {
 	mason := engine.Value(m.draft, "tools.provider", "system") == "mason"
 	runtimes := map[string]bool{"nvim": true, "git": true, "rg": true, "node": true, "npm": true}
 	var out []string
-	for _, d := range engine.Dependencies(m.draft) {
+	for _, d := range m.dependencies() {
 		if d.Status != "missing" {
 			continue
 		}
@@ -855,15 +869,15 @@ func journalTime(id string) string {
 	return time.Unix(0, n).Format("Jan 2 15:04:05")
 }
 
-// launchCommand tells the user how to start Neovim with this target.
+// launchCommand tells the user how to start Neovim with this target. It follows the
+// same rule as engine.DataDirFor, so Neovim finds the plugins that were downloaded.
 func launchCommand(target string) string {
-	if os.Getenv("SHOSHINVIM_TARGET_DIR") == "" {
-		if def, err := engine.Canonical(engine.DefaultTarget()); err == nil && def == target {
-			if app := os.Getenv("NVIM_APPNAME"); app != "" && app != "nvim" {
-				return "NVIM_APPNAME=" + app + " nvim"
-			}
-			return "nvim"
-		}
+	switch app := engine.AppName(target); app {
+	case "":
+		return "nvim -u " + filepath.Join(shortPath(target), "init.lua")
+	case "nvim":
+		return "nvim"
+	default:
+		return "NVIM_APPNAME=" + app + " nvim"
 	}
-	return "nvim -u " + filepath.Join(shortPath(target), "init.lua")
 }

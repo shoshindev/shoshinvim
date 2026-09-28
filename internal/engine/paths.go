@@ -8,6 +8,28 @@ import (
 	"strings"
 )
 
+// configHome and dataHome mirror the bases of Neovim's stdpath('config') and stdpath('data').
+func configHome() string {
+	if base := os.Getenv("XDG_CONFIG_HOME"); base != "" {
+		return base
+	}
+	if runtime.GOOS == "windows" {
+		return os.Getenv("LOCALAPPDATA")
+	}
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".config")
+}
+func dataHome() string {
+	if base := os.Getenv("XDG_DATA_HOME"); base != "" {
+		return base
+	}
+	if runtime.GOOS == "windows" {
+		return os.Getenv("LOCALAPPDATA")
+	}
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".local", "share")
+}
+
 func DefaultTarget() string {
 	if dir := os.Getenv("SHOSHINVIM_TARGET_DIR"); dir != "" {
 		return dir
@@ -16,32 +38,41 @@ func DefaultTarget() string {
 	if app == "" {
 		app = "nvim"
 	}
-	base := os.Getenv("XDG_CONFIG_HOME")
-	if base == "" {
-		if runtime.GOOS == "windows" {
-			base = os.Getenv("LOCALAPPDATA")
-		} else {
-			home, _ := os.UserHomeDir()
-			base = filepath.Join(home, ".config")
-		}
-	}
-	return filepath.Join(base, app)
+	return filepath.Join(configHome(), app)
 }
-func DataDir() string {
-	app := os.Getenv("NVIM_APPNAME")
+
+// AppName returns the NVIM_APPNAME that makes Neovim load target as its configuration,
+// or "" when target lies outside the configuration home and must be started with -u.
+func AppName(target string) string {
+	home, err := resolveExisting(configHome())
+	if err != nil {
+		return ""
+	}
+	target, err = resolveExisting(target)
+	if err != nil {
+		return ""
+	}
+	rel, err := filepath.Rel(home, target)
+	if err != nil || rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return ""
+	}
+	return filepath.ToSlash(rel)
+}
+
+// DataDirFor is where plugins and tools for target live: the shoshinvim folder in the
+// stdpath('data') that Neovim uses when it loads target. The generated configuration
+// looks there, so it depends on the target, never on the environment ShoshinVim runs in.
+func DataDirFor(target string) string {
+	app := AppName(target)
 	if app == "" {
-		app = "nvim"
+		app = "nvim" // `nvim -u <target>/init.lua` runs with the default application name.
 	}
-	base := os.Getenv("XDG_DATA_HOME")
-	if base == "" {
-		if runtime.GOOS == "windows" {
-			return filepath.Join(os.Getenv("LOCALAPPDATA"), app+"-data", "shoshinvim")
-		}
-		home, _ := os.UserHomeDir()
-		base = filepath.Join(home, ".local", "share")
+	if runtime.GOOS == "windows" {
+		app += "-data"
 	}
-	return filepath.Join(base, app, "shoshinvim")
+	return filepath.Join(dataHome(), filepath.FromSlash(app), "shoshinvim")
 }
+
 func Canonical(path string) (string, error) {
 	abs, err := filepath.Abs(path)
 	if err != nil {
@@ -49,6 +80,15 @@ func Canonical(path string) (string, error) {
 	}
 	if fi, err := os.Lstat(abs); err == nil && fi.Mode()&os.ModeSymlink != 0 {
 		return "", fmt.Errorf("target must not be a symlink: %s", abs)
+	}
+	return resolveExisting(abs)
+}
+
+// resolveExisting resolves symlinks in the longest existing ancestor of path.
+func resolveExisting(path string) (string, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
 	}
 	cur := abs
 	var tail []string

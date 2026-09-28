@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -349,7 +350,7 @@ func TestCustomExecutableAndScopedAcquisition(t *testing.T) {
 	if err := c.Set(&s, "tools.path.stylua", "relative/path", true); err == nil {
 		t.Fatal("accepted relative executable")
 	}
-	actions, err := Actions(s)
+	actions, err := Actions(s, t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -411,5 +412,126 @@ func TestGoldenProfiles(t *testing.T) {
 				t.Fatal("generated output changed; review then refresh the golden fixture")
 			}
 		})
+	}
+}
+
+// fakeNeovim is an executable that records each invocation and claims to be Neovim.
+func fakeNeovim(t *testing.T) (bin, marker string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("uses a POSIX shell script as a stand-in executable")
+	}
+	dir := t.TempDir()
+	bin, marker = filepath.Join(dir, "nvim"), filepath.Join(dir, "invocations")
+	script := "#!/bin/sh\necho \"$@\" >> '" + marker + "'\necho 'NVIM v0.12.5'\n"
+	if err := os.WriteFile(bin, []byte(script), 0755); err != nil {
+		t.Fatal(err)
+	}
+	return bin, marker
+}
+
+func TestApplyNeverRunsTheNeovimNamedInAPlan(t *testing.T) {
+	target, s := fixture(t)
+	fake, marker := fakeNeovim(t)
+	p := planFor(t, target, s)
+	p.Neovim = fake // An edited plan file; its digest is only a checksum, so it can be refreshed.
+	p.Digest = p.Fingerprint()
+	if _, err := VerifyPlan(context.Background(), p, ""); err == nil || !strings.Contains(err.Error(), "reviewed with Neovim") {
+		t.Fatalf("edited Neovim path accepted: %v", err)
+	}
+	if _, err := Apply(context.Background(), p, ApplyOptions{}); err == nil {
+		t.Fatal("apply accepted a plan made for another Neovim")
+	}
+	if _, err := os.Stat(marker); !os.IsNotExist(err) {
+		t.Fatal("the Neovim named in the plan was executed")
+	}
+	if ins, _ := Inspect(target); ins.Ownership != "NEW" {
+		t.Fatalf("target changed: %s", ins.Ownership)
+	}
+	// Choosing that Neovim explicitly (--nvim) is the user's decision and is honored.
+	if _, err := VerifyPlan(context.Background(), p, fake); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(marker); err != nil {
+		t.Fatal("the explicitly chosen Neovim was not used")
+	}
+}
+
+func TestMasonUsesTheChosenNeovim(t *testing.T) {
+	fake, marker := fakeNeovim(t)
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	target := filepath.Join(t.TempDir(), "nvim")
+	base, err := Canonical(DataDirFor(target))
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := Action{ID: "mason:stylua", Kind: "mason", Package: "stylua", Destination: filepath.Join(base, "mason"), Description: "Mason test"}
+	results := RunActions(context.Background(), target, fake, []Action{a}, nil)
+	if len(results) != 1 || results[0].Status != "installed" {
+		t.Fatalf("%+v", results)
+	}
+	b, err := os.ReadFile(marker)
+	if err != nil || !strings.Contains(string(b), "--headless") || !strings.Contains(string(b), "-l") {
+		t.Fatalf("Mason did not run in the chosen Neovim: %q %v", b, err)
+	}
+}
+
+func TestDataDirectoryFollowsTheTarget(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(root, "config"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(root, "data"))
+	t.Setenv("NVIM_APPNAME", "unrelated") // The environment ShoshinVim runs in must not decide.
+	if err := os.MkdirAll(filepath.Join(root, "config"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	inside := filepath.Join(root, "config", "work", "web")
+	outside := filepath.Join(root, "projects", "nvim")
+	if app := AppName(inside); app != "work/web" {
+		t.Fatalf("app name %q", app)
+	}
+	if app := AppName(outside); app != "" {
+		t.Fatalf("outside target got app name %q", app)
+	}
+	want := func(parts ...string) string {
+		p, _ := resolveExisting(filepath.Join(append([]string{root, "data"}, parts...)...))
+		return p
+	}
+	suffix := func(app string) string {
+		if runtime.GOOS == "windows" {
+			return app + "-data"
+		}
+		return app
+	}
+	if got, _ := resolveExisting(DataDirFor(inside)); got != want("work", suffix("web"), "shoshinvim") {
+		t.Fatalf("inside data dir %s", got)
+	}
+	if got, _ := resolveExisting(DataDirFor(outside)); got != want(suffix("nvim"), "shoshinvim") {
+		t.Fatalf("outside data dir %s", got)
+	}
+	s, _ := LoadCatalog().Profile(NewState(), "rich-ide")
+	actions, err := Actions(s, inside)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, a := range actions {
+		if !strings.HasPrefix(a.Destination, want("work", suffix("web"), "shoshinvim")) {
+			t.Fatalf("%s downloads outside the target's data directory: %s", a.ID, a.Destination)
+		}
+	}
+	// Neovim itself must agree: generated Lua reads stdpath('data') .. '/shoshinvim'.
+	if _, err := exec.LookPath("nvim"); err != nil {
+		t.Skip("requires Neovim 0.12+ for the stdpath check")
+	}
+	for target, app := range map[string]string{inside: AppName(inside), outside: ""} {
+		cmd := exec.Command("nvim", "--headless", "--clean", "--cmd", "lua io.stdout:write(vim.fn.stdpath('data'))", "+qa")
+		cmd.Env = append(os.Environ(), "NVIM_APPNAME="+app)
+		out, err := cmd.Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, _ := resolveExisting(filepath.Join(strings.TrimSpace(string(out)), "shoshinvim"))
+		if expected, _ := resolveExisting(DataDirFor(target)); got != expected {
+			t.Fatalf("Neovim reads plugins from %s, ShoshinVim downloads to %s", got, expected)
+		}
 	}
 }

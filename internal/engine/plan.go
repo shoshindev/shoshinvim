@@ -199,12 +199,13 @@ func BuildPlan(ctx context.Context, target string, s State, bin string, external
 		content := "-- Your Lua extensions. ShoshinVim never overwrites this file.\n"
 		p.Files = append(p.Files, File{Path: userPath, Content: content, After: Hash([]byte(content)), Role: "user"})
 	}
-	p.Actions, err = Actions(s)
+	p.Actions, err = Actions(s, ins.Target)
 	if err != nil {
 		return p, err
 	}
-	for _, d := range Dependencies(s) {
-		if d.Status == "missing" {
+	for _, d := range Dependencies(s, ins.Target) {
+		// The chosen Neovim was resolved above; a PATH lookup would contradict --nvim.
+		if d.Status == "missing" && d.ID != "nvim" {
 			p.Warnings = append(p.Warnings, d.Purpose+": missing "+d.ID)
 		}
 	}
@@ -212,21 +213,31 @@ func BuildPlan(ctx context.Context, target string, s State, bin string, external
 	return p, nil
 }
 
-func VerifyPlan(ctx context.Context, p Plan) error {
+// VerifyPlan rebuilds a plan with the Neovim the caller chose (bin, as --nvim; empty
+// means PATH) and returns that Neovim's path. The plan's own Neovim path is only
+// compared, never executed: a plan file is data, and its digest is not a signature.
+func VerifyPlan(ctx context.Context, p Plan, bin string) (string, error) {
 	if p.Schema != SchemaVersion || p.Catalog != CatalogVersion || p.Digest != p.Fingerprint() {
-		return fmt.Errorf("invalid or incompatible plan")
+		return "", fmt.Errorf("invalid or incompatible plan")
 	}
-	fresh, err := BuildPlan(ctx, p.Target, p.State, p.Neovim, p.RunExternal)
+	nvim, _, err := Neovim(ctx, bin)
 	if err != nil {
-		return err
+		return "", err
+	}
+	if nvim != p.Neovim {
+		return "", fmt.Errorf("the plan was reviewed with Neovim at %s, but this run uses %s; review a new plan, or choose that Neovim with --nvim", p.Neovim, nvim)
+	}
+	fresh, err := BuildPlan(ctx, p.Target, p.State, nvim, p.RunExternal)
+	if err != nil {
+		return "", err
 	}
 	// Availability may improve independently; it is evidence, not authorization.
 	fresh.Warnings = p.Warnings
 	fresh.Digest = fresh.Fingerprint()
 	if p.Digest != fresh.Digest {
-		return fmt.Errorf("stale plan: target, files, actions, or Neovim changed; review a new plan")
+		return "", fmt.Errorf("stale plan: target, files, actions, or Neovim changed; review a new plan")
 	}
-	return nil
+	return nvim, nil
 }
 
 func Summary(p Plan) string {

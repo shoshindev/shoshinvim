@@ -21,7 +21,8 @@ type Plugin struct {
 	Reviewed   string `json:"reviewed"`
 }
 
-func Actions(s State) ([]Action, error) {
+// Actions lists the downloads a state needs, placed in the data directory Neovim uses for target.
+func Actions(s State, target string) ([]Action, error) {
 	var pins map[string]Plugin
 	if err := json.Unmarshal(pluginData, &pins); err != nil {
 		return nil, err
@@ -31,7 +32,7 @@ func Actions(s State) ([]Action, error) {
 	if Value(s, "plugins.manager", "none") == "lazy" {
 		ids = append([]string{"lazy"}, ids...)
 	}
-	base, err := Canonical(DataDir())
+	base, err := Canonical(DataDirFor(target))
 	if err != nil {
 		return nil, err
 	}
@@ -77,11 +78,10 @@ func run(ctx context.Context, dir string, name string, args ...string) error {
 	}
 	return nil
 }
-func acquire(ctx context.Context, a Action) error {
-	base, err := Canonical(DataDir())
-	if err != nil {
-		return err
-	}
+
+// acquire performs one approved action. nvim is the Neovim the user chose; Mason runs
+// inside it, so a different or older Neovim on PATH is never used.
+func acquire(ctx context.Context, base, nvim string, a Action) error {
 	rel, err := filepath.Rel(base, a.Destination)
 	if err != nil {
 		return err
@@ -127,9 +127,8 @@ func acquire(ctx context.Context, a Action) error {
 	if a.Kind != "mason" {
 		return fmt.Errorf("unsupported external action")
 	}
-	bin, _, err := Neovim(ctx, "")
-	if err != nil {
-		return err
+	if nvim == "" {
+		return fmt.Errorf("Mason needs a verified Neovim")
 	}
 	tmp, err := os.MkdirTemp("", "shoshinvim-mason-")
 	if err != nil {
@@ -162,7 +161,7 @@ vim.cmd('qa!')
 	if err = os.WriteFile(p, []byte(script), 0600); err != nil {
 		return err
 	}
-	cmd := exec.CommandContext(ctx, bin, "--clean", "--headless", "-i", "NONE", "-n", "-l", p)
+	cmd := exec.CommandContext(ctx, nvim, "--clean", "--headless", "-i", "NONE", "-n", "-l", p)
 	boundProcess(cmd)
 	cmd.Dir = tmp
 	cmd.Env = isolatedEnv(tmp)
@@ -178,11 +177,12 @@ vim.cmd('qa!')
 	}
 	return nil
 }
-func RunActions(ctx context.Context, target string, actions []Action, progress func(string)) []ActionResult {
+func RunActions(ctx context.Context, target, nvim string, actions []Action, progress func(string)) []ActionResult {
 	results := make([]ActionResult, len(actions))
 	for i, a := range actions {
 		results[i] = ActionResult{Action: a, Status: "pending"}
 	}
+	base, baseErr := Canonical(DataDirFor(target))
 	p, pathErr := safePath(target, ".shoshinvim/acquisition.json")
 	persist := func() error {
 		if pathErr != nil {
@@ -202,7 +202,10 @@ func RunActions(ctx context.Context, target string, actions []Action, progress f
 				progress(a.Description)
 			}
 			child, cancel := context.WithTimeout(ctx, 5*time.Minute)
-			err := acquire(child, a)
+			err := baseErr
+			if err == nil {
+				err = acquire(child, base, nvim, a)
+			}
 			cancel()
 			if err != nil {
 				r.Status = "failed"
@@ -221,7 +224,9 @@ func RunActions(ctx context.Context, target string, actions []Action, progress f
 	}
 	return results
 }
-func Retry(ctx context.Context, target string, progress func(string)) ([]ActionResult, error) {
+
+// Retry reruns approved actions that did not finish. bin selects Neovim as --nvim does.
+func Retry(ctx context.Context, target, bin string, progress func(string)) ([]ActionResult, error) {
 	ins, err := Inspect(target)
 	if err != nil {
 		return nil, err
@@ -239,7 +244,7 @@ func Retry(ctx context.Context, target string, progress func(string)) ([]ActionR
 	} else if err != nil {
 		return nil, err
 	}
-	authorized, err := Actions(*ins.State)
+	authorized, err := Actions(*ins.State, ins.Target)
 	if err != nil {
 		return nil, err
 	}
@@ -260,12 +265,21 @@ func Retry(ctx context.Context, target string, progress func(string)) ([]ActionR
 			return nil, fmt.Errorf("external plan changed; review new actions")
 		}
 	}
+	nvim := ""
+	for _, a := range failed {
+		if a.Kind == "mason" {
+			if nvim, _, err = Neovim(ctx, bin); err != nil {
+				return nil, err
+			}
+			break
+		}
+	}
 	unlock, err := acquireLock(ins.Target)
 	if err != nil {
 		return nil, err
 	}
 	defer unlock()
-	return RunActions(ctx, ins.Target, failed, progress), nil
+	return RunActions(ctx, ins.Target, nvim, failed, progress), nil
 }
 
 func hasWeb(s State) bool {

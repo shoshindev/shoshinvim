@@ -178,7 +178,7 @@ func RunPlain(target, bin string, in io.Reader, out io.Writer) error {
 	}
 	p.RunExternal = download
 	p.Digest = p.Fingerprint()
-	r, err := engine.Apply(context.Background(), p, engine.ApplyOptions{Progress: func(text string) {
+	r, err := engine.Apply(context.Background(), p, engine.ApplyOptions{Neovim: bin, Progress: func(text string) {
 		switch {
 		case text == "LOCAL_COMMITTED":
 			fmt.Fprintln(out, "[OK] Configuration saved.")

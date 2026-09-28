@@ -120,7 +120,8 @@ func Probe(ctx context.Context, bin string, files map[string]string) error {
 	return nil
 }
 
-func Dependencies(s State) []Dependency {
+// Dependencies reports the programs a state needs; Mason-installed tools are found in target's data directory.
+func Dependencies(s State, target string) []Dependency {
 	list := []Dependency{{ID: "nvim", Purpose: "Validate generated configuration"}}
 	if len(Plugins(s)) > 0 {
 		list = append(list, Dependency{ID: "git", Purpose: "Fetch approved plugin revisions"})
@@ -138,7 +139,7 @@ func Dependencies(s State) []Dependency {
 			list = append(list, Dependency{ID: "stylua", Purpose: "Lua formatting"})
 		}
 	}
-	if Value(s, "tools.provider", "system") == "mason" {
+	if Value(s, "tools.provider", "system") == "mason" && hasWeb(s) {
 		list = append(list, Dependency{ID: "node", Purpose: "Mason JavaScript language tools"}, Dependency{ID: "npm", Purpose: "Mason JavaScript packages"})
 	}
 	if Value(s, "navigation.picker", "native") == "snacks" || Value(s, "experience.layout", "native") == "rich" {
@@ -152,7 +153,7 @@ func Dependencies(s State) []Dependency {
 		} else if toolCommand(s, list[i].ID) != list[i].ID {
 			list[i].Status = "missing"
 		} else {
-			candidate := filepath.Join(DataDir(), "mason", "bin", list[i].ID)
+			candidate := filepath.Join(DataDirFor(target), "mason", "bin", list[i].ID)
 			if runtime.GOOS == "windows" {
 				for _, ext := range []string{".cmd", ".exe", ".bat"} {
 					if _, err := os.Stat(candidate + ext); err == nil {

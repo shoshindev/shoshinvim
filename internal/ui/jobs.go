@@ -39,7 +39,7 @@ func (m *Model) startLog(title, activity string, total int) {
 	m.log, m.wrote, m.actionsDone, m.actionsTotal = nil, 0, 0, total
 	m.result, m.resultErr = nil, nil
 	m.names = map[string]string{}
-	actions, _ := engine.Actions(m.draft)
+	actions, _ := engine.Actions(m.draft, m.target)
 	for _, a := range actions {
 		m.names[a.ID] = actionName(a.Description)
 	}
@@ -58,8 +58,9 @@ func (m *Model) save(download bool) tea.Cmd {
 	}
 	m.startLog("Saving your configuration", "Checking the plan with Neovim", total)
 	m.doneKind = "save"
+	bin := m.bin
 	return m.work("save", true, func(ctx context.Context, report func(string)) jobMsg {
-		r, err := engine.Apply(ctx, p, engine.ApplyOptions{Progress: report})
+		r, err := engine.Apply(ctx, p, engine.ApplyOptions{Progress: report, Neovim: bin})
 		return jobMsg{result: &r, err: err}
 	})
 }
@@ -67,9 +68,9 @@ func (m *Model) save(download bool) tea.Cmd {
 func (m *Model) retry() tea.Cmd {
 	m.startLog("Retrying downloads", "Checking pending downloads", 0)
 	m.doneKind = "retry"
-	target := m.target
+	target, bin := m.target, m.bin
 	return m.work("retry", false, func(ctx context.Context, report func(string)) jobMsg {
-		r, err := engine.Retry(ctx, target, report)
+		r, err := engine.Retry(ctx, target, bin, report)
 		return jobMsg{retry: r, err: err}
 	})
 }

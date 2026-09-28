@@ -134,8 +134,9 @@ func TestRecommendedChoicesMatchTheFormerRichIDE(t *testing.T) {
 	if !reflect.DeepEqual(engine.Plugins(s), engine.Plugins(rich)) {
 		t.Fatalf("plugins %v, want %v", engine.Plugins(s), engine.Plugins(rich))
 	}
-	a, _ := engine.Actions(s)
-	b, _ := engine.Actions(rich)
+	target := filepath.Join(t.TempDir(), "nvim")
+	a, _ := engine.Actions(s, target)
+	b, _ := engine.Actions(rich, target)
 	if !reflect.DeepEqual(a, b) {
 		t.Fatalf("downloads differ:\n%v\n%v", a, b)
 	}
@@ -310,5 +311,23 @@ func TestPlainModeRefusesToLoseAnswersSilently(t *testing.T) {
 	err := RunPlain(filepath.Join(t.TempDir(), "nvim"), "", strings.NewReader("\n\n"), &out)
 	if err == nil || !strings.Contains(err.Error(), "no configuration was written") {
 		t.Fatalf("expected unsaved-input error, got %v", err)
+	}
+}
+
+func TestLaunchCommandMatchesWherePluginsAre(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(root, "config"))
+	t.Setenv("NVIM_APPNAME", "")
+	if err := os.MkdirAll(filepath.Join(root, "config"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	for target, want := range map[string]string{
+		filepath.Join(root, "config", "nvim"):    "nvim",
+		filepath.Join(root, "config", "shoshin"): "NVIM_APPNAME=shoshin nvim",
+		filepath.Join(root, "elsewhere", "nvim"): "nvim -u ",
+	} {
+		if got := launchCommand(target); !strings.HasPrefix(got, want) {
+			t.Fatalf("%s: %q, want %q", target, got, want)
+		}
 	}
 }
