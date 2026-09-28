@@ -2,6 +2,8 @@
 
 > Staged implementation: see [current alpha coverage and release gates](implementation-status.md). This specification includes planned capabilities; a listed plugin or installation channel does not imply released support.
 
+> **Superseded interaction model.** The shipped setup replaced the transcript, composer and preset proposals described below with guided sections: a section sidebar, selectable menus with a recommended choice at every step, a single Editor form for text settings, a review screen, and a `/` command palette. Safety, state and ownership requirements in this document still apply. A rewrite of the interaction sections is tracked in the implementation status.
+
 - Status: authoritative interaction, safety, state, and responsive-design specification
 - Audience: the developer implementing the standalone terminal application
 - Product line: **Build your Neovim from the terminal.**

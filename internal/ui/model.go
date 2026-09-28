@@ -1,70 +1,127 @@
 package ui
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"io"
-	"os"
-	"sort"
 	"strconv"
 	"strings"
 
+	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textinput"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/shoshindev/shoshinvim/internal/engine"
 )
 
-type Entry struct {
-	ID         int
-	Role, Text string
+type screen int
+
+const (
+	welcomeScreen screen = iota
+	stepScreen
+	reviewScreen
+	pickScreen
+	workingScreen
+	doneScreen
+	recoveryScreen
+	restoreScreen
+)
+
+const (
+	minWidth, minHeight = 44, 14
+	sidebarWidth        = 16
+	sidebarMinWidth     = 92
+)
+
+type menuItem struct {
+	label, detail, action string
+	recommended           bool
 }
+
+type logLine struct{ key, kind, text string }
+
 type progressMsg struct {
+	id   int
 	text string
 	next <-chan tea.Msg
 }
 
 type jobMsg struct {
+	id     int
 	kind   string
 	plan   *engine.Plan
 	result *engine.ApplyResult
-	text   string
+	retry  []engine.ActionResult
 	err    error
 }
-type Model struct {
-	target, bin         string
-	catalog             engine.Catalog
-	draft, persisted    engine.State
-	undo                []engine.State
-	entries             []Entry
-	input               textinput.Model
-	viewport            viewport.Model
-	width, height       int
-	focus, viewer       string
-	status              string
-	busy, writing, quit bool
-	cancel              context.CancelFunc
-	history             []string
-	historyIndex        int
-	prompt              string
-	proposal            engine.State
-	plan                *engine.Plan
-	guided              []engine.Setting
-	question            int
-	recoveryID          string
-	recoveryGenerated   bool
-	noColor             bool
-	palette             string
-	savedComposer       string
-	selection           int
-	transcriptSelection int
+
+type command struct{ label, action string }
+
+var paletteCommands = []command{
+	{"Preview generated Lua", "lua"},
+	{"See file changes", "diff"},
+	{"Check dependencies", "health"},
+	{"Show all settings as JSON", "json"},
+	{"Set any setting…", "set"},
+	{"Go to review", "review"},
+	{"Retry failed downloads", "retry"},
+	{"Recovery & history", "recovery"},
+	{"Keys & help", "help"},
+	{"Quit", "quit"},
 }
 
-var commands = []string{"/start", "/back", "/skip", "/why", "/profile", "/configure", "/compare", "/set", "/enable", "/disable", "/show", "/search", "/undo", "/reset", "/review", "/lua", "/diff", "/files", "/health", "/save", "/retry", "/recovery", "/clear", "/help", "/quit"}
+type Model struct {
+	target, bin      string
+	catalog          engine.Catalog
+	th               theme
+	noColor          bool
+	ownership        string
+	problems         []string
+	draft, persisted engine.State
+	width, height    int
+
+	screen         screen
+	sec, q, cursor int
+	form           []int
+	checks         []bool
+	visited        map[int]bool
+	returnToReview bool
+	menu           []menuItem
+
+	plan    *engine.Plan
+	planErr error
+
+	busy, writing bool
+	jobID         int
+	jobTitle      string
+	activity      string
+	cancel        context.CancelFunc
+	spin          spinner.Model
+	log           []logLine
+	wrote         int
+	actionsDone   int
+	actionsTotal  int
+	names         map[string]string
+	doneKind      string
+	result        *engine.ApplyResult
+	resultErr     error
+
+	journals  []engine.Journal
+	restoreID string
+
+	viewerOpen  bool
+	viewerTitle string
+	viewer      viewport.Model
+
+	paletteOpen, settingOpen bool
+	input                    textinput.Model
+
+	notice    string
+	noticeBad bool
+	quitArmed bool
+	quit      bool
+}
 
 func New(target, bin string, noColor bool) (*Model, error) {
 	ins, err := engine.Inspect(target)
@@ -75,820 +132,684 @@ func New(target, bin string, noColor bool) (*Model, error) {
 	if ins.State != nil {
 		s = engine.Clone(*ins.State)
 	}
-	i := textinput.New()
-	i.Prompt = "> "
-	i.Placeholder = "/ for commands"
-	i.CharLimit = 8192
-	i.Focus()
-	m := &Model{target: ins.Target, bin: bin, catalog: engine.LoadCatalog(), draft: s, persisted: engine.Clone(s), input: i, viewport: viewport.New(viewport.WithWidth(80), viewport.WithHeight(18)), width: 80, height: 24, focus: "composer", status: ins.Ownership, noColor: noColor}
-	m.append("configurator", "ShoshinVim\nMake Neovim feel like your workspace.\nTarget: "+m.target+"\nChoose a starting point, make it yours, then review and save.")
-	if ins.Ownership == "NEW" {
-		m.profiles()
-	} else {
-		m.append("result", ins.Ownership+"\n"+strings.Join(ins.Problems, "\n")+"\n/show  /health  /configure  /review")
+	input := textinput.New()
+	input.Prompt = "› "
+	input.CharLimit = 8192
+	m := &Model{target: ins.Target, bin: bin, catalog: engine.LoadCatalog(), noColor: noColor,
+		ownership: ins.Ownership, problems: ins.Problems, draft: s, persisted: engine.Clone(s),
+		width: 100, height: 30, visited: map[int]bool{}, input: input,
+		viewer: viewport.New(viewport.WithWidth(80), viewport.WithHeight(20)),
+		spin:   spinner.New(spinner.WithSpinner(spinner.MiniDot))}
+	m.setTheme(true)
+	if ins.Ownership == "SAVED" {
+		for i := range sections {
+			m.visited[i] = true
+		}
 	}
+	m.openWelcome()
 	return m, nil
 }
-func (m *Model) Init() tea.Cmd { return textinput.Blink }
-func (m *Model) append(role, text string) {
-	text = strings.ReplaceAll(text, "\x1b", "^[")
-	m.entries = append(m.entries, Entry{ID: len(m.entries) + 1, Role: role, Text: text})
-	m.transcriptSelection = len(m.entries) - 1
-	m.refresh()
-	m.viewport.GotoBottom()
-}
-func (m *Model) refresh() {
-	var b strings.Builder
-	for i, e := range m.entries {
-		prefix := ""
-		if m.focus == "transcript" && i == m.transcriptSelection {
-			prefix = "> "
-		}
-		fmt.Fprintf(&b, "%s%s\n\n", prefix, e.Text)
+
+func (m *Model) setTheme(dark bool) {
+	m.th = newTheme(dark, m.noColor)
+	if !m.noColor {
+		m.spin.Style = lipgloss.NewStyle().Foreground(m.th.accent)
 	}
-	m.viewport.SetContent(lipgloss.NewStyle().Width(max(20, m.width-4)).Render(b.String()))
 }
+
+func (m *Model) Init() tea.Cmd { return tea.RequestBackgroundColor }
+
 func (m *Model) dirty() bool { return !engine.Equal(m.draft, m.persisted) }
+
+func (m *Model) tooSmall() bool { return m.width < minWidth || m.height < minHeight }
+
+func (m *Model) flash(text string, bad bool) { m.notice, m.noticeBad = text, bad }
+
 func (m *Model) change(next engine.State) {
-	m.undo = append(m.undo, engine.Clone(m.draft))
 	m.draft = next
 	m.plan = nil
-	if m.status != "READ ONLY" && m.status != "RECOVERY" {
-		if m.dirty() {
-			m.status = "DRAFT"
-		} else {
-			m.status = "SAVED"
-		}
-	}
-}
-func (m *Model) profiles() {
-	m.prompt = "profile"
-	m.append("choice", "What kind of workspace do you want?\n\n  1. Rich IDE — recommended for Web / Lua\n     Tokyo Night, project sidebar, buffer tabs, Git changes,\n     shortcut hints, language intelligence and formatting.\n  2. Minimal native — fast, simple, no plugins\n  3. Web development — compact language-focused setup\n  4. Lua / Neovim — compact language-focused setup\n  5. Custom — choose every feature\n\nReply with a number. You will review every download and file change.")
-}
-func (m *Model) work(kind string, fn func(context.Context, func(string)) jobMsg) tea.Cmd {
-	ctx, cancel := context.WithCancel(context.Background())
-	m.cancel = cancel
-	m.busy = true
-	m.writing = kind == "apply" || kind == "restore"
-	m.append("activity", "[..] "+kind+" — please wait")
-	updates := make(chan tea.Msg, 64)
-	return func() tea.Msg {
-		go func() {
-			result := fn(ctx, func(text string) {
-				select {
-				case updates <- progressMsg{text: text, next: updates}:
-				case <-ctx.Done():
-				}
-			})
-			result.kind = kind
-			updates <- result
-			close(updates)
-		}()
-		return <-updates
-	}
-}
-func (m *Model) complete(j jobMsg) {
-	m.busy = false
-	m.writing = false
-	if m.cancel != nil {
-		m.cancel()
-	}
-	m.cancel = nil
-	if j.err != nil {
-		m.append("error", "[ERROR] "+j.err.Error())
-		if ins, e := engine.Inspect(m.target); e == nil && (ins.Ownership == "RECOVERY" || ins.Ownership == "READ ONLY") {
-			m.status = ins.Ownership
-		}
-		return
-	}
-	if j.plan != nil {
-		m.plan = j.plan
-		m.append("result", engine.Summary(*j.plan))
-		if j.kind == "save" {
-			m.prompt = "save"
-			m.append("choice", "Proceed with the reviewed local write?\n  1. Save local configuration\n  2. Save, then run listed external actions\n  3. Cancel\nAn explicit number is required.")
-		}
-		if j.kind == "review" {
-			m.prompt = "reviewed"
-			m.append("choice", "Ready for the next step?\n1. Continue to save choices\n2. Keep customizing\n/lua, /diff and /files explain the proposed output.")
-		}
-	}
-	if j.result != nil && j.result.LocalCommitted {
-		m.persisted = engine.Clone(m.draft)
-		m.status = "SAVED"
-		m.plan = nil
-		m.append("result", "[OK] Local configuration saved and verified.\nBackup transaction: "+j.result.Transaction+"\n[RESTART] Restart Neovim to load saved changes.\nExisting running sessions were not inspected.")
-		for _, r := range j.result.External {
-			m.append("result", "["+strings.ToUpper(r.Status)+"] "+r.Action.ID+" "+r.Detail)
-		}
-	}
-	if j.text != "" {
-		m.append("result", j.text)
-	}
-}
-func (m *Model) questionText() {
-	if m.question < 0 {
-		m.question = 0
-	}
-	if m.question >= len(m.guided) {
-		m.prompt = ""
-		m.append("result", "Topic complete. /review to inspect the proposal.")
-		return
-	}
-	s := m.guided[m.question]
-	m.prompt = "guided"
-	text := s.Label + "\n" + s.Description + "\n"
-	if s.Type == "boolean" {
-		text += "  1. On\n  2. Off\n"
-	} else {
-		for i, c := range s.Choices {
-			fmt.Fprintf(newBuilder(&text), "  %d. %s\n", i+1, c)
-		}
-	}
-	m.append("choice", text+"Reply with a value; /skip leaves it unchanged, /back returns, /why explains.")
 }
 
-type appendWriter struct{ p *string }
+// ---- navigation -------------------------------------------------------------
 
-func (w appendWriter) Write(b []byte) (int, error) { *w.p += string(b); return len(b), nil }
-func newBuilder(p *string) io.Writer               { return appendWriter{p} }
-
-func (m *Model) Submit(line string) tea.Cmd {
-	line = strings.TrimSpace(line)
-	if line == "" {
-		return nil
-	}
-	m.append("user", "> "+line)
-	m.history = append(m.history, line)
-	m.historyIndex = len(m.history)
-	if !strings.HasPrefix(line, "/") {
-		return m.answer(line)
-	}
-	parts := strings.SplitN(line, " ", 3)
-	cmd := parts[0]
-	arg := ""
-	if len(parts) > 1 {
-		arg = parts[1]
-	}
-	rest := ""
-	if len(parts) > 2 {
-		rest = parts[2]
-	}
-	errText := func(err error) { m.append("error", "[ERROR] "+err.Error()) }
-	switch cmd {
-	case "/start":
-		m.profiles()
-	case "/profile":
-		if arg == "" {
-			m.profiles()
-			break
+func (m *Model) openWelcome() {
+	m.screen = welcomeScreen
+	m.cursor = 0
+	switch m.ownership {
+	case "SAVED":
+		m.menu = []menuItem{
+			{"Review & change", "See your setup, adjust any section, then save", "review", true},
+			{"Walk through every section", "Revisit each decision from the start", "walk", false},
+			{"Quit", "", "quit", false},
 		}
-		next, err := m.catalog.Profile(m.draft, arg)
-		if err != nil {
-			errText(err)
-			break
+	case "READ ONLY":
+		m.menu = []menuItem{
+			{"Explore anyway", "Walk through the setup and preview the Lua; saving stays disabled", "walk", false},
+			{"Quit", "", "quit", true},
 		}
-		m.proposal = next
-		m.prompt = "proposal"
-		m.append("proposal", "Profile "+arg+" proposes:\n"+stateChanges(m.draft, next)+"\n1. Accept into draft\n2. Cancel\nNo files or tools will change.")
-	case "/set", "/enable", "/disable":
-		if cmd != "/set" {
-			rest = "on"
-			if cmd == "/disable" {
-				rest = "off"
-			}
-		}
-		v, err := m.catalog.Parse(arg, rest)
-		if err != nil {
-			errText(err)
-			break
-		}
-		next := engine.Clone(m.draft)
-		if err = m.catalog.Set(&next, arg, v, true); err != nil {
-			errText(err)
-			break
-		}
-		m.change(next)
-		m.append("proposal", "Changed "+arg+" to "+fmt.Sprint(v)+" in the draft. /review checks dependencies.")
-	case "/configure":
-		if arg == "" {
-			arg = "core"
-		}
-		if arg == "profiles" {
-			m.profiles()
-			break
-		}
-		if arg == "dependencies" {
-			return m.Submit("/health")
-		}
-		if arg == "recovery" {
-			return m.Submit("/recovery")
-		}
-		m.guided = nil
-		for _, s := range m.catalog.Settings {
-			if arg == "core" && strings.HasPrefix(s.ID, "editor.") || strings.HasPrefix(s.ID, arg+".") {
-				m.guided = append(m.guided, s)
-			}
-		}
-		if len(m.guided) == 0 {
-			m.append("warning", "This topic is planned or is edited through /set options.<name> and declarative state. /search lists supported settings.")
-			break
-		}
-		m.question = 0
-		m.questionText()
-	case "/back":
-		if len(m.guided) > 0 {
-			m.question--
-			m.questionText()
-		} else {
-			m.profiles()
-		}
-	case "/skip":
-		if m.prompt == "guided" {
-			m.question++
-			m.questionText()
-		}
-	case "/why":
-		if m.prompt == "guided" {
-			s := m.guided[m.question]
-			m.append("configurator", s.Description+"\nSetting: "+s.ID+"\nGenerated option: "+s.Option+"\nChanges apply after save and restarting Neovim.")
-		} else {
-			m.append("configurator", "Choices edit the draft. /lua shows executable output; /files shows ownership; /review checks the complete proposal.")
-		}
-	case "/show":
-		m.viewer = string(engine.JSON(m.draft))
-		m.viewport.SetContent(m.viewer)
-		m.focus = "viewer"
-	case "/search":
-		found := m.catalog.Search(strings.TrimSpace(arg + " " + rest))
-		var b strings.Builder
-		for _, s := range found {
-			fmt.Fprintf(&b, "%-32s %s\n", s.ID, s.Label)
-		}
-		m.viewer = b.String()
-		m.viewport.SetContent(m.viewer)
-		m.focus = "viewer"
-	case "/compare":
-		text, err := m.catalog.Comparison(arg)
-		if err != nil {
-			errText(err)
-			break
-		}
-		m.viewer = text
-		m.focus = "viewer"
-		m.viewport.SetContent(m.viewer)
-	case "/undo":
-		if len(m.undo) == 0 {
-			m.append("warning", "Nothing to undo.")
-			break
-		}
-		next := m.undo[len(m.undo)-1]
-		m.undo = m.undo[:len(m.undo)-1]
-		m.draft = next
-		m.plan = nil
-		if m.status != "READ ONLY" && m.status != "RECOVERY" {
-			if m.dirty() {
-				m.status = "DRAFT"
-			} else {
-				m.status = "SAVED"
-			}
-		}
-		m.append("proposal", "Undid the latest draft change.")
-	case "/reset":
-		m.proposal = engine.Clone(m.draft)
-		if arg == "" || arg == "all" {
-			m.proposal = engine.NewState()
-		} else {
-			for id := range m.proposal.Values {
-				if strings.HasPrefix(id, arg+".") {
-					delete(m.proposal.Values, id)
-					delete(m.proposal.Explicit, id)
-				}
-			}
-		}
-		m.prompt = "proposal"
-		m.append("choice", "Reset proposal:\n"+stateChanges(m.draft, m.proposal)+"\n1. Accept into draft\n2. Cancel")
-	case "/review", "/save":
-		state := engine.Clone(m.draft)
-		target, bin := m.target, m.bin
-		kind := strings.TrimPrefix(cmd, "/")
-		export := ""
-		if arg == "export" {
-			export = rest
-		}
-		return m.work(kind, func(ctx context.Context, report func(string)) jobMsg {
-			p, err := engine.BuildPlan(ctx, target, state, bin, false)
-			if err == nil && export != "" {
-				err = exportPlan(export, p)
-			}
-			if err != nil {
-				return jobMsg{err: err}
-			}
-			return jobMsg{plan: &p}
-		})
-	case "/lua":
-		files, err := engine.Generate(m.draft)
-		if err != nil {
-			errText(err)
-			break
-		}
-		keys := make([]string, 0, len(files))
-		for k := range files {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		var b strings.Builder
-		for _, name := range keys {
-			if arg == "" || strings.Contains(name, arg) {
-				fmt.Fprintf(&b, "-- %s\n%s\n", name, files[name])
-			}
-		}
-		m.viewer = b.String()
-		m.viewport.SetContent(m.viewer)
-		m.focus = "viewer"
-	case "/diff", "/files":
-		if m.plan == nil {
-			m.append("warning", "Run /review first to build a fresh file plan.")
-			break
-		}
-		m.viewer = engine.Summary(*m.plan)
-		if cmd == "/diff" {
-			m.viewer = engine.Diff(*m.plan)
-		}
-		m.viewport.SetContent(m.viewer)
-		m.focus = "viewer"
-	case "/health":
-		state := engine.Clone(m.draft)
-		m.append("result", string(engine.JSON(engine.Dependencies(state))))
-	case "/retry":
-		target := m.target
-		return m.work("retry", func(ctx context.Context, report func(string)) jobMsg {
-			r, err := engine.Retry(ctx, target, report)
-			return jobMsg{text: string(engine.JSON(r)), err: err}
-		})
-	case "/recovery":
-		js, err := engine.Journals(m.target)
-		if err != nil {
-			errText(err)
-			break
-		}
-		if arg == "restore" || arg == "generated" {
-			found := false
-			for _, j := range js {
-				if j.ID == rest {
-					found = true
-					m.recoveryID = j.ID
-					m.recoveryGenerated = arg == "generated"
-					m.prompt = "recovery"
-					m.append("choice", "Recovery transaction: "+j.ID+"\n"+engine.Summary(j.Plan)+"\nRestore backups, or archive manual changes before restoring generated files (generated mode).\n1. Confirm this recovery\n2. Cancel")
-					break
-				}
-			}
-			if !found {
-				m.append("error", "Unknown transaction ID.")
-			}
-			break
-		}
-		var b strings.Builder
-		for _, j := range js {
-			fmt.Fprintf(&b, "%s  %s\n", j.ID, j.Status)
-		}
-		m.append("result", b.String()+"/recovery restore <id> restores verified backups.\n/recovery generated <id> archives drift then restores the generated snapshot.\nNo destructive choice is preselected.")
-	case "/clear":
-		if m.dirty() {
-			m.append("warning", "Unsaved draft: /clear is unavailable.")
-		} else {
-			m.entries = nil
-			m.refresh()
-		}
-	case "/help":
-		if arg != "" {
-			if s, err := m.catalog.Find(arg); err == nil {
-				m.append("configurator", s.Label+"\n"+s.Description)
-				break
-			}
-		}
-		m.viewer = helpText
-		m.viewport.SetContent(m.viewer)
-		m.focus = "viewer"
-	case "/quit":
-		if m.dirty() {
-			m.prompt = "quit"
-			m.append("choice", "Unsaved changes:\n1. Return to the session\n2. Discard draft and quit")
-		} else {
-			m.quit = true
+	case "RECOVERY":
+		m.menu = []menuItem{
+			{"Open recovery", "Restore a previous version of your files", "recovery", true},
+			{"Quit", "", "quit", false},
 		}
 	default:
-		m.append("error", "Unknown command. /help lists supported commands.")
+		m.menu = []menuItem{
+			{"Start setup", "Seven short sections, one decision at a time", "walk", true},
+			{"Quit", "", "quit", false},
+		}
+	}
+}
+
+func (m *Model) enterSection(i int, fromEnd bool) tea.Cmd {
+	for i >= 0 && i < len(sections) && sections[i].skipped(m.draft) {
+		if fromEnd {
+			i--
+		} else {
+			i++
+		}
+	}
+	if i < 0 {
+		m.openWelcome()
+		return nil
+	}
+	if i >= len(sections) {
+		return m.openReview()
+	}
+	m.screen, m.sec = stepScreen, i
+	sec := sections[i]
+	if sec.form {
+		m.form = make([]int, len(sec.questions))
+		for j, q := range sec.questions {
+			m.form[j] = currentIndex(m.draft, q)
+		}
+		m.cursor = 0
+		return nil
+	}
+	if fromEnd {
+		m.q = len(sec.questions)
+		return m.moveQuestion(-1)
+	}
+	m.q = -1
+	return m.moveQuestion(1)
+}
+
+func (m *Model) moveQuestion(dir int) tea.Cmd {
+	sec := sections[m.sec]
+	for j := m.q + dir; j >= 0 && j < len(sec.questions); j += dir {
+		if !sec.questions[j].skipped(m.draft) {
+			m.q = j
+			m.loadQuestion()
+			return nil
+		}
+	}
+	if dir > 0 {
+		return m.finishSection()
+	}
+	return m.enterSection(m.sec-1, true)
+}
+
+func (m *Model) loadQuestion() {
+	q := sections[m.sec].questions[m.q]
+	if q.multi {
+		m.checks = checked(m.draft, q)
+		m.cursor = 0
+		return
+	}
+	if m.cursor = currentIndex(m.draft, q); m.cursor < 0 {
+		m.cursor = recommendedIndex(q)
+	}
+}
+
+func (m *Model) finishSection() tea.Cmd {
+	m.visited[m.sec] = true
+	if m.returnToReview {
+		return m.openReview()
+	}
+	return m.enterSection(m.sec+1, false)
+}
+
+func (m *Model) answer() tea.Cmd {
+	q := sections[m.sec].questions[m.q]
+	var next engine.State
+	var err error
+	if q.multi {
+		next, err = chooseMany(m.catalog, m.draft, q, m.checks)
+	} else {
+		next, err = choose(m.catalog, m.draft, q.options[m.cursor])
+	}
+	if err != nil {
+		m.flash(err.Error(), true)
+		return nil
+	}
+	m.change(next)
+	return m.moveQuestion(1)
+}
+
+// applyForm stores the rows of the current form section in the draft.
+func (m *Model) applyForm() bool {
+	next := m.draft
+	for j, q := range sections[m.sec].questions {
+		if m.form[j] < 0 {
+			continue
+		}
+		var err error
+		if next, err = choose(m.catalog, next, q.options[m.form[j]]); err != nil {
+			m.flash(err.Error(), true)
+			return false
+		}
+	}
+	m.change(next)
+	return true
+}
+
+func (m *Model) openReview() tea.Cmd {
+	m.screen, m.returnToReview, m.cursor = reviewScreen, false, 0
+	m.plan, m.planErr, m.menu = nil, nil, nil
+	if m.ownership == "READ ONLY" {
+		m.planErr = fmt.Errorf("saving is disabled: this folder holds a configuration ShoshinVim did not create")
+		m.menu = m.reviewMenu()
+		return nil
+	}
+	state, target, bin := engine.Clone(m.draft), m.target, m.bin
+	return m.work("review", false, func(ctx context.Context, _ func(string)) jobMsg {
+		p, err := engine.BuildPlan(ctx, target, state, bin, false)
+		if err != nil {
+			return jobMsg{err: err}
+		}
+		return jobMsg{plan: &p}
+	})
+}
+
+func (m *Model) fileChanges() (created, updated, removed int) {
+	if m.plan == nil {
+		return
+	}
+	for _, f := range m.plan.Files {
+		switch {
+		case f.Before == f.After:
+		case f.Delete:
+			removed++
+		case f.Before == "":
+			created++
+		default:
+			updated++
+		}
+	}
+	return
+}
+
+func (m *Model) reviewMenu() []menuItem {
+	var items []menuItem
+	created, updated, removed := m.fileChanges()
+	changes := created + updated + removed
+	if m.plan != nil {
+		files := plural(changes, "file", "files")
+		plugins, tools := actionCounts(m.plan.Actions)
+		downloads := downloadText(plugins, tools)
+		switch {
+		case changes > 0 && downloads != "":
+			items = append(items,
+				menuItem{"Save and download", fmt.Sprintf("Write %d %s, then download %s", changes, files, downloads), "save-download", true},
+				menuItem{"Save without downloading", "Missing plugins and tools stay pending; save again to download", "save", false})
+		case changes > 0:
+			items = append(items, menuItem{"Save", fmt.Sprintf("Write %d %s", changes, files), "save", true})
+		case downloads != "":
+			items = append(items, menuItem{"Download plugins and tools", "Nothing to save; fetch anything missing (" + downloads + ")", "download", true})
+		}
+	}
+	items = append(items, menuItem{"Preview the generated Lua", "Every file ShoshinVim would write", "lua", false})
+	if changes > 0 {
+		items = append(items, menuItem{"See file changes", "A diff against what is on disk", "diff", false})
+	}
+	items = append(items, menuItem{"Change a section", "Jump to any section, then come back here", "sections", false}, menuItem{"Quit", "", "quit", false})
+	return items
+}
+
+func (m *Model) openPick() {
+	m.screen, m.cursor, m.menu = pickScreen, 0, nil
+	for i, sec := range sections {
+		if !sec.skipped(m.draft) {
+			m.menu = append(m.menu, menuItem{label: sec.title, detail: summary(m.draft, sec), action: "section:" + strconv.Itoa(i)})
+		}
+	}
+	m.menu = append(m.menu, menuItem{label: "Back to review", action: "back-review"})
+}
+
+func (m *Model) openRecovery() {
+	js, err := engine.Journals(m.target)
+	if err != nil {
+		m.flash(err.Error(), true)
+		return
+	}
+	m.journals, m.screen, m.cursor, m.menu = js, recoveryScreen, 0, nil
+	for _, j := range js {
+		files := 0
+		for _, f := range j.Plan.Files {
+			if f.Before != f.After {
+				files++
+			}
+		}
+		m.menu = append(m.menu, menuItem{label: journalTime(j.ID) + " · " + j.Status, detail: fmt.Sprintf("%d %s changed · transaction %s", files, plural(files, "file", "files"), j.ID), action: "journal:" + j.ID})
+	}
+	m.menu = append(m.menu, menuItem{label: "Back", action: "welcome"})
+}
+
+func (m *Model) openRestore(id string) {
+	m.restoreID, m.screen = id, restoreScreen
+	m.menu = []menuItem{{"Restore the files from before this save", "Puts back the backups recorded for this save", "restore", false}}
+	for _, j := range m.journals {
+		if j.ID == id && j.Status == "committed" {
+			m.menu = append(m.menu, menuItem{"Restore the files this save wrote", "Your manual edits are archived in .shoshinvim/recovery first", "restore-generated", false})
+		}
+	}
+	m.menu = append(m.menu, menuItem{"Cancel", "", "recovery", true})
+	m.cursor = len(m.menu) - 1 // Never preselect a destructive choice.
+}
+
+func (m *Model) activate(action string) tea.Cmd {
+	switch {
+	case action == "walk":
+		return m.enterSection(0, false)
+	case action == "review":
+		return m.openReview()
+	case action == "back-review":
+		m.screen, m.menu, m.cursor = reviewScreen, m.reviewMenu(), 0
+	case action == "recovery":
+		m.openRecovery()
+	case action == "welcome":
+		m.openWelcome()
+	case action == "quit":
+		return m.requestQuit()
+	case action == "save", action == "save-download", action == "download":
+		return m.save(action != "save")
+	case action == "lua":
+		m.showLua()
+	case action == "diff":
+		m.showDiff()
+	case action == "sections":
+		m.openPick()
+	case action == "retry":
+		return m.retry()
+	case action == "restore", action == "restore-generated":
+		return m.restore(action == "restore-generated")
+	case strings.HasPrefix(action, "section:"):
+		i, _ := strconv.Atoi(strings.TrimPrefix(action, "section:"))
+		m.returnToReview = true
+		return m.enterSection(i, false)
+	case strings.HasPrefix(action, "journal:"):
+		m.openRestore(strings.TrimPrefix(action, "journal:"))
 	}
 	return nil
 }
 
-func (m *Model) answer(line string) tea.Cmd {
-	switch m.prompt {
-	case "profile":
-		if line == "1" || line == "Rich IDE" {
-			m.proposal, _ = m.catalog.Profile(m.draft, "rich-ide")
-			m.prompt = "rich-languages"
-			m.append("choice", "What will you work on?\n1. Web + Lua / Neovim — recommended\n2. Web only — JavaScript, TypeScript, HTML, CSS and JSON\n3. Lua / Neovim only\n\nLanguage servers provide completion, navigation and diagnostics.")
-			return nil
-		}
-		names := map[string]string{"2": "minimal", "3": "web", "4": "lua", "5": "custom", "Minimal native": "minimal", "Web development": "web", "Lua / Neovim": "lua", "Custom": "custom"}
-		if name, ok := names[line]; ok {
-			return m.Submit("/profile " + name)
-		}
-	case "rich-languages":
-		if line == "1" || line == "2" || line == "3" {
-			for _, lang := range []string{"typescript", "html", "css", "json", "lua"} {
-				enabled := line == "1" || (line == "2" && lang != "lua") || (line == "3" && lang == "lua")
-				_ = m.catalog.Set(&m.proposal, "language."+lang+".lsp", enabled, true)
-			}
-			m.prompt = "rich-format"
-			m.append("choice", "When should code be formatted?\n1. When I ask — Space cf formats the file\n2. Whenever I save — Prettier for Web, StyLua for Lua\n\nBoth use the same formatting tools. Existing project formatter settings are respected.")
-			return nil
-		}
-	case "rich-format":
-		if line == "1" || line == "2" {
-			_ = m.catalog.Set(&m.proposal, "formatting.on_save", line == "2", true)
-			m.prompt = "proposal"
-			m.append("proposal", "Your Rich IDE workspace\n\n  Look: Tokyo Night, statusline and buffer tabs\n  Navigate: project sidebar, file/text search, recent files\n  Code: completion, diagnostics, rename and formatting\n  Learn: press Space to discover commands; Space ? for a guide\n\nNo special font is required. Git and selected language tools are\nchecked during review; missing runtimes get manual instructions.\n\n1. Accept this setup into the draft\n2. Cancel\n\nNo files have changed. /show and /lua expose every setting.")
-			return nil
-		}
-	case "next":
-		if line == "1" {
-			return m.Submit("/review")
-		}
-		if line == "2" {
-			return m.Submit("/configure core")
-		}
-		if line == "3" {
-			return m.Submit("/health")
-		}
-	case "reviewed":
-		if line == "1" {
-			return m.Submit("/save")
-		}
-		if line == "2" {
-			m.prompt = "next"
-			m.append("choice", "1. Review\n2. Customize editor settings\n3. Check dependencies\n/configure appearance changes the look.")
-			return nil
-		}
-	case "proposal":
-		if line == "1" {
-			m.change(m.proposal)
-			m.prompt = "next"
-			m.append("proposal", "Your draft is ready.\n1. Review the configuration and downloads\n2. Customize editor settings\n3. Check dependencies\n\n/configure appearance changes the look; /undo goes back.")
-			return nil
-		}
-		if line == "2" {
-			m.prompt = ""
-			m.append("result", "Cancelled.")
-			return nil
-		}
-	case "guided":
-		s := m.guided[m.question]
-		value := line
-		if s.Type == "boolean" {
-			if line == "1" {
-				value = "on"
-			}
-			if line == "2" {
-				value = "off"
-			}
-		} else if len(s.Choices) > 0 {
-			if n, e := strconv.Atoi(line); e == nil && n > 0 && n <= len(s.Choices) {
-				value = s.Choices[n-1]
-			}
-		}
-		v, err := m.catalog.Parse(s.ID, value)
-		if err == nil {
-			next := engine.Clone(m.draft)
-			err = m.catalog.Set(&next, s.ID, v, true)
-			if err == nil {
-				m.change(next)
-				m.append("proposal", "Changed "+s.Label+" to "+fmt.Sprint(v))
-				m.question++
-				m.questionText()
-				return nil
-			}
-		}
-		m.append("error", fmt.Sprint(err))
-		return nil
-	case "quit":
-		if line == "2" {
-			m.quit = true
-			return nil
-		}
-		if line == "1" {
-			m.prompt = ""
-			return nil
-		}
-	case "save":
-		if line == "3" {
-			m.prompt = ""
-			m.append("result", "Cancelled. No files changed.")
-			return nil
-		}
-		if (line == "1" || line == "2") && m.plan != nil {
-			p := *m.plan
-			p.RunExternal = line == "2"
-			p.Digest = p.Fingerprint()
-			m.prompt = ""
-			return m.work("apply", func(ctx context.Context, report func(string)) jobMsg {
-				r, err := engine.Apply(ctx, p, engine.ApplyOptions{Progress: report})
-				return jobMsg{result: &r, err: err}
-			})
-		}
-	case "recovery":
-		if line == "2" {
-			m.prompt = ""
-			return nil
-		}
-		if line == "1" {
-			target, id, generated := m.target, m.recoveryID, m.recoveryGenerated
-			m.prompt = ""
-			return m.work("restore", func(ctx context.Context, report func(string)) jobMsg {
-				var err error
-				if generated {
-					err = engine.RecoverGenerated(target, id)
-				} else {
-					err = engine.Rollback(target, id)
-				}
-				return jobMsg{text: "Recovery finished. Reopen ShoshinVim to load the restored state.", err: err}
-			})
-		}
+func (m *Model) requestQuit() tea.Cmd {
+	if m.quitArmed || !m.dirty() || m.ownership == "READ ONLY" {
+		m.quit = true
+		return tea.Quit
 	}
-	m.append("error", "Input was not recognized. Answer the active choice exactly or use /help; no configuration changed.")
+	m.quitArmed = true
+	m.flash("Your choices are not saved. Choose Quit again or press Ctrl+C to leave.", true)
 	return nil
 }
+
+// ---- input -----------------------------------------------------------------------
 
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.BackgroundColorMsg:
+		m.setTheme(msg.IsDark())
+		return m, nil
+	case tea.WindowSizeMsg:
+		m.width, m.height = msg.Width, msg.Height
+		m.viewer.SetWidth(max(10, m.width-4))
+		m.viewer.SetHeight(max(3, m.height-5))
+		m.input.SetWidth(max(10, m.width-12))
+		return m, nil
+	case spinner.TickMsg:
+		if !m.busy {
+			return m, nil
+		}
+		var cmd tea.Cmd
+		m.spin, cmd = m.spin.Update(msg)
+		return m, cmd
 	case progressMsg:
-		if msg.text == "LOCAL_COMMITTED" {
-			m.persisted = engine.Clone(m.draft)
-			m.writing = false
-			m.status = "INSTALLING"
-			m.append("result", "[OK] Local configuration committed. External work has a separate outcome.")
-		} else {
-			m.append("activity", "[..] "+msg.text)
+		if msg.id == m.jobID {
+			m.onProgress(msg.text)
 		}
 		return m, func() tea.Msg { return <-msg.next }
 	case jobMsg:
-		m.complete(msg)
-		return m, nil
-	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
-		m.input.SetWidth(max(10, m.width-6))
-		m.viewport.SetWidth(max(10, m.width-4))
-		m.viewport.SetHeight(max(3, m.height-7))
-		if m.focus == "viewer" {
-			m.viewport.SetContent(m.viewer)
-		} else {
-			m.refresh()
+		if msg.id == m.jobID {
+			m.finishJob(msg)
 		}
 		return m, nil
 	case tea.KeyPressMsg:
-		key := msg.String()
-		if m.palette != "" {
-			return m.paletteUpdate(msg)
+		return m, m.key(msg)
+	}
+	if m.paletteOpen || m.settingOpen {
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		return m, cmd
+	}
+	return m, nil
+}
+
+func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
+	key := msg.String()
+	if key == "ctrl+c" {
+		return m.ctrlC()
+	}
+	m.quitArmed, m.notice = false, ""
+	if m.tooSmall() {
+		return nil // Hidden prompts never receive input.
+	}
+	switch {
+	case m.viewerOpen:
+		if key == "esc" || key == "q" {
+			m.viewerOpen = false
+			return nil
 		}
-		if m.busy {
-			if key == "ctrl+c" || key == "esc" {
-				if m.writing {
-					m.append("warning", "Local write/verification cannot be interrupted. Recovery is journaled.")
-				} else if m.cancel != nil {
-					m.cancel()
-				}
-			}
-			return m, nil
+		var cmd tea.Cmd
+		m.viewer, cmd = m.viewer.Update(msg)
+		return cmd
+	case m.settingOpen:
+		return m.settingKey(msg)
+	case m.paletteOpen:
+		return m.paletteKey(msg)
+	case m.busy:
+		if key == "esc" && !m.writing && m.screen == reviewScreen {
+			m.cancelReview()
+			return m.enterSection(len(sections)-1, true)
 		}
-		if m.width < 52 || m.height < 16 {
-			if key == "ctrl+d" {
-				cmd := m.Submit("/quit")
-				if m.quit {
-					return m, tea.Quit
-				}
-				return m, cmd
-			}
-			if key == "1" || key == "2" {
-				m.answer(key)
-				if m.quit {
-					return m, tea.Quit
-				}
-			}
-			return m, nil
+		return nil
+	}
+	switch key {
+	case "/":
+		m.paletteOpen, m.cursor = true, 0
+		m.input.SetValue("")
+		m.input.Placeholder = "Search commands"
+		return m.input.Focus()
+	case "?":
+		m.openViewer("Keys & help", helpText)
+		return nil
+	}
+	if m.screen == stepScreen {
+		if sections[m.sec].form {
+			return m.formKey(key)
 		}
-		if m.focus == "viewer" {
-			if key == "esc" || key == "q" || key == "tab" {
-				m.focus = "composer"
-				m.viewer = ""
-				m.refresh()
-				return m, m.input.Focus()
-			}
-			var cmd tea.Cmd
-			m.viewport, cmd = m.viewport.Update(msg)
-			return m, cmd
+		return m.questionKey(key)
+	}
+	return m.menuKey(key)
+}
+
+func (m *Model) ctrlC() tea.Cmd {
+	switch {
+	case m.busy && m.writing:
+		m.flash("Saving can't be interrupted. It is journaled and recoverable.", false)
+		return nil
+	case m.busy:
+		if m.screen == reviewScreen {
+			m.cancelReview()
+			return nil
 		}
-		if key == "ctrl+p" {
-			m.openPalette("commands")
-			return m, nil
+		if m.cancel != nil {
+			m.cancel()
 		}
-		if key == "?" && m.input.Value() == "" {
-			m.viewer = helpText
-			m.focus = "viewer"
-			m.viewport.SetContent(m.viewer)
-			return m, nil
+		m.flash("Cancelling the remaining downloads…", false)
+		return nil
+	case m.viewerOpen || m.paletteOpen || m.settingOpen:
+		m.viewerOpen, m.paletteOpen, m.settingOpen = false, false, false
+		m.input.Blur()
+		return nil
+	case m.quitArmed:
+		m.quit = true
+		return tea.Quit
+	}
+	m.quitArmed = true
+	text := "Press Ctrl+C again to quit"
+	if m.dirty() && m.ownership != "READ ONLY" {
+		text += " · your choices are not saved"
+	}
+	m.flash(text, true)
+	return nil
+}
+
+func (m *Model) cancelReview() {
+	if m.cancel != nil {
+		m.cancel()
+		m.cancel = nil
+	}
+	m.jobID++ // Ignore the cancelled result.
+	m.busy = false
+	m.planErr = fmt.Errorf("check cancelled")
+	m.menu = m.reviewMenu()
+}
+
+func digit(key string) int {
+	if len(key) == 1 && key[0] >= '1' && key[0] <= '9' {
+		return int(key[0] - '0')
+	}
+	return 0
+}
+
+func (m *Model) questionKey(key string) tea.Cmd {
+	q := sections[m.sec].questions[m.q]
+	n := len(q.options)
+	switch key {
+	case "up", "k", "shift+tab":
+		m.cursor = max(0, m.cursor-1)
+	case "down", "j", "tab":
+		m.cursor = min(n-1, m.cursor+1)
+	case "space", " ":
+		if q.multi {
+			m.checks[m.cursor] = !m.checks[m.cursor]
 		}
-		if m.focus == "transcript" {
-			if key == "/" {
-				m.openPalette("transcript")
-				return m, nil
+	case "enter":
+		return m.answer()
+	case "esc", "left", "h":
+		return m.moveQuestion(-1)
+	default:
+		if d := digit(key); d > 0 && d <= n {
+			m.cursor = d - 1
+			if q.multi {
+				m.checks[m.cursor] = !m.checks[m.cursor]
+				return nil
 			}
-			if (key == "j" || key == "down" || key == "k" || key == "up") && len(m.entries) > 0 {
-				delta := 1
-				if key == "k" || key == "up" {
-					delta = -1
-				}
-				m.transcriptSelection = min(len(m.entries)-1, max(0, m.transcriptSelection+delta))
-				m.refresh()
-				line := 0
-				for _, e := range m.entries[:m.transcriptSelection] {
-					line += strings.Count(e.Text, "\n") + 2
-				}
-				m.viewport.SetYOffset(line)
-				return m, nil
-			}
-			if key == "tab" || key == "i" {
-				m.focus = "composer"
-				return m, m.input.Focus()
-			}
-			if key == "y" {
-				if len(m.entries) > 0 {
-					return m, tea.SetClipboard(m.entries[m.transcriptSelection].Text)
-				}
-				return m, nil
-			}
-			if key == "g" {
-				m.viewport.GotoTop()
-				return m, nil
-			}
-			if key == "G" {
-				m.viewport.GotoBottom()
-				return m, nil
-			}
-			var cmd tea.Cmd
-			m.viewport, cmd = m.viewport.Update(msg)
-			return m, cmd
+			return m.answer()
 		}
-		switch key {
-		case "enter":
-			line := m.input.Value()
-			m.input.SetValue("")
-			cmd := m.Submit(line)
-			if m.quit {
-				return m, tea.Quit
-			}
-			return m, cmd
-		case "tab":
-			matches := m.completions()
-			if len(matches) > 0 {
-				if len(matches) == 1 {
-					m.input.SetValue(matches[0] + " ")
-					m.input.CursorEnd()
-				} else {
-					m.openPalette("completion")
-				}
-			} else {
-				m.focus = "transcript"
-				m.input.Blur()
-			}
-			return m, nil
-		case "shift+tab":
-			m.focus = "transcript"
-			m.input.Blur()
-			return m, nil
-		case "up", "down":
-			if key == "up" {
-				m.historyIndex = max(0, m.historyIndex-1)
-			} else {
-				m.historyIndex = min(len(m.history), m.historyIndex+1)
-			}
-			if m.historyIndex < len(m.history) {
-				m.input.SetValue(m.history[m.historyIndex])
-			} else {
-				m.input.SetValue("")
-			}
-			m.input.CursorEnd()
-			return m, nil
-		case "ctrl+r":
-			m.openPalette("history")
-			return m, nil
-		case "ctrl+c", "esc":
-			m.input.SetValue("")
-			return m, nil
-		case "ctrl+d":
-			if m.input.Value() == "" {
-				cmd := m.Submit("/quit")
-				if m.quit {
-					return m, tea.Quit
-				}
-				return m, cmd
-			}
+	}
+	return nil
+}
+
+func (m *Model) formKey(key string) tea.Cmd {
+	qs := sections[m.sec].questions
+	q := qs[m.cursor]
+	cycle := func(dir int) {
+		n := len(q.options)
+		if m.form[m.cursor] < 0 {
+			m.form[m.cursor] = 0
+			return
 		}
+		m.form[m.cursor] = (m.form[m.cursor] + dir + n) % n
+	}
+	switch key {
+	case "up", "k", "shift+tab":
+		m.cursor = max(0, m.cursor-1)
+	case "down", "j", "tab":
+		m.cursor = min(len(qs)-1, m.cursor+1)
+	case "left", "h":
+		cycle(-1)
+	case "right", "l", "space", " ":
+		cycle(1)
+	case "r":
+		m.form[m.cursor] = recommendedIndex(q)
+	case "enter":
+		if m.applyForm() {
+			return m.finishSection()
+		}
+	case "esc":
+		if m.applyForm() {
+			return m.enterSection(m.sec-1, true)
+		}
+	}
+	return nil
+}
+
+func (m *Model) menuKey(key string) tea.Cmd {
+	n := len(m.menu)
+	switch key {
+	case "up", "k", "shift+tab":
+		m.cursor = max(0, m.cursor-1)
+	case "down", "j", "tab":
+		m.cursor = min(n-1, m.cursor+1)
+	case "enter":
+		if n > 0 {
+			return m.activate(m.menu[m.cursor].action)
+		}
+	case "esc", "left", "h":
+		switch m.screen {
+		case reviewScreen:
+			return m.enterSection(len(sections)-1, true)
+		case pickScreen:
+			return m.activate("back-review")
+		case recoveryScreen:
+			m.openWelcome()
+		case restoreScreen:
+			m.openRecovery()
+		}
+	default:
+		if d := digit(key); d > 0 && d <= n {
+			m.cursor = d - 1
+			return m.activate(m.menu[m.cursor].action)
+		}
+	}
+	return nil
+}
+
+func (m *Model) filteredCommands() []command {
+	query := strings.ToLower(strings.TrimSpace(m.input.Value()))
+	var out []command
+	for _, c := range paletteCommands {
+		if strings.Contains(strings.ToLower(c.label), query) {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+func (m *Model) paletteKey(msg tea.KeyPressMsg) tea.Cmd {
+	options := m.filteredCommands()
+	switch msg.String() {
+	case "esc":
+		m.paletteOpen = false
+		m.input.Blur()
+		return nil
+	case "up", "shift+tab":
+		m.cursor = max(0, m.cursor-1)
+		return nil
+	case "down", "tab":
+		m.cursor = min(max(0, len(options)-1), m.cursor+1)
+		return nil
+	case "enter":
+		if len(options) == 0 {
+			return nil
+		}
+		m.paletteOpen = false
+		m.input.Blur()
+		return m.runCommand(options[min(m.cursor, len(options)-1)].action)
 	}
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
-	return m, cmd
+	m.cursor = 0
+	return cmd
 }
-func (m *Model) completions() []string {
-	value := m.input.Value()
-	if !strings.HasPrefix(value, "/") {
-		return nil
+
+func (m *Model) runCommand(action string) tea.Cmd {
+	cursor := m.cursor
+	switch action {
+	case "lua":
+		m.showLua()
+	case "diff":
+		m.showDiff()
+	case "health":
+		m.showHealth()
+	case "json":
+		m.openViewer("All settings", string(engine.JSON(m.draft)))
+	case "help":
+		m.openViewer("Keys & help", helpText)
+	case "set":
+		m.settingOpen = true
+		m.input.SetValue("")
+		m.input.Placeholder = "options.colorcolumn 80"
+		return m.input.Focus()
+	case "recovery":
+		m.openRecovery()
+	case "retry":
+		return m.retry()
+	case "review":
+		return m.openReview()
+	case "quit":
+		return m.requestQuit()
 	}
-	var out []string
-	if strings.HasPrefix(value, "/set ") {
-		prefix := strings.TrimPrefix(value, "/set ")
-		for _, s := range m.catalog.Search("") {
-			if strings.HasPrefix(s.ID, prefix) {
-				out = append(out, "/set "+s.ID)
-			}
-		}
-	} else {
-		for _, c := range commands {
-			if strings.HasPrefix(c, value) {
-				out = append(out, c)
+	if m.screen == stepScreen || m.screen == welcomeScreen {
+		m.cursor = cursor
+	}
+	return nil
+}
+
+func (m *Model) settingSuggestions() []engine.Setting {
+	id, _, _ := strings.Cut(strings.TrimSpace(m.input.Value()), " ")
+	var out []engine.Setting
+	for _, s := range m.catalog.Search("") {
+		if id == "" || strings.HasPrefix(s.ID, id) {
+			out = append(out, s)
+			if len(out) == 6 {
+				break
 			}
 		}
 	}
 	return out
 }
-func (m *Model) View() tea.View {
-	if m.width < 52 || m.height < 16 {
-		v := tea.NewView(fmt.Sprintf("ShoshinVim\nResize terminal: %dx%d; minimum 52x16.\nDraft is retained. Ctrl+D: /quit\n%s", m.width, m.height, func() string {
-			if m.prompt == "quit" {
-				return "Unsaved draft: 1 return, 2 discard and quit"
-			}
-			return ""
-		}()))
-		v.AltScreen = true
-		return v
-	}
-	if m.palette != "" {
-		options := m.paletteOptions()
-		var b strings.Builder
-		fmt.Fprintf(&b, "ShoshinVim — %s\n\n", m.palette)
-		start := max(0, m.selection-max(3, m.height-8)+1)
-		for i := start; i < min(len(options), start+max(3, m.height-8)); i++ {
-			prefix := "  "
-			if i == m.selection {
-				prefix = "> "
-			}
-			fmt.Fprintf(&b, "%s%s\n", prefix, options[i])
+
+func (m *Model) settingKey(msg tea.KeyPressMsg) tea.Cmd {
+	switch msg.String() {
+	case "esc":
+		m.settingOpen = false
+		m.input.Blur()
+		return nil
+	case "tab":
+		if s := m.settingSuggestions(); len(s) > 0 {
+			m.input.SetValue(s[0].ID + " ")
+			m.input.CursorEnd()
 		}
-		b.WriteString("\n" + m.input.View() + "\nUp/Down select   Enter choose   Esc return")
-		v := tea.NewView(lipgloss.NewStyle().Width(m.width).Render(b.String()))
-		v.AltScreen = true
-		return v
-	}
-	title := "ShoshinVim"
-	if m.width >= 80 {
-		title += "  " + m.target
-	}
-	if !m.noColor {
-		title = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("6")).Render(title)
-	}
-	status := m.status
-	if m.dirty() && status != "READ ONLY" && status != "RECOVERY" {
-		status = "DRAFT"
-	}
-	if m.busy {
-		if status != "INSTALLING" {
-			status = "WORKING"
+		return nil
+	case "enter":
+		id, text, _ := strings.Cut(strings.TrimSpace(m.input.Value()), " ")
+		v, err := m.catalog.Parse(id, strings.TrimSpace(text))
+		next := engine.Clone(m.draft)
+		if err == nil {
+			err = m.catalog.Set(&next, id, v, true)
 		}
-		if m.writing {
-			status = "SAVING"
+		if err == nil {
+			err = derive(m.catalog, &next)
 		}
+		if err != nil {
+			m.flash(err.Error(), true)
+			return nil
+		}
+		m.change(next)
+		m.settingOpen = false
+		m.input.Blur()
+		m.flash(fmt.Sprintf("Set %s to %v in your draft", id, v), false)
+		if m.screen == stepScreen {
+			m.enterSection(m.sec, false)
+		}
+		return nil
 	}
-	footer := "Enter send   Tab focus/complete   Ctrl+P commands   ? help"
-	if m.focus == "viewer" {
-		footer = "j/k scroll   Esc return"
-	}
-	if m.width < 80 {
-		footer = "Enter send   ? help"
-	}
-	completion := ""
-	matches := m.completions()
-	if len(matches) > 0 && m.focus == "composer" {
-		completion = strings.Join(matches[:min(3, len(matches))], "  ")
-	}
-	title = ansi.Truncate(title, m.width, "…")
-	completion = ansi.Truncate(completion, m.width, "…")
-	v := tea.NewView(title + "\n\n" + m.viewport.View() + "\n" + m.input.View() + "\n" + status + " | " + m.focus + "\n" + completion + "\n" + footer)
-	v.AltScreen = true
-	return v
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+	return cmd
 }
+
 func Run(target, bin string, noColor bool) error {
 	m, err := New(target, bin, noColor)
 	if err != nil {
@@ -900,167 +821,4 @@ func Run(target, bin string, noColor bool) error {
 	}
 	_, err = tea.NewProgram(m, opts...).Run()
 	return err
-}
-func RunPlain(target, bin string, in io.Reader, out io.Writer) error {
-	m, err := New(target, bin, true)
-	if err != nil {
-		return err
-	}
-	cursor := 0
-	printNew := func() {
-		if cursor > len(m.entries) {
-			cursor = 0
-		}
-		for _, e := range m.entries[cursor:] {
-			fmt.Fprintln(out, e.Text)
-		}
-		cursor = len(m.entries)
-		if m.focus == "viewer" {
-			fmt.Fprintln(out, m.viewer)
-			m.focus = "composer"
-		}
-	}
-	printNew()
-	scan := bufio.NewScanner(in)
-	scan.Buffer(make([]byte, 4096), 1<<20)
-	for !m.quit {
-		fmt.Fprint(out, "> ")
-		if !scan.Scan() {
-			if m.dirty() {
-				return fmt.Errorf("input ended with an unsaved draft; no configuration was written")
-			}
-			return scan.Err()
-		}
-		cmd := m.Submit(scan.Text())
-		printNew()
-		for cmd != nil {
-			_, cmd = m.Update(cmd())
-			printNew()
-		}
-		printNew()
-	}
-	return nil
-}
-func exportPlan(path string, p engine.Plan) error {
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(engine.JSON(p))
-	closeErr := f.Close()
-	if err != nil {
-		return err
-	}
-	return closeErr
-}
-func stateChanges(a, b engine.State) string {
-	var rows []string
-	for k, v := range b.Values {
-		if fmt.Sprint(a.Values[k]) != fmt.Sprint(v) {
-			rows = append(rows, fmt.Sprintf("%s: %v -> %v", k, a.Values[k], v))
-		}
-	}
-	for k := range a.Values {
-		if _, ok := b.Values[k]; !ok {
-			rows = append(rows, k+": reset to Neovim default")
-		}
-	}
-	sort.Strings(rows)
-	if len(rows) == 0 {
-		return "No setting values change."
-	}
-	return strings.Join(rows, "\n")
-}
-
-const helpText = `ShoshinVim commands
-/start  /profile minimal|web|lua|custom
-/configure core|navigation|language|formatting|plugins
-/set <id> <value>  /enable <id>  /disable <id>
-/search <text>  /compare <capability>  /show
-/back  /skip  /why  /undo  /reset [topic|all]
-/review  /review export <new-file.json>
-/lua [file]  /diff  /files  /health
-/save  /retry  /recovery
-/recovery restore <transaction-id>
-/recovery generated <transaction-id>
-/clear  /help [id]  /quit
-
-Tab completes commands/settings or moves focus. Shift+Tab selects transcript.
-Up/Down: prompt history. Ctrl+R: history viewer. Ctrl+P: commands.
-Transcript: j/k, PgUp/PgDown, g/G, y copy, Tab/i input.
-Viewers: j/k/PgUp/PgDown scroll, Esc returns with input preserved.
-Ctrl+C cancels non-write work or clears input. Ctrl+D quits an empty prompt.
-No color, icons, mouse, credentials, AI model, or network is required to configure.
-Draft, saved configuration, installed dependencies, and running Neovim are separate.
-`
-
-func (m *Model) openPalette(kind string) {
-	m.palette = kind
-	m.savedComposer = m.input.Value()
-	m.selection = 0
-	m.input.SetValue("")
-}
-func (m *Model) paletteOptions() []string {
-	var source []string
-	switch m.palette {
-	case "commands":
-		source = commands
-	case "history":
-		source = m.history
-	case "completion":
-		value := m.input.Value()
-		m.input.SetValue(m.savedComposer)
-		source = m.completions()
-		m.input.SetValue(value)
-	case "transcript":
-		for _, e := range m.entries {
-			source = append(source, fmt.Sprintf("%d. %s", e.ID, strings.ReplaceAll(e.Text, "\n", " ")))
-		}
-	}
-	var out []string
-	for _, item := range source {
-		if strings.Contains(strings.ToLower(item), strings.ToLower(m.input.Value())) {
-			out = append(out, item)
-		}
-	}
-	return out
-}
-func (m *Model) paletteUpdate(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	options := m.paletteOptions()
-	switch msg.String() {
-	case "esc", "ctrl+c":
-		m.palette = ""
-		m.input.SetValue(m.savedComposer)
-		m.input.CursorEnd()
-		return m, nil
-	case "down":
-		m.selection = min(max(0, len(options)-1), m.selection+1)
-		return m, nil
-	case "up":
-		m.selection = max(0, m.selection-1)
-		return m, nil
-	case "enter":
-		if len(options) == 0 {
-			return m, nil
-		}
-		chosen := options[min(m.selection, len(options)-1)]
-		if m.palette == "transcript" {
-			var id int
-			fmt.Sscanf(chosen, "%d.", &id)
-			m.transcriptSelection = max(0, id-1)
-			m.input.SetValue(m.savedComposer)
-			m.focus = "transcript"
-			m.refresh()
-		} else {
-			m.input.SetValue(chosen + " ")
-			m.input.CursorEnd()
-			m.focus = "composer"
-		}
-		m.palette = ""
-		return m, nil
-	}
-	m.selection = 0
-	var cmd tea.Cmd
-	m.input, cmd = m.input.Update(msg)
-	return m, cmd
 }

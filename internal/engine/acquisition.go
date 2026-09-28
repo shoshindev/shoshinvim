@@ -234,7 +234,9 @@ func Retry(ctx context.Context, target string, progress func(string)) ([]ActionR
 		return nil, err
 	}
 	var prior []ActionResult
-	if err = DecodeFile(p, &prior); err != nil {
+	if err = DecodeFile(p, &prior); os.IsNotExist(err) {
+		return nil, fmt.Errorf("no downloads are pending; save with downloads to install plugins and tools")
+	} else if err != nil {
 		return nil, err
 	}
 	authorized, err := Actions(*ins.State)

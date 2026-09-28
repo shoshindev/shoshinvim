@@ -175,15 +175,25 @@ func (c Catalog) Profile(s State, name string) (State, error) {
 	if !ok {
 		return s, fmt.Errorf("profile %q is planned; available: rich-ide, custom, minimal, web, lua", name)
 	}
-	next := Clone(s)
+	// A profile replaces the previous proposal instead of layering on it; only
+	// explicit choices, filetype settings and keymaps carry over.
+	next := NewState()
 	next.Profile = name
+	prev := Clone(s)
+	next.Filetypes, next.Keymaps = prev.Filetypes, prev.Keymaps
 	for id, v := range values {
-		meta, _ := c.Find(id)
-		if !next.Explicit[canonical(meta)] {
-			if err := c.Set(&next, id, v, false); err != nil {
-				return s, err
-			}
+		if err := c.Set(&next, id, v, false); err != nil {
+			return s, err
 		}
+	}
+	for id, explicit := range s.Explicit {
+		if v, ok := s.Values[id]; ok && explicit {
+			next.Values[id] = v
+			next.Explicit[id] = true
+		}
+	}
+	if len(Plugins(next)) > 0 {
+		next.Values["plugins.manager"] = "lazy"
 	}
 	return next, nil
 }

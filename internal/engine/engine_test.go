@@ -57,6 +57,31 @@ func TestProfilesPreserveManualValues(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+func TestProfileReplacesPreviousProfile(t *testing.T) {
+	c := LoadCatalog()
+	rich, _ := c.Profile(NewState(), "rich-ide")
+	minimal, err := c.Profile(rich, "minimal")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plugins := Plugins(minimal); len(plugins) > 0 || Value(minimal, "plugins.manager", "none") != "none" {
+		t.Fatalf("minimal kept rich-ide plugins: %v", plugins)
+	}
+	if err = c.Validate(minimal); err != nil {
+		t.Fatal(err)
+	}
+	if err = c.Set(&minimal, "navigation.picker", "snacks", true); err != nil {
+		t.Fatal(err)
+	}
+	web, _ := c.Profile(minimal, "web")
+	lua, _ := c.Profile(web, "lua")
+	if lua.Values["navigation.picker"] != "snacks" || Enabled(lua, "language.typescript.lsp") {
+		t.Fatalf("explicit choice lost or web languages leaked: %v", lua.Values)
+	}
+	if err = c.Validate(lua); err != nil {
+		t.Fatal(err)
+	}
+}
 func TestProfilesGenerateValidDeterministicLua(t *testing.T) {
 	fixture(t)
 	for name := range LoadCatalog().Profiles {
