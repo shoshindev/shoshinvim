@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -17,6 +18,8 @@ import (
 
 func newModel(t *testing.T) *Model {
 	t.Helper()
+	// Pin both homes: on Windows the default configuration home contains the temp folder.
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
 	m, err := New(filepath.Join(t.TempDir(), "nvim"), "", true)
 	if err != nil {
@@ -324,7 +327,7 @@ func TestLaunchCommandMatchesWherePluginsAre(t *testing.T) {
 	}
 	for target, want := range map[string]string{
 		filepath.Join(root, "config", "nvim"):    "nvim",
-		filepath.Join(root, "config", "shoshin"): "NVIM_APPNAME=shoshin nvim",
+		filepath.Join(root, "config", "shoshin"): withAppName(runtime.GOOS, "shoshin", "nvim"),
 		filepath.Join(root, "elsewhere", "nvim"): "nvim -u ",
 	} {
 		if got := launchCommand(target); !strings.HasPrefix(got, want) {
@@ -371,5 +374,17 @@ func TestDoneScreenWrapsAtEightyColumns(t *testing.T) {
 	press(m, "enter") // Quit must not ask about unsaved choices.
 	if !m.quit {
 		t.Fatal("quitting after a save asked about unsaved choices")
+	}
+}
+
+func TestAppNameCommandUsesThePlatformShell(t *testing.T) {
+	if got := withAppName("darwin", "work", "nvim"); got != "NVIM_APPNAME=work nvim" {
+		t.Fatal(got)
+	}
+	if got := withAppName("windows", "work", "nvim"); got != "$env:NVIM_APPNAME='work'; nvim" {
+		t.Fatal(got)
+	}
+	if got := withAppName("windows", "it's", "nvim"); got != "$env:NVIM_APPNAME='it''s'; nvim" {
+		t.Fatal(got)
 	}
 }

@@ -403,7 +403,7 @@ Plugins and tools are stored under `shoshinvim/` in the data directory Neovim us
 | `<config home>/<name>` | `NVIM_APPNAME=<name> nvim` | `<data home>/<name>/shoshinvim` |
 | Elsewhere | `nvim -u <target>/init.lua` | `<data home>/nvim/shoshinvim` |
 
-On Windows the data folder carries Neovim's `-data` suffix. The result screen and line mode print the launch command from the same rule.
+On Windows the data folder carries Neovim's `-data` suffix, and commands use PowerShell syntax (`$env:NVIM_APPNAME='<name>'; nvim`). The result screen, line mode and the read-only hint print commands from the same rule.
 
 ## 10. Shell command surface
 

@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -597,7 +598,7 @@ func (m *Model) welcomeContent(cw, h int) []string {
 		body = []string{"Welcome back.", m.th.Dim("This configuration was made with ShoshinVim. Change any part of it; your manual Lua in user.lua is never touched.")}
 	case "READ ONLY":
 		body = []string{m.th.Warn("This folder already holds a Neovim configuration"), m.th.Warn("that ShoshinVim did not create. It will not be changed."), "",
-			m.th.Dim("To build a separate configuration next to it, run:"), m.th.Blue("NVIM_APPNAME=shoshin shoshinvim")}
+			m.th.Dim("To build a separate configuration next to it, run:"), m.th.Blue(withAppName(runtime.GOOS, "shoshin", "shoshinvim"))}
 	case "RECOVERY":
 		body = []string{m.th.Bad("An earlier save was interrupted, or generated files"), m.th.Bad("were edited by hand."), ""}
 		for _, p := range m.problems {
@@ -906,10 +907,22 @@ func journalTime(id string) string {
 func launchCommand(target string) string {
 	switch app := engine.AppName(target); app {
 	case "":
+		if runtime.GOOS == "windows" {
+			return "nvim -u " + filepath.Join(target, "init.lua") // PowerShell does not expand ~ for programs.
+		}
 		return "nvim -u " + filepath.Join(shortPath(target), "init.lua")
 	case "nvim":
 		return "nvim"
 	default:
-		return "NVIM_APPNAME=" + app + " nvim"
+		return withAppName(runtime.GOOS, app, "nvim")
 	}
+}
+
+// withAppName runs command with NVIM_APPNAME set, in the syntax of the platform's
+// usual shell: POSIX shells on macOS and Linux, PowerShell on Windows.
+func withAppName(goos, app, command string) string {
+	if goos == "windows" {
+		return "$env:NVIM_APPNAME='" + strings.ReplaceAll(app, "'", "''") + "'; " + command
+	}
+	return "NVIM_APPNAME=" + app + " " + command
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -27,7 +28,7 @@ func RunPlain(target, bin string, in io.Reader, out io.Writer) error {
 	fmt.Fprintf(out, "ShoshinVim — build a Neovim you understand.\nTarget: %s (%s)\n", ins.Target, strings.ToLower(ins.Ownership))
 	switch ins.Ownership {
 	case "READ ONLY":
-		fmt.Fprintln(out, "This folder holds a configuration ShoshinVim did not create; it will not be changed.\nTo build a separate one, run: NVIM_APPNAME=shoshin shoshinvim --no-alt-screen")
+		fmt.Fprintln(out, "This folder holds a configuration ShoshinVim did not create; it will not be changed.\nTo build a separate one, run: "+withAppName(runtime.GOOS, "shoshin", "shoshinvim --no-alt-screen"))
 		return nil
 	case "RECOVERY":
 		fmt.Fprintln(out, strings.Join(ins.Problems, "\n")+"\nRun `shoshinvim rollback` to list and restore earlier saves.")
