@@ -252,6 +252,107 @@ assert(#require('lint').get_running() == 0 and #vim.diagnostic.get(0) == 0, 'ESL
 		choice{"debug nvim-dap-view", map[string]any{"coding.debug": "nvim-dap-view", "tools.provider": "mason", "language.typescript.lsp": true, "keymaps.style": "lazyvim"},
 			debugSession + "\nassert(vim.fn.maparg('<leader>db', 'n') ~= '', 'Space db is not mapped')"},
 	)
+	// Every language: its server attaches in a small project, Tree-sitter parses the file,
+	// and its formatter (when it has one) rewrites messy code as expected.
+	type sample struct {
+		files        map[string]string
+		open, format string // format: the expected text after formatting; empty skips it
+	}
+	samples := map[string]sample{
+		"typescript": {map[string]string{"package.json": "{}", "a.ts": "const x   =  1"}, "a.ts", "const x = 1;"},
+		"html":       {map[string]string{"package.json": "{}", "index.html": "<div   class='a'>hi</div>"}, "index.html", `<div class="a">hi</div>`},
+		"css":        {map[string]string{"package.json": "{}", "a.css": "a{color:red}"}, "a.css", "a {\n  color: red;\n}"},
+		"json":       {map[string]string{"package.json": "{}", "a.json": `{"a":1}`}, "a.json", `{ "a": 1 }`},
+		"svelte":     {map[string]string{"package.json": "{}", "App.svelte": "<script>let x = 1</script>\n<p>{x}</p>"}, "App.svelte", ""},
+		"lua":        {map[string]string{".luarc.json": "{}", "a.lua": "local x  =  1"}, "a.lua", "local x = 1"},
+		"python":     {map[string]string{"pyproject.toml": "", "a.py": "x  =  1"}, "a.py", "x = 1"},
+		"ruby":       {map[string]string{".git/HEAD": "ref: refs/heads/main", "a.rb": "x = 1"}, "a.rb", ""}, // A Gemfile needs its lock file.
+		"php":        {map[string]string{"composer.json": "{}", "a.php": "<?php echo 1;"}, "a.php", ""},
+		"bash":       {map[string]string{"a.sh": "#!/bin/sh\necho   hi"}, "a.sh", "#!/bin/sh\necho hi"},
+		"elixir":     {map[string]string{"mix.exs": "", "a.ex": "x = 1"}, "a.ex", ""},
+		"go":         {map[string]string{"go.mod": "module demo\n\ngo 1.22", "main.go": "package main\nfunc main(){}"}, "main.go", "package main\n\nfunc main() {}"},
+		"rust":       {map[string]string{"Cargo.toml": "[package]\nname = \"demo\"\nversion = \"0.1.0\"\nedition = \"2021\"", "src/main.rs": "fn main(){}"}, "src/main.rs", "fn main() {}"},
+		"cpp":        {map[string]string{"compile_flags.txt": "", "a.cpp": "int main(){return 0;}"}, "a.cpp", "int main() { return 0; }"},
+		"zig":        {map[string]string{"build.zig": "", "a.zig": "const x = 1;"}, "a.zig", ""},
+		"swift":      {map[string]string{"Package.swift": "// swift-tools-version:5.9\nimport PackageDescription\nlet package = Package(name: \"demo\")", "main.swift": "let x = 1"}, "main.swift", ""},
+		"java":       {map[string]string{"pom.xml": "<project/>", "A.java": "class A {}"}, "A.java", ""},
+		"kotlin":     {map[string]string{"settings.gradle": "", "a.kt": "val x = 1"}, "a.kt", ""},
+		"csharp":     {map[string]string{"demo.csproj": "<Project/>", "A.cs": "class A {}"}, "A.cs", ""},
+		"yaml":       {map[string]string{"a.yaml": "a:   1"}, "a.yaml", "a: 1"},
+		"toml":       {map[string]string{"taplo.toml": "", "a.toml": "a  =  1"}, "a.toml", "a = 1"},
+		"markdown":   {map[string]string{".marksman.toml": "", "a.md": "#  Title"}, "a.md", "# Title"},
+		"docker":     {map[string]string{"Dockerfile": "FROM alpine"}, "Dockerfile", ""},
+		"terraform":  {map[string]string{"main.tf": "variable \"x\" {}"}, "main.tf", ""},
+	}
+	languageCheck := func(server string, conform bool, smp sample) string {
+		var writes []string
+		names := map[string]bool{}
+		for name := range smp.files {
+			names[name] = true
+		}
+		for _, name := range sortedKeys(names) {
+			writes = append(writes, fmt.Sprintf("vim.fn.mkdir(vim.fs.dirname(dir .. '/' .. %[1]s), 'p'); vim.fn.writefile(vim.split(%[2]s, '\\n'), dir .. '/' .. %[1]s)", LuaString(name), LuaString(smp.files[name])))
+		}
+		formatter := "vim.lsp.buf.format({ bufnr = buf, async = false, timeout_ms = 20000 })"
+		if conform {
+			formatter = "require('conform').format({ bufnr = buf, async = false, timeout_ms = 20000 })"
+		}
+		return fmt.Sprintf(`local dir = vim.fn.resolve(vim.fn.tempname())
+%s
+vim.cmd.cd(dir)
+vim.cmd.edit(dir .. '/' .. %s)
+local buf = vim.api.nvim_get_current_buf()
+if not vim.wait(60000, function() return #vim.lsp.get_clients({ bufnr = buf, name = %[3]s }) > 0 end, 200) then
+  local log = table.concat(vim.fn.readfile(vim.lsp.log.get_filename()), '\n')
+  error(%[3]s .. ' did not attach; LSP log: ' .. log:sub(-2500))
+end
+pcall(function() vim.treesitter.get_parser(buf):parse(true) end)
+assert(vim.treesitter.highlighter.active[buf], 'Tree-sitter did not start for ' .. vim.bo.filetype)
+local want = %[4]s
+if want ~= '' then
+  vim.wait(3000, function() return false end)
+  local before = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n')
+  %[5]s
+  local got = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n')
+  if want == '*' then
+    assert(got ~= before, 'the server did not format: ' .. vim.inspect(got))
+  else
+    assert(got == want, 'formatted to ' .. vim.inspect(got))
+  end
+end`, strings.Join(writes, "\n"), LuaString(smp.open), LuaString(server), LuaString(smp.format), formatter)
+	}
+	for _, l := range Languages() {
+		smp, ok := samples[l.ID]
+		if !ok {
+			t.Fatalf("no sample for %s", l.ID)
+		}
+		cases = append(cases, choice{"language " + l.ID, map[string]any{"language." + l.ID + ".lsp": true, "tools.provider": "mason", "lsp.provider": "lspconfig",
+			"formatting.provider": "conform", "syntax.engine": "nvim-treesitter"}, languageCheck(l.Server.Name, true, smp)})
+	}
+	// Without nvim-lspconfig, ShoshinVim's basic recipes must still let servers format.
+	for _, l := range Languages() {
+		if l.ID == "json" || l.ID == "html" || l.ID == "css" {
+			cases = append(cases, choice{"basic server formatting " + l.ID, map[string]any{"language." + l.ID + ".lsp": true, "tools.provider": "mason", "lsp.provider": "native",
+				"formatting.provider": "native", "syntax.engine": "nvim-treesitter"}, languageCheck(l.Server.Name, false, sample{samples[l.ID].files, samples[l.ID].open, "*"})})
+		}
+	}
+	// Every recipe resolves in Neovim, both ShoshinVim's basic ones and nvim-lspconfig's
+	// with ShoshinVim's additions (Swift's server keeps to Swift files).
+	for _, provider := range []string{"native", "lspconfig"} {
+		values := map[string]any{"lsp.provider": provider}
+		var checks []string
+		for _, l := range Languages() {
+			values["language."+l.ID+".lsp"] = true
+			checks = append(checks, fmt.Sprintf("{ %s, %s }", LuaString(l.Server.Name), LuaString(l.Server.Command)))
+		}
+		cases = append(cases, choice{"all recipes " + provider, values, `for _, s in ipairs({ ` + strings.Join(checks, ", ") + ` }) do
+  local config = vim.lsp.config[s[1]]
+  assert(config and config.cmd and #config.filetypes > 0, s[1] .. ' has no recipe')
+  if type(config.cmd) == 'table' then assert(config.cmd[1] == s[2], s[1] .. ' runs ' .. tostring(config.cmd[1])) end
+end
+assert(vim.deep_equal(vim.lsp.config.sourcekit.filetypes, { 'swift' }), 'sourcekit also serves ' .. table.concat(vim.lsp.config.sourcekit.filetypes, ','))
+assert(vim.lsp.config.lua_ls.settings.Lua.workspace.library[1] == vim.env.VIMRUNTIME, 'lua_ls lost Neovim runtime')`})
+	}
 	cat := LoadCatalog()
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -259,6 +360,23 @@ assert(#require('lint').get_running() == 0 and #vim.diagnostic.get(0) == 0, 'ESL
 			for id, v := range c.values {
 				if err := cat.Set(&s, id, v, true); err != nil {
 					t.Fatal(err)
+				}
+			}
+			if lang, ok := strings.CutPrefix(c.name, "language "); ok {
+				for _, l := range Languages() {
+					if l.ID != lang {
+						continue
+					}
+					for _, r := range l.Server.Needs {
+						if p, err := exec.LookPath(r); err != nil || !runtimeWorks(r, p) {
+							t.Skipf("needs %s, which is not installed here", r)
+						}
+					}
+					if l.Server.Package == "" {
+						if _, err := exec.LookPath(l.Server.Command); err != nil {
+							t.Skipf("%s is not installed here", l.Server.Command)
+						}
+					}
 				}
 			}
 			if c.name == "shortcut command" {
@@ -290,8 +408,8 @@ assert(#require('lint').get_running() == 0 and #vim.diagnostic.get(0) == 0, 'ESL
 			}
 			base, _ := Canonical(DataDirFor(target))
 			for _, a := range actions {
-				if a.Kind == "mason" && a.Package != "tree-sitter-cli" && a.Package != "markdownlint" && a.Package != "js-debug-adapter" {
-					continue // Language servers are exercised by the separate Lua integration script.
+				if a.Kind == "mason" && !strings.HasPrefix(c.name, "language ") && !strings.HasPrefix(c.name, "basic server") && a.Package != "tree-sitter-cli" && a.Package != "markdownlint" && a.Package != "js-debug-adapter" {
+					continue // Only the language cases and the tools a case exercises are installed.
 				}
 				if !Installed(a) {
 					if err := acquire(context.Background(), base, nvim, a); err != nil {

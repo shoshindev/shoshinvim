@@ -116,11 +116,7 @@ func Generate(s State) (map[string]string, error) {
 if not vim.g.shoshinvim_probe then ok, conform = pcall(require, 'conform') end
 if ok then
   conform.setup({ formatters = {
-`+formatterCommands(s)+`  }, formatters_by_ft = {
-    lua = { 'stylua' }, javascript = { 'prettier' }, typescript = { 'prettier' },
-    javascriptreact = { 'prettier' }, typescriptreact = { 'prettier' },
-    html = { 'prettier' }, css = { 'prettier' }, json = { 'prettier' },
-  }`+func() string {
+`+formatterCommands(s)+`  }, formatters_by_ft = { `+formattersByFiletype(s)+` }`+func() string {
 			if Enabled(s, "formatting.on_save") {
 				return ", format_on_save = { timeout_ms = 2000, lsp_format = 'fallback' }"
 			}
@@ -189,6 +185,9 @@ func Plugins(s State) []string {
 	}
 	if p := themePlugin(s); p != "" {
 		set[p] = true
+	}
+	if !needsTools(s) {
+		delete(set, "mason") // Chosen, but nothing needs a separate program.
 	}
 	return withRequirements(sorted(set))
 }
@@ -268,34 +267,6 @@ require('lazy').setup(specs, {
 	return b.String()
 }
 
-type language struct{ ID, Server, Executable, Package, Filetypes, Roots, Extra string }
-
-var languages = []language{
-	{"typescript", "ts_ls", "typescript-language-server", "typescript-language-server", "'javascript', 'javascriptreact', 'typescript', 'typescriptreact'", "'tsconfig.json', 'jsconfig.json', 'package.json', '.git'", `root_dir = function(bufnr, on_dir)
-  if vim.fs.root(bufnr, { 'deno.json', 'deno.jsonc' }) then return end
-  on_dir(vim.fs.root(bufnr, { 'tsconfig.json', 'jsconfig.json', 'package.json', '.git' }) or vim.fn.getcwd())
-end,`},
-	{"lua", "lua_ls", "lua-language-server", "lua-language-server", "'lua'", "'.luarc.json', '.luarc.jsonc', '.git'", `settings = { Lua = { runtime = { version = 'LuaJIT' }, diagnostics = { globals = { 'vim' } }, workspace = { checkThirdParty = false, library = { vim.env.VIMRUNTIME } }, telemetry = { enable = false } } },`},
-	{"html", "html", "vscode-html-language-server", "html-lsp", "'html'", "'package.json', '.git'", ""},
-	{"css", "cssls", "vscode-css-language-server", "css-lsp", "'css', 'scss', 'less'", "'package.json', '.git'", ""},
-	{"json", "jsonls", "vscode-json-language-server", "json-lsp", "'json', 'jsonc'", "'package.json', '.git'", ""},
-}
-
-func lspLua(s State) string {
-	var b strings.Builder
-	for _, l := range languages {
-		if Enabled(s, "language."+l.ID+".lsp") {
-			args := ""
-			if l.ID != "lua" {
-				args = ", '--stdio'"
-			}
-			fmt.Fprintf(&b, "vim.lsp.config(%s, { cmd = { %s%s }, filetypes = { %s }, root_markers = { %s }, %s })\n", LuaString(l.Server), LuaString(toolCommand(s, l.Executable)), args, l.Filetypes, l.Roots, l.Extra)
-			fmt.Fprintf(&b, "if not vim.g.shoshinvim_probe and vim.fn.executable(%s) == 1 then vim.lsp.enable(%s) end\n", LuaString(toolCommand(s, l.Executable)), LuaString(l.Server))
-		}
-	}
-	return b.String()
-}
-
 func toolCommand(s State, name string) string {
 	if path, ok := s.Values["tools.path."+name].(string); ok && path != "" {
 		return path
@@ -304,9 +275,9 @@ func toolCommand(s State, name string) string {
 }
 func formatterCommands(s State) string {
 	var b strings.Builder
-	for _, name := range []string{"prettier", "stylua"} {
-		if cmd := toolCommand(s, name); cmd != name {
-			fmt.Fprintf(&b, "    %s = { command = %s },\n", name, LuaString(cmd))
+	for _, f := range Formatters(s) {
+		if cmd := toolCommand(s, f.Command); cmd != f.Command {
+			fmt.Fprintf(&b, "    [%s] = { command = %s },\n", LuaString(f.Name), LuaString(cmd))
 		}
 	}
 	return b.String()

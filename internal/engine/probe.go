@@ -126,23 +126,12 @@ func Dependencies(s State, target string) []Dependency {
 	if len(Plugins(s)) > 0 {
 		list = append(list, Dependency{ID: "git", Purpose: "Fetch approved plugin revisions"})
 	}
-	for _, l := range languages {
-		if Enabled(s, "language."+l.ID+".lsp") {
-			list = append(list, Dependency{ID: l.Executable, Purpose: l.ID + " language intelligence", Instruction: "Install " + l.Package + " with your selected provider, or select tools.provider=mason"})
+	list = append(list, languageDependencies(s)...)
+	if linting(s) || debugging(s) {
+		list = append(list, runtimes["node"])
+		if Value(s, "tools.provider", "system") == "mason" {
+			list = append(list, Dependency{ID: "npm", Purpose: "Mason installs JavaScript-based tools with npm"})
 		}
-	}
-	if Value(s, "formatting.provider", "native") == "conform" {
-		if hasWeb(s) {
-			list = append(list, Dependency{ID: "prettier", Purpose: "Web formatting"})
-		}
-		if Enabled(s, "language.lua.lsp") {
-			list = append(list, Dependency{ID: "stylua", Purpose: "Lua formatting"})
-		}
-	}
-	if Value(s, "tools.provider", "system") == "mason" && (hasWeb(s) || linting(s) || debugging(s)) {
-		list = append(list, Dependency{ID: "node", Purpose: "Mason JavaScript language tools"}, Dependency{ID: "npm", Purpose: "Mason JavaScript packages"})
-	} else if linting(s) || debugging(s) {
-		list = append(list, Dependency{ID: "node", Purpose: "Run linters and the JavaScript debugger"})
 	}
 	for _, name := range linters(s) {
 		list = append(list, Dependency{ID: name, Purpose: map[string]string{"markdownlint": "Markdown linting", "eslint_d": "JavaScript and TypeScript linting"}[name],
@@ -164,6 +153,7 @@ func Dependencies(s State, target string) []Dependency {
 			Dependency{ID: "curl", Purpose: "Download Tree-sitter parser sources"},
 			Dependency{ID: "tar", Purpose: "Unpack Tree-sitter parser sources"})
 	}
+	list = dedupeDependencies(list)
 	for i := range list {
 		if list[i].ID == "cc" {
 			// Any C compiler the tree-sitter CLI can find will do.
@@ -177,7 +167,9 @@ func Dependencies(s State, target string) []Dependency {
 			continue
 		}
 		p, err := exec.LookPath(toolCommand(s, list[i].ID))
-		if err == nil {
+		if err == nil && !runtimeWorks(list[i].ID, p) {
+			list[i].Status = "missing" // For example macOS's java placeholder, which only explains how to install Java.
+		} else if err == nil {
 			list[i].Path = p
 			list[i].Status = "present"
 		} else if toolCommand(s, list[i].ID) != list[i].ID {
@@ -201,4 +193,17 @@ func Dependencies(s State, target string) []Dependency {
 		}
 	}
 	return list
+}
+
+// runtimeWorks tells a real runtime from a placeholder on PATH; macOS ships a java
+// command that only explains how to install Java.
+func runtimeWorks(id, path string) bool {
+	if id != "java" {
+		return true
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, path, "-version")
+	boundProcess(cmd)
+	return cmd.Run() == nil
 }

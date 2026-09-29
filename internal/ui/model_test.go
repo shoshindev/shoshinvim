@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -144,7 +145,7 @@ func TestRecommendedChoicesInstallTheExpectedPlugins(t *testing.T) {
 	if err = c.Validate(s); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"blink.cmp", "bufferline", "conform", "gitsigns", "guess-indent", "indent-blankline", "lualine", "mason", "mini.ai", "mini.surround", "neo-tree", "nui", "nvim-autopairs", "nvim-treesitter", "plenary", "snacks", "telescope", "todo-comments", "tokyonight", "which-key"}
+	want := []string{"blink.cmp", "bufferline", "conform", "gitsigns", "guess-indent", "indent-blankline", "lspconfig", "lualine", "mason", "mini.ai", "mini.surround", "neo-tree", "nui", "nvim-autopairs", "nvim-treesitter", "plenary", "snacks", "telescope", "todo-comments", "tokyonight", "which-key"}
 	if got := engine.Plugins(s); !reflect.DeepEqual(got, want) {
 		t.Fatalf("plugins %v, want %v", got, want)
 	}
@@ -255,7 +256,11 @@ func TestNoLanguagesSkipsLanguageDecisions(t *testing.T) {
 	for sections[m.sec].id != "languages" {
 		press(m, "enter")
 	}
-	press(m, "1", "2", "3", "4", "5", "enter") // Untick every language.
+	if id := sections[m.sec].questions[m.q].id; id != "tools.provider" {
+		t.Fatalf("Languages should start with the Mason question, at %s", id)
+	}
+	press(m, "enter")                          // Mason.
+	press(m, "1", "2", "3", "4", "6", "enter") // Untick the recommended languages; Lua is sixth.
 	// Syntax highlighting still helps without language servers (Markdown, shell scripts).
 	if id := sections[m.sec].questions[m.q].id; id != "syntax.engine" {
 		t.Fatalf("expected the syntax step, at %s", id)
@@ -271,10 +276,19 @@ func TestNoLanguagesSkipsLanguageDecisions(t *testing.T) {
 	if sections[m.sec].id != "tools" || sections[m.sec].questions[m.q].id != "git.hunks" {
 		t.Fatalf("expected to skip to Git changes, at %s", sections[m.sec].questions[m.q].id)
 	}
-	for _, id := range []string{"formatting.provider", "tools.provider", "completion.native"} {
+	for _, id := range []string{"formatting.provider", "completion.native"} {
 		if _, ok := m.draft.Values[id]; ok {
 			t.Fatalf("%s kept although no language is selected", id)
 		}
+	}
+	// Mason stays chosen: the recommended Tree-sitter parsers still need its compiler.
+	if !slices.Contains(engine.Plugins(m.draft), "mason") {
+		t.Fatal("Mason dropped although Tree-sitter needs its tree-sitter CLI")
+	}
+	next := engine.Clone(m.draft)
+	next.Values["syntax.engine"], next.Values["coding.lint"] = "native", "none"
+	if slices.Contains(engine.Plugins(next), "mason") {
+		t.Fatal("Mason installed although nothing needs a separate program")
 	}
 	if !strings.Contains(summary(m.draft, sections[5]), "skipped") {
 		t.Fatal("formatting not reported as skipped")
@@ -637,5 +651,29 @@ func TestStepsNameConfiguredKeys(t *testing.T) {
 	}
 	if got := engine.KeyLabel(s, "<C-S-x>"); got != "Ctrl+Shift+x" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+// Mason downloads servers and formatters, never runtimes or tools it has no package for.
+func TestMasonProvidesOnlyItsPackages(t *testing.T) {
+	s := engine.NewState()
+	s.Values["tools.provider"], s.Values["formatting.provider"] = "mason", "conform"
+	for _, id := range []string{"java", "swift", "python", "rust"} {
+		s.Values["language."+id+".lsp"] = true
+	}
+	got := engine.MasonProvides(s)
+	for _, want := range []string{"jdtls", "pyright-langserver", "ruff", "rust-analyzer"} {
+		if !got[want] {
+			t.Errorf("Mason should provide %s", want)
+		}
+	}
+	for _, not := range []string{"java", "sourcekit-lsp", "rustfmt", "cargo"} {
+		if got[not] {
+			t.Errorf("Mason cannot provide %s", not)
+		}
+	}
+	s.Values["tools.provider"] = "system"
+	if len(engine.MasonProvides(s)) != 0 {
+		t.Error("nothing is provided without Mason")
 	}
 }

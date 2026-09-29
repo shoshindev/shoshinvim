@@ -166,36 +166,6 @@
       "description": "Generated native configurations or nvim-lspconfig definitions."
     },
     {
-      "id": "language.typescript.lsp",
-      "label": "TypeScript / JavaScript LSP",
-      "type": "boolean",
-      "description": "Use ts_ls; skip Deno projects."
-    },
-    {
-      "id": "language.lua.lsp",
-      "label": "Lua LSP",
-      "type": "boolean",
-      "description": "Use lua_ls with Neovim runtime awareness."
-    },
-    {
-      "id": "language.html.lsp",
-      "label": "HTML LSP",
-      "type": "boolean",
-      "description": "Use the VS Code HTML language server."
-    },
-    {
-      "id": "language.css.lsp",
-      "label": "CSS LSP",
-      "type": "boolean",
-      "description": "Use the VS Code CSS language server."
-    },
-    {
-      "id": "language.json.lsp",
-      "label": "JSON LSP",
-      "type": "boolean",
-      "description": "Use the VS Code JSON language server."
-    },
-    {
       "id": "completion.native",
       "label": "Native LSP completion",
       "type": "boolean",
