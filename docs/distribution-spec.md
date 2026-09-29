@@ -1,5 +1,7 @@
 # ShoshinVim distribution specification
 
+> Staged implementation: see [current alpha coverage and release gates](implementation-status.md). This specification includes planned capabilities; a listed plugin or installation channel does not imply released support.
+
 - Status: planned release and installation contract
 - Product binary: `shoshinvim`
 - Scope: standalone terminal application; Neovim is a target and validation dependency, not the host process

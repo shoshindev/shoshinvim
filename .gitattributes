@@ -1,0 +1,4 @@
+# Keep checkouts byte-identical on every platform: golden fixtures, embedded
+# catalogs and shell scripts must not gain CRLF line endings on Windows.
+* text=auto eol=lf
+*.png binary

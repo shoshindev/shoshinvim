@@ -1,5 +1,7 @@
 # ShoshinVim configuration catalog
 
+> Staged implementation: see [current alpha coverage and release gates](implementation-status.md). This specification includes planned capabilities; a listed plugin or installation channel does not imply released support.
+
 - Status: authoritative product and configuration scope
 - Target: Neovim 0.12+ with version-aware fallbacks where documented
 - Catalog snapshot: 2026-09-28
