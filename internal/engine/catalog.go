@@ -235,22 +235,8 @@ func (c Catalog) Validate(s State) error {
 			}
 		}
 	}
-	seen := map[string]bool{}
-	for _, m := range s.Keymaps {
-		if m.Mode != "n" && m.Mode != "i" && m.Mode != "v" && m.Mode != "t" {
-			return fmt.Errorf("unsupported keymap mode")
-		}
-		if m.Key == "" || len(m.Key) > 100 {
-			return fmt.Errorf("invalid mapping key")
-		}
-		if _, ok := keyActions[m.Action]; !ok {
-			return fmt.Errorf("unsupported mapping action %q", m.Action)
-		}
-		id := m.Mode + ":" + m.Key
-		if seen[id] {
-			return fmt.Errorf("conflicting mapping %s", id)
-		}
-		seen[id] = true
+	if err := validateKeymaps(s); err != nil {
+		return err
 	}
 	if err := validateCustomTheme(s); err != nil {
 		return err

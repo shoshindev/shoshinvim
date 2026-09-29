@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -111,6 +112,48 @@ end, 50)
 assert(found, 'no ` + filetype + ` window')`})
 	}
 
+	// Every shortcut of each style exists, and the commands it calls are defined.
+	for _, style := range []map[string]any{
+		{"keymaps.style": "kickstart", "navigation.picker": "telescope", "navigation.explorer": "neo-tree", "git.hunks": "gitsigns"},
+		{"keymaps.style": "lazyvim", "navigation.picker": "snacks", "navigation.explorer": "snacks", "git.hunks": "mini.diff", "keymaps.leader": "comma"},
+	} {
+		s := NewState()
+		for id, v := range style {
+			s.Values[id] = v
+		}
+		var checks []string
+		for _, k := range EffectiveKeymaps(s) {
+			a, _ := keyAction(k.Action)
+			for _, mode := range k.Mode {
+				checks = append(checks, fmt.Sprintf("assert(vim.fn.maparg(%s, %s) ~= '', %s)", LuaString(k.Key), LuaString(string(mode)), LuaString("missing "+string(mode)+" "+k.Key)))
+			}
+			if cmd, ok := strings.CutPrefix(a.RHS, "<cmd>"); ok && strings.HasPrefix(cmd, "Shoshin") {
+				name := strings.TrimSuffix(cmd, "<CR>")
+				checks = append(checks, fmt.Sprintf("assert(vim.fn.exists(':%s') == 2, 'missing command %s')", name, name))
+			}
+		}
+		leader := map[any]string{"comma": ","}[style["keymaps.leader"]]
+		if leader == "" {
+			leader = " "
+		}
+		checks = append(checks, "assert(vim.g.mapleader == "+LuaString(leader)+", 'leader')", "assert(vim.fn.exists(':ShoshinHelp') == 2, 'guide')")
+		cases = append(cases, choice{"shortcuts " + style["keymaps.style"].(string), style, strings.Join(checks, "\n")})
+	}
+	cases = append(cases,
+		choice{"shortcut command", map[string]any{"keymaps.style": "none"}, "assert(vim.fn.maparg('<leader>L', 'n'):find('Lazy'), 'custom command shortcut')"},
+		choice{"start snacks", map[string]any{"workspace.start_screen": "snacks"}, "assert(require('snacks').config.dashboard.enabled, 'dashboard off')"},
+		choice{"start mini.starter", map[string]any{"workspace.start_screen": "mini.starter"}, "assert(_G.MiniStarter, 'mini.starter not set up')"},
+		choice{"indent blankline", map[string]any{"appearance.indent": "indent-blankline"}, "assert(package.loaded['ibl'], 'ibl not loaded')"},
+		choice{"indent snacks", map[string]any{"appearance.indent": "snacks"}, "assert(require('snacks').config.indent.enabled, 'snacks indent off')"},
+		choice{"indent mini", map[string]any{"appearance.indent": "mini.indentscope"}, "assert(_G.MiniIndentscope, 'mini.indentscope not set up')"},
+		choice{"notify snacks", map[string]any{"appearance.notifications": "snacks"}, "assert(require('snacks').config.notifier.enabled, 'notifier off')"},
+		choice{"notify fidget", map[string]any{"appearance.notifications": "fidget"}, "assert(package.loaded['fidget'], 'fidget not loaded')"},
+		choice{"hints mini.clue", map[string]any{"navigation.shortcuts": "mini.clue", "keymaps.style": "kickstart"}, "assert(_G.MiniClue, 'mini.clue not set up')"},
+		choice{"hints which-key", map[string]any{"navigation.shortcuts": "which-key", "keymaps.style": "lazyvim"}, "assert(package.loaded['which-key'], 'which-key not loaded')"},
+		choice{"detect indent", map[string]any{"editor.detect_indent": "guess-indent"}, "assert(package.loaded['guess-indent'], 'guess-indent not loaded')"},
+		choice{"editor behaviors", map[string]any{"editor.highlight_yank": true, "editor.trim_whitespace": true, "editor.restore_cursor": true, "editor.spell_prose": true},
+			"local events = {}; for _, a in ipairs(vim.api.nvim_get_autocmds({ group = 'ShoshinEditor' })) do events[a.event] = true end; for _, e in ipairs({ 'TextYankPost', 'BufWritePre', 'BufReadPost', 'FileType' }) do assert(events[e], 'missing ' .. e) end"},
+	)
 	swatches := map[string][]string{}
 	swatchLua := `local out = {}
 for _, g in ipairs({ 'Normal', 'Keyword', 'Function', 'String', 'Type', 'Constant' }) do
@@ -127,6 +170,9 @@ io.stdout:write('SWATCH ' .. vim.json.encode(out) .. '\n')`
 				if err := cat.Set(&s, id, v, true); err != nil {
 					t.Fatal(err)
 				}
+			}
+			if c.name == "shortcut command" {
+				s.Keymaps = []Keymap{{Mode: "n", Key: "<leader>L", Action: CommandAction + "Lazy"}}
 			}
 			if len(Plugins(s)) > 0 {
 				s.Values["plugins.manager"] = "lazy"

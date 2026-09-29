@@ -123,7 +123,8 @@ Full-screen viewers show long content with a title, scroll percentage and `esc` 
 | --- | --- | --- |
 | Single choice | Most decisions | `↑↓` or a number selects; Enter or the number confirms. Long lists are grouped under headings (for example plugin themes and built-in themes). |
 | Multiple choice | Languages | `space` or a number toggles `[✓]`; Enter continues. |
-| Form row | Editor settings | All rows on one screen; `←→` cycles a row's value; Enter continues. |
+| Form row | Editor settings | All rows on one screen under group headings (Display, Wrapping, Indentation, Search, Editing, Windows, Timing); `←→` cycles a row's value; Enter continues. |
+| Shortcut list | Your shortcuts (§3.9) | Every shortcut with its source; change, turn off, add or restore. |
 | Text input | Theme repository and colorscheme name (§3.8) | Type and paste freely (`/` and `?` are text here); Enter continues; Esc goes back. |
 
 Every option sets explicit catalog values, so the saved state records each decision even when it matches Neovim's default.
@@ -135,15 +136,16 @@ Every option sets explicit catalog values, so the saved state records each decis
 - Options show `◆ recommended` (or `(recommended)` without color). In the Editor form, a row that differs shows `changed · recommended: <value>`, and `r` restores the recommendation.
 - Recommendations never lock alternatives and never overwrite a saved choice.
 - **What gets recommended:** the option today's leading starter configurations ship (kickstart.nvim, LazyVim, NvChad, AstroNvim), with GitHub stars breaking ties. Each option's plugin line shows the evidence (stars and which of those projects use it), so the reasoning is checkable.
+- **Editor rows** take kickstart.nvim's `init.lua` value where it sets one, otherwise LazyVim's default; the form's help line says so.
 - **Every section offers real alternatives**, including a built-in or "none" choice wherever Neovim can do without a plugin.
 
 ### 3.3 Sections and recommended choices
 
 | Section | Decisions (recommended first) |
 | --- | --- |
-| **Editor** (form, 19 rows) | Line numbers on · Relative numbers off · Wrap off · Indent with spaces · Tab width 2 · Indent width 2 · Search case smart · Replace preview split · Context lines 8 · Context columns 8 · Persistent undo on · Unsaved changes ask · New splits right & below · Mouse all modes · Clipboard shared · Cursor line highlight · Invisible characters trailing spaces · Sign column always · Key timing fast (400 ms / 250 ms) |
-| **Appearance** | Color scheme: Tokyo Night, 25 more theme plugins, 11 themes built into Neovim, or another theme from GitHub (§3.8) · Variant, when the theme has several (light variants marked) · Status line: lualine.nvim / mini.statusline / built in · Open files: bufferline.nvim / barbar.nvim / mini.tabline / no tabs · Popup borders: rounded / square / none |
-| **Workspace** | Keyboard shortcuts: ShoshinVim Space shortcuts (start screen and guide) / Neovim defaults · Shortcut hints: which-key.nvim / none |
+| **Editor** (form, 27 rows) | *Display:* Line numbers on · Relative numbers off · Cursor line highlight · Sign column always · Invisible characters tabs & spaces · Column guide off · Empty lines blank. *Wrapping:* Wrap long lines off · Wrapped lines tidy (break at words, keep indentation). *Indentation:* Indent with spaces · Tab width 2 · Indent width 2 · Detect indentation guess-indent.nvim / off. *Search:* Search case smart · Replace preview split. *Editing:* Persistent undo on · Clipboard shared · Mouse all modes · Highlight on copy on · Reopen at last position on · Trim trailing spaces off · Spell check prose on. *Windows:* New splits right & below · Context lines 10 · Context columns 8 · Unsaved changes ask. *Timing:* Key timing fast (300 ms / 250 ms) |
+| **Appearance** | Color scheme: Tokyo Night, 25 more theme plugins, 11 themes built into Neovim, or another theme from GitHub (§3.8) · Variant, when the theme has several (light variants marked) · Status line: lualine.nvim / mini.statusline / built in · Open files: bufferline.nvim / barbar.nvim / mini.tabline / no tabs · Indent guides: indent-blankline.nvim / Snacks indent / mini.indentscope / none · Notifications: Snacks notifier / fidget.nvim / built in · Popup borders: rounded / square / none |
+| **Workspace** | Shortcut style: kickstart.nvim / LazyVim / Neovim defaults only · Leader key: Space / Comma / Backslash · Your shortcuts (§3.9) · Shortcut hints: which-key.nvim / mini.clue / none · Start screen: Snacks dashboard / mini.starter / none |
 | **Navigation** | Find files and text: Telescope / Snacks picker / fzf-lua / mini.pick / built in · File explorer: neo-tree.nvim / nvim-tree.lua / Snacks explorer / oil.nvim / mini.files / netrw |
 | **Languages** | Which languages: TypeScript & JavaScript, HTML, CSS, JSON, Lua (all recommended) · Completion: blink.cmp / nvim-cmp / built in / off · Errors and warnings: inline / signs only · Server settings: written by ShoshinVim / nvim-lspconfig |
 | **Formatting** | Formatter: conform.nvim (Prettier & StyLua) / language server · When to format: when I ask / every save |
@@ -163,12 +165,15 @@ Implementation details follow from decisions and are never asked:
 - lualine.nvim sets `showmode` off and a global status line (`laststatus` 3); mini.statusline sets `showmode` off; the built-in status line keeps Neovim's defaults.
 - Built-in completion sets `completeopt` and `pumheight`; blink.cmp and nvim-cmp manage their own menus and tell language servers which completion features they support.
 - Choosing a listed theme removes custom-theme settings; with no languages, the completion engine is removed too.
+- The leader key is set whenever a shortcut style or leader is chosen; the LazyVim style also sets the local leader to `\`, as LazyVim does.
+- Configurations saved before the Workspace choices existed keep their behavior: the earlier "Space shortcuts" layout maps to the LazyVim style with Space as leader, the Snacks start screen, indent guides and notifier.
+- Editor behaviors (highlight on copy, trim, reopen at last position, spell check) are autocommands in one `ShoshinEditor` group in `autocmds.lua`.
 - Each plugin's setup runs after lazy.nvim has loaded every plugin, and lazy.nvim keeps the configuration folder on the runtime path, so configurations started with `nvim -u` load completely.
 - `termguicolors` is left to Neovim's own terminal detection.
 
 ### 3.6 Summaries
 
-The review and "Change a section" list summarize each section on one line using short option names, for example `Tokyo Night · Lualine · Buffer tabs · Rounded borders`. The Editor summary reports `19 settings · all recommended` or the number changed.
+The review and "Change a section" list summarize each section on one line using short option names, for example `Tokyo Night · Lualine · Buffer tabs · Rounded borders`. The Editor summary reports `27 settings · all recommended` or the number changed; the Workspace summary includes the number of shortcut changes.
 
 ### 3.7 Transparency
 
@@ -189,6 +194,18 @@ The last color-scheme option, "Another theme from GitHub…", accepts any reposi
 4. The theme is pinned to that commit and stored in a folder named after the repository and commit, so a later commit never collides with it.
 
 The review and Plugins used mark it "not reviewed by ShoshinVim". If it fails to load, Neovim keeps a built-in theme and shows a message. Choosing a listed theme later removes the custom theme settings.
+
+### 3.9 Shortcuts
+
+Shortcuts are credited, visible and editable before anything is written.
+
+- **Styles are copied from their source.** kickstart.nvim's keys come from its `init.lua`; LazyVim's from its published keymap list. Each style option names its source link and how many shortcuts it has. "Neovim defaults only" adds none; Neovim's built-in keys (`grn`, `gra`, `grr`, `gri`, `gO`, `K`, `[d`, `]d`) work in every style and are listed under the shortcut list as a reminder.
+- **Only what works is listed.** A shortcut whose feature is not chosen is dropped, for example Git-change keys when Git changes is off; finder and explorer shortcuts call whichever finder or explorer was chosen.
+- **Your shortcuts** lists every key grouped as Find, Files, Code, Git, Buffers, Windows, Editor and Yours, with its source (`kickstart.nvim`, `LazyVim`, `ShoshinVim` or `yours`). Keys are spelled in words with the chosen leader, for example `Space sf`, `Ctrl+h`, `Shift+h`; modes other than normal are named after the description (`· normal & visual`).
+- Later steps that shortcuts reach name the keys actually configured, for example `Your shortcuts: Space sf find files · Space sg search text in the project` on Find files and text; nothing is named when no style is chosen.
+- **Changing** a key asks for Vim notation (`<leader>ff`, `<C-s>`, `]q`). Turning one off records it as off, so a later style update does not bring it back. **Adding** one picks from the same actions, or "Run a command…" for any Ex command such as `Lazy`. `R` restores the style and removes every change.
+- **Conflicts** are shown under the list: a key that is also the start of a longer key in the same mode, which Neovim runs only after a pause. LazyVim's `gr` is exempt because LazyVim maps it with `nowait`. A key cannot be used twice: changing or adding a key replaces whatever was on it.
+- The generated `keymaps.lua` names the style and its source, then lists shortcuts under `-- From kickstart.nvim`, `-- ShoshinVim additions` and `-- Your shortcuts` headings. ShoshinVim adds only `<leader>?`, the shortcut guide (`:ShoshinHelp`), which lists the keys actually configured. which-key.nvim and mini.clue show the style's group names (for example `Search` for kickstart's `Space s`).
 
 ## 4. Core flows
 
@@ -245,7 +262,7 @@ Saving your configuration
 
 Downloads begin only after "Configuration saved". The result screen then shows one of:
 
-- `✓ Your Neovim is ready`, the exact launch command (see §9.3), and — with Space shortcuts — how to discover them;
+- `✓ Your Neovim is ready`, the exact launch command (see §9.3), and — when shortcuts are configured — how to discover them with the chosen leader (`Space ?` opens the guide);
 - `✓ Saved · N downloads did not finish`, with **Retry failed downloads** offered first;
 - `✗ Your configuration was not saved` and the reason, which states whether previous files were restored or recovery is required.
 
@@ -294,6 +311,8 @@ Enter accepts the bracketed default (the saved or recommended choice), a number 
 | Single choice | `↑↓` or `j k` move · Enter choose · `1`–`9` choose directly · Esc, `←` or `h` back |
 | Multiple choice | `↑↓` move · `space` or a number toggles · Enter continue · Esc back |
 | Editor form | `↑↓` row · `←→` or `h l` change value (`space` cycles forward) · `r` recommended · Enter continue · Esc back |
+| Shortcut list | `↑↓` move · Enter change the key (or continue / add on those rows) · `a` add · `d` or `x` turn off · `R` restore the style · Esc back |
+| Shortcut key or command input | type in Vim notation (`/` and `?` are text) · Enter save · Esc cancel |
 | Menus (welcome, review, result, recovery) | `↑↓` move · Enter choose · `1`–`9` choose directly · Esc back where a previous screen exists |
 | Viewer | `↑↓`, PgUp/PgDn scroll · Esc or `q` close |
 | Palette | type to filter · `↑↓` move · Enter run · Esc close |

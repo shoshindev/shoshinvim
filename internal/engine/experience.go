@@ -1,6 +1,9 @@
 package engine
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 func appearanceLua(s State) string {
 	var b strings.Builder
@@ -61,145 +64,108 @@ end
 end
 `)
 	}
-	if Value(s, "navigation.shortcuts", "native") == "which-key" {
-		b.WriteString(`if not vim.g.shoshinvim_probe then
+	groups := shortcutGroups(s)
+	switch Value(s, "navigation.shortcuts", "native") {
+	case "which-key":
+		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
   local ok, wk = pcall(require, 'which-key')
   if ok then
     local key_names = {}
     for _, key in ipairs({ 'Up', 'Down', 'Left', 'Right', 'C', 'M', 'D', 'S', 'CR', 'Esc', 'ScrollWheelDown', 'ScrollWheelUp', 'NL', 'BS', 'Space', 'Tab', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12' }) do key_names[key] = key end
     wk.setup({ preset = 'modern', delay = 300, icons = { mappings = false, keys = key_names, breadcrumb = '>', separator = '->', group = '+' } })
-    wk.add({ { '<leader>f', group = 'Find' }, { '<leader>b', group = 'Buffers' }, { '<leader>c', group = 'Code' }, { '<leader>g', group = 'Git' }, { '<leader>w', group = 'Windows' }, { '<leader>u', group = 'View' } })
+    wk.add({ %s })
   end
 end
-`)
+`, strings.Join(groups.whichKey, ", "))
+	case "mini.clue":
+		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
+  local ok, clue = pcall(require, 'mini.clue')
+  if ok then clue.setup({
+    triggers = {
+      { mode = 'n', keys = '<Leader>' }, { mode = 'x', keys = '<Leader>' }, { mode = 'n', keys = 'g' }, { mode = 'x', keys = 'g' },
+      { mode = 'n', keys = '[' }, { mode = 'n', keys = ']' }, { mode = 'n', keys = '<C-w>' }, { mode = 'n', keys = 'z' },
+      { mode = 'n', keys = "'" }, { mode = 'n', keys = '"' }, { mode = 'i', keys = '<C-r>' },
+    },
+    clues = { clue.gen_clues.g(), clue.gen_clues.marks(), clue.gen_clues.registers(), clue.gen_clues.windows(), clue.gen_clues.z(), %s },
+    window = { delay = 300 },
+  }) end
+end
+`, strings.Join(groups.miniClue, ", "))
 	}
 	return b.String()
 }
 
-func snacksOptions(s State) string {
-	// Snacks' picker and explorer are only switched on when chosen, so they never
-	// compete with another finder or explorer (for example to open folders).
-	picker := Lua(Value(s, "navigation.picker", "native") == "snacks")
-	explorer := Lua(Value(s, "navigation.explorer", "native") == "snacks")
-	if Value(s, "experience.layout", "native") != "rich" {
-		return "{ picker = { enabled = " + picker + " }, explorer = { enabled = " + explorer + " } }"
+type groupLists struct{ whichKey, miniClue []string }
+
+// shortcutGroups names the leader groups of the chosen style (for example Search).
+func shortcutGroups(s State) groupLists {
+	var out groupLists
+	st, _ := keymapStyle(Value(withLegacyWorkspace(s), "keymaps.style", "none").(string))
+	for _, g := range st.Groups {
+		out.whichKey = append(out.whichKey, fmt.Sprintf("{ %s, group = %s }", LuaString(g[0]), LuaString(g[1])))
+		out.miniClue = append(out.miniClue, fmt.Sprintf("{ mode = 'n', keys = %s, desc = %s }", LuaString(strings.ReplaceAll(g[0], "<leader>", "<Leader>")), LuaString("+"+g[1])))
 	}
-	return `{ picker = { enabled = ` + picker + `, prompt = '> ', icons = { files = { enabled = false } } },
- explorer = { enabled = ` + explorer + ` }, input = { enabled = true }, indent = { enabled = true },
- notifier = { enabled = true, timeout = 3000 },
- dashboard = { enabled = true, preset = {
+	return out
+}
+
+// snacksOptions switches on only the parts of snacks.nvim that were chosen, so it
+// never competes with another plugin for the same job.
+func snacksOptions(s State) string {
+	on := func(id, value string, fallback any) string { return Lua(Value(s, id, fallback) == value) }
+	var b strings.Builder
+	fmt.Fprintf(&b, "{ picker = { enabled = %s, prompt = '> ', icons = { files = { enabled = false } } },\n", on("navigation.picker", "snacks", "native"))
+	fmt.Fprintf(&b, " explorer = { enabled = %s }, indent = { enabled = %s },\n", on("navigation.explorer", "snacks", "native"), on("appearance.indent", "snacks", "none"))
+	notify := on("appearance.notifications", "snacks", "none")
+	fmt.Fprintf(&b, " input = { enabled = %s }, notifier = { enabled = %s, timeout = 3000 },\n", notify, notify)
+	if Value(s, "workspace.start_screen", "none") == "snacks" {
+		b.WriteString(` dashboard = { enabled = true, preset = {
    header = 'S H O S H I N\n\nA fresh mind. A focused workspace.',
    keys = {
-     { icon = '', key = 'f', desc = 'Find a file', action = ':ShoshinFiles' },
-     { icon = '', key = 'e', desc = 'Explore this project', action = ':ShoshinExplore' },
-     { icon = '', key = 'r', desc = 'Recent files', action = ':ShoshinRecent' },
-     { icon = '', key = 'n', desc = 'New file', action = ':ene | startinsert' },
-     { icon = '', key = '?', desc = 'Shortcut guide', action = ':ShoshinHelp' },
-     { icon = '', key = 'q', desc = 'Quit', action = ':qa' },
-   },
- }, sections = { { section = 'header' }, { section = 'keys', gap = 1, padding = 1 }, { text = 'Press Space in a file to discover commands.', align = 'center', padding = 1 } } },
- }`
+`)
+		for _, item := range startItems(s) {
+			fmt.Fprintf(&b, "     { icon = '', key = %s, desc = %s, action = %s },\n", LuaString(item.key), LuaString(item.label), LuaString(":"+item.command))
+		}
+		b.WriteString(`   },
+ }, sections = { { section = 'header' }, { section = 'keys', gap = 1, padding = 1 }, { text = 'Press your leader key in a file to discover shortcuts.', align = 'center', padding = 1 } } },
+`)
+	}
+	b.WriteString(" }")
+	return b.String()
 }
 
-// sidebarOnStart opens a sidebar explorer without taking focus; other explorers stay closed.
-func sidebarOnStart(s State) string {
-	switch Value(s, "navigation.explorer", "native") {
-	case "snacks":
-		return "local ok, ui = pcall(require, 'snacks'); if ok then ui.explorer({ focus = false }) end"
-	case "neo-tree":
-		return "pcall(vim.cmd, 'Neotree show')"
-	case "nvim-tree":
-		return "local ok, api = pcall(require, 'nvim-tree.api'); if ok then api.tree.toggle({ focus = false, find_file = true }) end"
+type startItem struct{ key, label, command string }
+
+// startItems are the start screen's entries; the guide appears only when shortcuts exist.
+func startItems(s State) []startItem {
+	items := []startItem{{"f", "Find a file", "ShoshinFiles"}, {"e", "Explore this project", "ShoshinExplore"}, {"r", "Recent files", "ShoshinRecent"}, {"n", "New file", "enew"}}
+	if len(EffectiveKeymaps(s)) > 0 {
+		items = append(items, startItem{"?", "Shortcut guide", "ShoshinHelp"})
 	}
-	return "-- The chosen explorer is not a sidebar."
+	return append(items, startItem{"q", "Quit", "qa"})
 }
 
-func workspaceLua(s State) string {
-	if Value(s, "experience.layout", "native") != "rich" {
-		return ""
+// interfaceLua sets up the start screen, indent guides and notifications that are not
+// part of snacks.nvim.
+func interfaceLua(s State) string {
+	var b strings.Builder
+	setup := func(module, call string) {
+		fmt.Fprintf(&b, "if not vim.g.shoshinvim_probe then\n  local ok, m = pcall(require, %s)\n  if ok then %s end\nend\n", LuaString(module), call)
 	}
-	native := ""
-	if Enabled(s, "completion.native") {
-		native = "vim.keymap.set('i', '<C-space>', function() vim.lsp.completion.get() end, { desc = 'Complete from language server' })\n"
+	if Value(s, "workspace.start_screen", "none") == "mini.starter" {
+		var items []string
+		for _, item := range startItems(s) {
+			items = append(items, fmt.Sprintf("{ name = %s, action = %s, section = 'Start' }", LuaString(item.label), LuaString(item.command)))
+		}
+		setup("mini.starter", "m.setup({ header = 'S H O S H I N\\n\\nA fresh mind. A focused workspace.', items = { "+strings.Join(items, ", ")+" }, footer = 'Press your leader key in a file to discover shortcuts.' })")
 	}
-	return native + `-- Task-oriented shortcuts. User mappings load after these defaults.
-local map = function(key, action, description) vim.keymap.set('n', key, action, { desc = description, silent = true }) end
-local snacks = function(action, fallback)
-  return function() local ok, ui = pcall(require, 'snacks'); if ok then action(ui) elseif fallback then fallback() else vim.notify('This feature is pending installation. Open ShoshinVim and /retry.') end end
-end
-map('<leader><space>', '<cmd>ShoshinFiles<CR>', 'Find file')
-map('<leader>ff', '<cmd>ShoshinFiles<CR>', 'Find file')
-map('<leader>fg', '<cmd>ShoshinGrep<CR>', 'Search project text')
-map('<leader>fr', '<cmd>ShoshinRecent<CR>', 'Recent files')
-map('<leader>fb', '<cmd>ShoshinBuffers<CR>', 'Find buffer')
-map('<leader>e', '<cmd>ShoshinExplore<CR>', 'Project explorer')
-map('<S-h>', '<cmd>bprevious<CR>', 'Previous buffer')
-map('<S-l>', '<cmd>bnext<CR>', 'Next buffer')
-map('<leader>bd', snacks(function(ui) ui.bufdelete() end, function() vim.cmd.bdelete() end), 'Close buffer')
-map('<leader>cf', '<cmd>ShoshinFormat<CR>', 'Format file')
-map('<leader>ca', vim.lsp.buf.code_action, 'Code action')
-map('<leader>cr', vim.lsp.buf.rename, 'Rename symbol')
-map('<leader>cd', vim.diagnostic.open_float, 'Line diagnostics')
-map('<leader>cl', '<cmd>ShoshinDiagnostics<CR>', 'Project diagnostics')
-map('gd', vim.lsp.buf.definition, 'Go to definition')
-map('gr', vim.lsp.buf.references, 'Find references')
-map('K', vim.lsp.buf.hover, 'Documentation')
-map('<leader>gg', '<cmd>ShoshinGitStatus<CR>', 'Git status')
-map('<leader>gd', function() local ok, git = pcall(require, 'gitsigns'); if ok then git.diffthis() else vim.cmd('!git diff') end end, 'Git diff')
-map('<leader>gp', function()
-  local ok, git = pcall(require, 'gitsigns')
-  if ok then return git.preview_hunk() end
-  local has_diff, diff = pcall(require, 'mini.diff')
-  if has_diff then diff.toggle_overlay() end
-end, 'Preview Git hunk')
-map('<leader>ws', '<cmd>split<CR>', 'Split below')
-map('<leader>wv', '<cmd>vsplit<CR>', 'Split right')
-map('<leader>wd', '<cmd>close<CR>', 'Close window')
-map('<C-h>', '<C-w>h', 'Focus left window')
-map('<C-j>', '<C-w>j', 'Focus window below')
-map('<C-k>', '<C-w>k', 'Focus window above')
-map('<C-l>', '<C-w>l', 'Focus right window')
-map('<leader>uw', function() vim.wo.wrap = not vim.wo.wrap end, 'Toggle line wrapping')
-map('<leader>t', snacks(function(ui) ui.terminal.toggle() end, function() vim.cmd.terminal() end), 'Toggle terminal')
-map('<Esc>', '<cmd>nohlsearch<CR>', 'Clear search highlight')
-vim.keymap.set('i', '<C-j>', function() return vim.fn.pumvisible() == 1 and '<C-n>' or '<C-j>' end, { expr = true, desc = 'Next completion' })
-vim.keymap.set('i', '<C-k>', function() return vim.fn.pumvisible() == 1 and '<C-p>' or '<C-k>' end, { expr = true, desc = 'Previous completion' })
-vim.keymap.set('s', '<Tab>', function() if vim.snippet.active({ direction = 1 }) then vim.snippet.jump(1) end end, { desc = 'Next snippet field' })
-vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Leave terminal mode' })
-vim.api.nvim_create_user_command('ShoshinHelp', function()
-  local lines = {
-    'SHOSHIN  /  WORKSPACE GUIDE', '',
-    'Space opens your command groups. Pause to discover shortcuts.', '',
-    'FIND      Space Space   files       Space fg   project text',
-    '          Space e       explorer    Space fr   recent files',
-    'CODE      gd            definition  K          documentation',
-    '          Space ca      actions     Space cr   rename symbol',
-    '          Space cf      format      Space cd   diagnostics',
-    'BUFFERS   Shift H / L   switch      Space bd   close file',
-    'WINDOWS   Ctrl h/j/k/l  focus       Space wv   split right',
-    'GIT       Space gg      status      Space gp   preview hunk',
-    'TERMINAL  Space t       toggle      Esc Esc    normal mode', '',
-    'COMPLETION  Ctrl Space  request     Ctrl n/p   choose',
-    '            Ctrl y      accept     Ctrl e     dismiss', '',
-    'Customize: run shoshinvim. Manual Lua belongs in user.lua.',
-    'This Neovim configuration works without ShoshinVim installed.', '',
-    'Press q to close this guide.',
-  }
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.bo[buf].modifiable = false
-  local width = math.min(74, vim.o.columns - 4)
-  local height = math.min(#lines, vim.o.lines - 4)
-  vim.api.nvim_open_win(buf, true, { relative = 'editor', width = width, height = height, row = math.max(0, math.floor((vim.o.lines-height)/2)-1), col = math.max(0, math.floor((vim.o.columns-width)/2)), border = 'rounded', title = ' Workspace guide ', title_pos = 'center' })
-  vim.keymap.set('n', 'q', '<cmd>close<CR>', { buffer = buf, silent = true })
-end, {})
-map('<leader>?', '<cmd>ShoshinHelp<CR>', 'Workspace guide')
-if not vim.g.shoshinvim_probe then
-  vim.api.nvim_create_autocmd('VimEnter', { once = true, callback = function()
-    if #vim.api.nvim_list_uis() > 0 and vim.fn.argc() > 0 and vim.o.columns >= 100 then
-      vim.schedule(function() ` + sidebarOnStart(s) + ` end)
-    end
-  end })
-end
-`
+	switch Value(s, "appearance.indent", "none") {
+	case "indent-blankline":
+		setup("ibl", "m.setup({ indent = { char = '│' }, scope = { enabled = false } })")
+	case "mini.indentscope":
+		setup("mini.indentscope", "m.setup({ symbol = '│' })")
+	}
+	if Value(s, "appearance.notifications", "none") == "fidget" {
+		setup("fidget", "m.setup({})")
+	}
+	return b.String()
 }

@@ -19,6 +19,8 @@ var finderCommands = []struct{ name, desc string }{
 	{"ShoshinCommands", "Search commands"},
 	{"ShoshinResume", "Reopen the last search"},
 	{"ShoshinGitStatus", "Changed files (Git)"},
+	{"ShoshinBufferLines", "Search in this file"},
+	{"ShoshinConfigFiles", "Find Neovim config files"},
 }
 
 // Implementations per finder: module to require, then a Lua call on it named `m`.
@@ -31,21 +33,25 @@ var finders = map[string]struct {
 		"ShoshinFiles": "m.picker.files()", "ShoshinGrep": "m.picker.grep()", "ShoshinGrepWord": "m.picker.grep_word()",
 		"ShoshinRecent": "m.picker.recent()", "ShoshinBuffers": "m.picker.buffers()", "ShoshinDiagnostics": "m.picker.diagnostics()",
 		"ShoshinHelpPages": "m.picker.help()", "ShoshinKeymaps": "m.picker.keymaps()", "ShoshinCommands": "m.picker.commands()",
-		"ShoshinResume": "m.picker.resume()", "ShoshinGitStatus": "m.picker.git_status()"}},
+		"ShoshinResume": "m.picker.resume()", "ShoshinGitStatus": "m.picker.git_status()", "ShoshinBufferLines": "m.picker.lines()",
+		"ShoshinConfigFiles": "m.picker.files({ cwd = config_root() })"}},
 	"telescope": {"telescope.builtin", map[string]string{
 		"ShoshinFiles": "m.find_files()", "ShoshinGrep": "m.live_grep()", "ShoshinGrepWord": "m.grep_string()",
 		"ShoshinRecent": "m.oldfiles()", "ShoshinBuffers": "m.buffers()", "ShoshinDiagnostics": "m.diagnostics()",
 		"ShoshinHelpPages": "m.help_tags()", "ShoshinKeymaps": "m.keymaps()", "ShoshinCommands": "m.commands()",
-		"ShoshinResume": "m.resume()", "ShoshinGitStatus": "m.git_status()"}},
+		"ShoshinResume": "m.resume()", "ShoshinGitStatus": "m.git_status()", "ShoshinBufferLines": "m.current_buffer_fuzzy_find()",
+		"ShoshinConfigFiles": "m.find_files({ cwd = config_root() })"}},
 	"fzf-lua": {"fzf-lua", map[string]string{
 		"ShoshinFiles": "m.files()", "ShoshinGrep": "m.live_grep()", "ShoshinGrepWord": "m.grep_cword()",
 		"ShoshinRecent": "m.oldfiles()", "ShoshinBuffers": "m.buffers()", "ShoshinDiagnostics": "m.diagnostics_workspace()",
 		"ShoshinHelpPages": "m.helptags()", "ShoshinKeymaps": "m.keymaps()", "ShoshinCommands": "m.commands()",
-		"ShoshinResume": "m.resume()", "ShoshinGitStatus": "m.git_status()"}},
+		"ShoshinResume": "m.resume()", "ShoshinGitStatus": "m.git_status()", "ShoshinBufferLines": "m.blines()",
+		"ShoshinConfigFiles": "m.files({ cwd = config_root() })"}},
 	"mini.pick": {"mini.pick", map[string]string{
 		"ShoshinFiles": "m.builtin.files()", "ShoshinGrep": "m.builtin.grep_live()",
 		"ShoshinGrepWord": "m.builtin.grep({ pattern = vim.fn.expand('<cword>') })", "ShoshinBuffers": "m.builtin.buffers()",
-		"ShoshinHelpPages": "m.builtin.help()", "ShoshinResume": "m.builtin.resume()"}},
+		"ShoshinHelpPages": "m.builtin.help()", "ShoshinResume": "m.builtin.resume()",
+		"ShoshinConfigFiles": "m.builtin.files(nil, { source = { cwd = config_root() } })"}},
 }
 
 // Built-in behavior, used without a finder plugin and where a finder lacks a feature.
@@ -61,6 +67,8 @@ var nativeCommands = map[string]string{
 	"ShoshinCommands":    "vim.api.nvim_feedkeys(':', 'n', false)",
 	"ShoshinResume":      "vim.notify('Resume needs a finder plugin', vim.log.levels.INFO)",
 	"ShoshinGitStatus":   "vim.cmd('!git status --short')",
+	"ShoshinBufferLines": "vim.api.nvim_feedkeys('/', 'n', false)",
+	"ShoshinConfigFiles": "vim.cmd.edit(vim.fn.fnameescape(config_root()))",
 }
 
 // Explorers: how to open each one, and setup to run once it is loaded.
@@ -79,6 +87,7 @@ func navigationLua(s State) string {
 	finder, hasFinder := finders[picker]
 	b.WriteString(`-- Search commands. Shortcuts call these, so they work with any finder.
 local function command(name, run, desc) vim.api.nvim_create_user_command(name, run, { desc = desc }) end
+local function config_root() return vim.g.shoshinvim_config_root or vim.fn.stdpath('config') end
 local function with(module, run)
   return function()
     local ok, m = pcall(require, module)
@@ -108,6 +117,50 @@ end
 		fmt.Fprintf(&b, "command(\"ShoshinExplore\", with(%s, function(m) %s end), \"Project explorer\")\n", LuaString(e.module), e.open)
 	} else {
 		b.WriteString("command(\"ShoshinExplore\", function() vim.cmd.Explore() end, \"Project explorer\")\n")
+	}
+	b.WriteString(`command("ShoshinTerminal", function()
+  local ok, snacks = pcall(require, 'snacks')
+  if ok then snacks.terminal.toggle() else vim.cmd('botright 12split | terminal') end
+end, "Terminal")
+command("ShoshinBufferDelete", function()
+  local ok, snacks = pcall(require, 'snacks')
+  if ok then snacks.bufdelete() else vim.cmd.bdelete() end
+end, "Close buffer")
+`)
+	return b.String()
+}
+
+// gitLua gives every Git choice the same hunk commands, so shortcuts work with either.
+func gitLua(s State) string {
+	var calls map[string]string
+	module := ""
+	switch Value(s, "git.hunks", "native") {
+	case "gitsigns":
+		module = "gitsigns"
+		calls = map[string]string{
+			"ShoshinHunkNext":    "if vim.wo.diff then vim.cmd.normal({ ']c', bang = true }) else m.nav_hunk('next') end",
+			"ShoshinHunkPrev":    "if vim.wo.diff then vim.cmd.normal({ '[c', bang = true }) else m.nav_hunk('prev') end",
+			"ShoshinHunkPreview": "m.preview_hunk()", "ShoshinHunkStage": "m.stage_hunk()", "ShoshinHunkReset": "m.reset_hunk()",
+			"ShoshinBlameLine": "m.blame_line({ full = true })", "ShoshinGitDiff": "m.diffthis()",
+		}
+	case "mini.diff":
+		module = "mini.diff"
+		calls = map[string]string{
+			"ShoshinHunkNext": "m.goto_hunk('next')", "ShoshinHunkPrev": "m.goto_hunk('prev')",
+			"ShoshinHunkPreview": "m.toggle_overlay()", "ShoshinGitDiff": "m.toggle_overlay()",
+			"ShoshinHunkStage": "local l = vim.fn.line('.'); m.do_hunks(0, 'apply', { line_start = l, line_end = l })",
+			"ShoshinHunkReset": "local l = vim.fn.line('.'); m.do_hunks(0, 'reset', { line_start = l, line_end = l })",
+			"ShoshinBlameLine": "vim.notify('Blame needs gitsigns.nvim', vim.log.levels.INFO)",
+		}
+	default:
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("-- Git change commands; shortcuts call these, so they work with gitsigns or mini.diff.\n")
+	b.WriteString("local function command(name, run, desc) vim.api.nvim_create_user_command(name, run, { desc = desc }) end\n")
+	for _, c := range []struct{ name, desc string }{{"ShoshinHunkNext", "Next Git change"}, {"ShoshinHunkPrev", "Previous Git change"}, {"ShoshinHunkPreview", "Preview Git change"},
+		{"ShoshinHunkStage", "Stage Git change"}, {"ShoshinHunkReset", "Undo Git change"}, {"ShoshinBlameLine", "Blame this line"}, {"ShoshinGitDiff", "Diff this file"}} {
+		fmt.Fprintf(&b, "command(%s, function()\n  local ok, m = pcall(require, %s)\n  if ok then %s end\nend, %s)\n", LuaString(c.name), LuaString(module), calls[c.name], LuaString(c.desc))
 	}
 	return b.String()
 }

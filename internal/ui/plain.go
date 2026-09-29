@@ -76,6 +76,24 @@ func RunPlain(target, bin string, in io.Reader, out io.Writer) error {
 			shown = st.sec
 		}
 		fmt.Fprintf(out, "\n%s — %s\n", q.title, q.help)
+		if hint := shortcutHint(s, q.actions); hint != "" {
+			fmt.Fprintln(out, hint)
+		}
+		if q.keymaps {
+			for _, k := range engine.EffectiveKeymaps(s) {
+				fmt.Fprintf(out, "  %-18s %-46s %s\n", engine.KeyLabel(s, k.Key), shortcutLabel(k), k.Source)
+			}
+			line, ok := read("Press Enter to keep these (customize them in the full-screen setup or with plan --state), b to go back: ")
+			if !ok {
+				return ended()
+			}
+			if strings.EqualFold(line, "b") {
+				i, dir = i-1, -1
+				continue
+			}
+			i, dir = i+1, 1
+			continue
+		}
 		if q.input != nil {
 			def, _ := s.Values[q.input.setting].(string)
 			line, ok := read(q.title + " (" + q.input.placeholder + ") [" + def + "]: ")

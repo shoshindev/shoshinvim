@@ -187,6 +187,12 @@ func (m *Model) hints() string {
 		return "↑↓ move · ←→ change · r recommended · enter continue · esc back · / commands"
 	case m.inputQuestion():
 		return "type " + sections[m.sec].questions[m.q].input.placeholder + " · enter continue · esc back · paste works"
+	case m.shortcutTyping():
+		return "type in Vim notation · enter set · esc cancel"
+	case m.screen == stepScreen && !sections[m.sec].form && sections[m.sec].questions[m.q].keymaps && m.keyMode == "action":
+		return "↑↓ move · enter choose · esc cancel"
+	case m.screen == stepScreen && !sections[m.sec].form && sections[m.sec].questions[m.q].keymaps:
+		return "↑↓ move · enter change key · d turn off · a add · R restore style · esc back"
 	case m.screen == stepScreen && m.question().multi:
 		return "↑↓ move · space toggle · enter continue · esc back · / commands"
 	case m.screen == stepScreen:
@@ -341,6 +347,12 @@ func (m *Model) questionContent(cw, h int) []string {
 	}
 	lines = append(lines, m.th.Bold(q.title))
 	lines = append(lines, wrap(m.th.Dim(q.help), cw)...)
+	if hint := shortcutHint(m.draft, q.actions); hint != "" {
+		lines = append(lines, wrap(m.th.Dim(hint), cw)...)
+	}
+	if q.keymaps {
+		return append(lines, m.shortcutContent(cw, h-len(lines)-1)...)
+	}
 	if q.input != nil {
 		lines = append(lines, "", m.input.View())
 		if m.busy {
@@ -364,7 +376,10 @@ func (m *Model) questionContent(cw, h int) []string {
 // optionLines shows each option with its detail and, for plugins, where it comes from.
 // It compresses in steps when the list does not fit, keeping the cursor visible.
 func (m *Model) optionLines(q question, cw, h int) []string {
-	type block struct{ heading, label, detail, plugin string }
+	type block struct {
+		heading, label, detail string
+		plugin                 []string
+	}
 	blocks := make([]block, len(q.options))
 	swatchColumn := 0
 	for _, o := range q.options {
@@ -401,8 +416,15 @@ func (m *Model) optionLines(q question, cw, h int) []string {
 		if o.detail != "" {
 			b.detail = pad + m.th.Dim(ansi.Truncate(o.detail, max(10, cw-len(pad)), "…"))
 		}
-		if line := pluginLine(o.plugin); line != "" {
-			b.plugin = pad + ansi.Truncate(m.th.Blue(line), max(10, cw-len(pad)), "…")
+		line := pluginLine(o.plugin)
+		if line == "" {
+			line = sourceLine(o.source)
+		}
+		if line != "" {
+			// Where an option comes from is never cut off; long lines wrap instead.
+			for _, part := range wrap(line, cw-len(pad)) {
+				b.plugin = append(b.plugin, pad+m.th.Blue(part))
+			}
 		}
 		blocks[i] = b
 	}
@@ -421,11 +443,10 @@ func (m *Model) optionLines(q question, cw, h int) []string {
 			}
 			lines = append(lines, b.label)
 			if mode < 2 || i == m.cursor {
-				for _, extra := range []string{b.detail, b.plugin} {
-					if extra != "" {
-						lines = append(lines, extra)
-					}
+				if b.detail != "" {
+					lines = append(lines, b.detail)
 				}
+				lines = append(lines, b.plugin...)
 			}
 			if mode == 0 && i < len(blocks)-1 {
 				lines = append(lines, "")
@@ -449,9 +470,6 @@ func (m *Model) pluginReasons() map[string]string {
 		}
 	}
 	for _, sec := range sections {
-		if sec.form {
-			continue
-		}
 		for _, q := range sec.questions {
 			if q.skipped(m.draft) {
 				continue
@@ -522,6 +540,16 @@ func pluginName(repository string) string {
 	return name
 }
 
+// sourceLine names where a keymap style comes from.
+func sourceLine(id string) string {
+	st, ok := engine.KeymapStyleFor(id)
+	if !ok {
+		return ""
+	}
+	count := len(engine.EffectiveKeymaps(engine.State{Values: map[string]any{"keymaps.style": id, "git.hunks": "gitsigns"}}))
+	return fmt.Sprintf("Copied from %s · %d shortcuts", st.URL, count)
+}
+
 // pluginLine names a plugin's source, popularity, activity, license and users.
 func pluginLine(id string) string {
 	p, ok := engine.PluginInfo(id)
@@ -582,7 +610,17 @@ func (m *Model) formContent(cw, h int) []string {
 	labelW += 2
 	valueW += 5
 	var rows []string
+	focus := 0
 	for j, q := range sec.questions {
+		if q.group != "" && (j == 0 || q.group != sec.questions[j-1].group) {
+			if len(rows) > 0 {
+				rows = append(rows, "")
+			}
+			rows = append(rows, m.th.Dim(strings.ToUpper(q.group)))
+		}
+		if j == m.cursor {
+			focus = len(rows)
+		}
 		idx := m.form[j]
 		value := "custom"
 		if idx >= 0 {
@@ -615,8 +653,15 @@ func (m *Model) formContent(cw, h int) []string {
 	}
 	help := append([]string{""}, wrap(m.th.Dim(q.help), cw)...)
 	help = append(help, m.th.Dim("← ")+strings.Join(choices, m.th.Dim(" · "))+m.th.Dim(" →"))
+	if idx := m.form[m.cursor]; idx >= 0 {
+		if line := pluginLine(q.options[idx].plugin); line != "" {
+			for _, part := range wrap(line, cw) {
+				help = append(help, m.th.Blue(part))
+			}
+		}
+	}
 	avail := h - len(lines) - len(help)
-	lines = append(lines, window(rows, avail, m.cursor)...)
+	lines = append(lines, window(rows, avail, focus)...)
 	return append(lines, help...)
 }
 
@@ -847,9 +892,10 @@ func (m *Model) doneContent(cw, h int) []string {
 		for _, part := range strings.Split(ansi.Wrap(launchCommand(m.target), max(10, cw-2), "/"), "\n") {
 			lines = append(lines, "  "+m.th.Accent(part))
 		}
-		if engine.Value(m.draft, "experience.layout", "native") == "rich" {
+		if len(engine.EffectiveKeymaps(m.draft)) > 0 {
+			leader := map[string]string{"space": "Space", "comma": "Comma", "backslash": "Backslash"}[fmt.Sprint(engine.Value(m.draft, "keymaps.leader", "space"))]
 			lines = append(lines, "")
-			lines = append(lines, wrap(m.th.Dim("Inside Neovim, press Space and pause to discover shortcuts; Space ? opens the guide."), cw)...)
+			lines = append(lines, wrap(m.th.Dim("Inside Neovim, press "+leader+" and pause to discover shortcuts; "+leader+" ? opens the guide."), cw)...)
 		}
 	}
 	if len(m.log) > 0 {

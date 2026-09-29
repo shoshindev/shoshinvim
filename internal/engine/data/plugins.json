@@ -526,5 +526,64 @@
     "stars": 232,
     "updated": "2026-07",
     "license": "MIT"
+  },
+  "mini.starter": {
+    "repository": "nvim-mini/mini.starter",
+    "revision": "25de4998197d59673f1918968a8f4060195edca0",
+    "reviewed": "2026-09-29",
+    "stars": 98,
+    "updated": "2026-07",
+    "license": "MIT"
+  },
+  "indent-blankline": {
+    "repository": "lukas-reineke/indent-blankline.nvim",
+    "revision": "f1e186e44d3b7f9ae918008e2c28ce37c6023d2d",
+    "reviewed": "2026-09-29",
+    "stars": 4996,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "NvChad",
+      "kickstart (optional)"
+    ]
+  },
+  "fidget": {
+    "repository": "j-hui/fidget.nvim",
+    "revision": "9e0201673e08e997e7cf52afca5565c70bd117f3",
+    "reviewed": "2026-09-29",
+    "stars": 2599,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "kickstart"
+    ]
+  },
+  "guess-indent": {
+    "repository": "NMAC427/guess-indent.nvim",
+    "revision": "84a4987ff36798c2fc1169cbaff67960aed9776f",
+    "reviewed": "2026-09-29",
+    "stars": 666,
+    "updated": "2025-03",
+    "license": "MIT",
+    "used_by": [
+      "kickstart",
+      "AstroNvim"
+    ]
+  },
+  "mini.clue": {
+    "repository": "nvim-mini/mini.clue",
+    "revision": "1c136d62729c8c3b0c2d91379bc37efac15d916e",
+    "reviewed": "2026-09-29",
+    "stars": 106,
+    "updated": "2026-09",
+    "license": "MIT"
+  },
+  "mini.indentscope": {
+    "repository": "nvim-mini/mini.indentscope",
+    "revision": "92fbaf895f83c59575ec599df532b297ebf62b14",
+    "reviewed": "2026-09-29",
+    "stars": 337,
+    "updated": "2026-07",
+    "license": "MIT"
   }
 }

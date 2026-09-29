@@ -119,6 +119,10 @@ type Model struct {
 	paletteOpen, settingOpen bool
 	input                    textinput.Model
 
+	keyMode   string // Shortcut editor: "" list, "key" typing a key, "action" picking, "command" typing a command.
+	keyTarget *engine.EffectiveKeymap
+	keyAdd    string // Action being added.
+
 	notice    string
 	noticeBad bool
 	quitArmed bool
@@ -260,6 +264,12 @@ func (m *Model) inputQuestion() bool {
 
 func (m *Model) loadQuestion() {
 	q := m.question()
+	m.keyMode, m.keyTarget, m.keyAdd = "", nil, ""
+	if q.keymaps {
+		m.input.Blur()
+		m.cursor = 0
+		return
+	}
 	if q.input != nil {
 		value, _ := m.draft.Values[q.input.setting].(string)
 		m.input.SetValue(value)
@@ -598,6 +608,8 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		return nil
 	case m.inputQuestion():
 		return m.inputKey(msg) // Typed text may contain / and ?.
+	case m.shortcutTyping():
+		return m.shortcutInputKey(msg) // Keys such as <leader>/ contain / too.
 	}
 	switch key {
 	case "/":
@@ -610,6 +622,9 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		return nil
 	}
 	if m.screen == stepScreen {
+		if !sections[m.sec].form && sections[m.sec].questions[m.q].keymaps {
+			return m.shortcutKey(key)
+		}
 		if sections[m.sec].form {
 			return m.formKey(key)
 		}

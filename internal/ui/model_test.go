@@ -113,7 +113,7 @@ func TestEverySectionAndQuestionHasARecommendation(t *testing.T) {
 	}
 	for _, sec := range sections {
 		for _, q := range sec.questions {
-			if q.input != nil || q.skipped(s) {
+			if q.input != nil || q.keymaps || q.skipped(s) {
 				continue
 			}
 			q = q.resolve(s)
@@ -144,7 +144,7 @@ func TestRecommendedChoicesInstallTheExpectedPlugins(t *testing.T) {
 	if err = c.Validate(s); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"blink.cmp", "bufferline", "conform", "gitsigns", "lualine", "mason", "neo-tree", "nui", "plenary", "snacks", "telescope", "tokyonight", "which-key"}
+	want := []string{"blink.cmp", "bufferline", "conform", "gitsigns", "guess-indent", "indent-blankline", "lualine", "mason", "neo-tree", "nui", "plenary", "snacks", "telescope", "tokyonight", "which-key"}
 	if got := engine.Plugins(s); !reflect.DeepEqual(got, want) {
 		t.Fatalf("plugins %v, want %v", got, want)
 	}
@@ -162,7 +162,7 @@ func TestEveryPluginIsExplained(t *testing.T) {
 	}
 	for _, sec := range sections {
 		for _, q := range sec.questions {
-			if q.input != nil || q.multi {
+			if q.input != nil || q.multi || q.keymaps {
 				continue
 			}
 			for _, o := range q.resolve(base).options {
@@ -342,7 +342,7 @@ func TestPlainModeAsksTheSameQuestions(t *testing.T) {
 	needNeovim(t)
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
 	var out bytes.Buffer
-	answers := strings.Repeat("\n", 40) // Accept every recommendation, then quit at the review.
+	answers := strings.Repeat("\n", 90) // Accept every recommendation, then quit at the review.
 	err := RunPlain(filepath.Join(t.TempDir(), "nvim"), "", strings.NewReader(answers+"q\n"), &out)
 	if err != nil {
 		t.Fatal(err, out.String())
@@ -487,5 +487,132 @@ func TestCustomThemeFromGitHub(t *testing.T) {
 	}
 	if _, ok := next.Values["appearance.custom_theme.repository"]; ok || m.catalog.Validate(next) != nil {
 		t.Fatal("custom theme details kept after choosing a listed theme")
+	}
+}
+
+func keyFor(keys []engine.EffectiveKeymap, action string) (engine.EffectiveKeymap, bool) {
+	for _, k := range keys {
+		if k.Action == action {
+			return k, true
+		}
+	}
+	return engine.EffectiveKeymap{}, false
+}
+
+func TestShortcutEditor(t *testing.T) {
+	m := newModel(t)
+	press(m, "enter", "enter") // Start, accept the Editor form.
+	for m.question().id != "keymaps-editor" {
+		press(m, "enter")
+	}
+	if !strings.Contains(screenText(m), "kickstart.nvim") || !strings.Contains(screenText(m), "Keep these shortcuts") {
+		t.Fatalf("shortcut list missing its source:\n%s", screenText(m))
+	}
+	files, ok := keyFor(engine.EffectiveKeymaps(m.draft), "find.files")
+	if !ok || files.Key != "<leader>sf" || files.Source != "kickstart.nvim" {
+		t.Fatalf("kickstart find files: %+v", files)
+	}
+	// Move Find files to <leader>ff.
+	rows := m.shortcutRows()
+	for i, r := range rows {
+		if r.kind == "key" && r.key.Action == "find.files" {
+			m.cursor = i
+		}
+	}
+	press(m, "enter")
+	for _, r := range "<leader>ff" {
+		m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	press(m, "enter")
+	if k, _ := keyFor(engine.EffectiveKeymaps(m.draft), "find.files"); k.Key != "<leader>ff" || k.Source != "yours" {
+		t.Fatalf("rebind failed: %+v", k)
+	}
+	// Add a command shortcut.
+	press(m, "a")
+	m.cursor = len(actionOptions()) - 1
+	press(m, "enter")
+	for _, r := range "Lazy" {
+		m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	press(m, "enter")
+	for _, r := range "<leader>L" {
+		m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	press(m, "enter")
+	if k, ok := keyFor(engine.EffectiveKeymaps(m.draft), "command:Lazy"); !ok || k.Key != "<leader>L" {
+		t.Fatalf("command shortcut not added: %+v", m.draft.Keymaps)
+	}
+	if err := m.catalog.Validate(m.draft); err != nil {
+		t.Fatal(err)
+	}
+	files2, _ := engine.Generate(m.draft)
+	lua := files2["lua/user_config/keymaps.lua"]
+	for _, want := range []string{`map("n", "<leader>sf"`, `"<leader>ff", "<cmd>ShoshinFiles<CR>"`, `"<leader>L", "<cmd>Lazy<CR>"`, "-- Your shortcuts", "-- From kickstart.nvim"} {
+		if want == `map("n", "<leader>sf"` {
+			if strings.Contains(lua, want) {
+				t.Fatal("moved shortcut still generated on its old key")
+			}
+			continue
+		}
+		if !strings.Contains(lua, want) {
+			t.Fatalf("keymaps.lua missing %q:\n%s", want, lua)
+		}
+	}
+	press(m, "R")
+	if len(m.draft.Keymaps) != 0 {
+		t.Fatal("restore did not remove changes")
+	}
+}
+
+func TestShortcutStylesAreCredited(t *testing.T) {
+	for _, style := range []string{"kickstart", "lazyvim"} {
+		s := engine.NewState()
+		s.Values["keymaps.style"], s.Values["git.hunks"] = style, "gitsigns"
+		keys := engine.EffectiveKeymaps(s)
+		if len(keys) < 30 {
+			t.Fatalf("%s: only %d shortcuts", style, len(keys))
+		}
+		for _, k := range keys {
+			if k.Source == "" || k.Label == "" {
+				t.Fatalf("%s: uncredited shortcut %+v", style, k)
+			}
+		}
+	}
+	// Git shortcuts disappear when Git changes are off.
+	s := engine.NewState()
+	s.Values["keymaps.style"], s.Values["git.hunks"] = "kickstart", "native"
+	if _, ok := keyFor(engine.EffectiveKeymaps(s), "git.next_hunk"); ok {
+		t.Fatal("git shortcut kept without a Git plugin")
+	}
+	// LazyVim's gr is nowait, so it is not reported as a conflict; a user "gr" would be.
+	s.Values["keymaps.style"] = "lazyvim"
+	if c := engine.KeymapConflicts(s); len(c) != 0 {
+		t.Fatalf("unexpected conflicts: %v", c)
+	}
+	s.Values["keymaps.style"] = "kickstart"
+	s.Keymaps = []engine.Keymap{{Mode: "n", Key: "gr", Action: "code.references"}}
+	if c := engine.KeymapConflicts(s); len(c) == 0 {
+		t.Fatal("gr before grd was not reported")
+	}
+}
+
+// Steps name the keys the chosen style really has, spelled with the chosen leader.
+func TestStepsNameConfiguredKeys(t *testing.T) {
+	s := engine.NewState()
+	for style, want := range map[string]string{"kickstart": `Your shortcuts: \ file explorer`, "lazyvim": "Your shortcuts: Space e file explorer", "none": ""} {
+		s.Values["keymaps.style"] = style
+		if got := shortcutHint(s, []string{"explorer.toggle"}); got != want {
+			t.Fatalf("%s: got %q, want %q", style, got, want)
+		}
+	}
+	s.Values["keymaps.style"], s.Values["keymaps.leader"] = "kickstart", "comma"
+	if got := shortcutHint(s, []string{"find.files", "code.format"}); got != "Your shortcuts: Comma sf find files · Comma f format file" {
+		t.Fatalf("got %q", got)
+	}
+	if got := engine.KeyLabel(s, "<Esc><Esc>"); got != "Esc Esc" {
+		t.Fatalf("got %q", got)
+	}
+	if got := engine.KeyLabel(s, "<C-S-x>"); got != "Ctrl+Shift+x" {
+		t.Fatalf("got %q", got)
 	}
 }

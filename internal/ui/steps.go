@@ -15,6 +15,7 @@ type option struct {
 	recommended          bool
 	swatch               []string
 	plugin               string                  // Registry ID shown for transparency; empty means built into Neovim.
+	source               string                  // Where a non-plugin choice comes from, such as a keymap style's origin.
 	group                string                  // Heading shown above the first option of a group.
 	match                func(engine.State) bool // Overrides exact value matching.
 }
@@ -32,9 +33,12 @@ func (o option) name() string {
 // An input question asks for text instead, stored in input.setting.
 type question struct {
 	id, title, help string
+	group           string // Heading above form rows.
 	options         []option
 	dynamic         func(engine.State) []option
 	input           *inputSpec
+	keymaps         bool     // The shortcut editor screen.
+	actions         []string // Shortcut actions whose configured keys the step names.
 	multi           bool
 	skip            func(engine.State) bool
 }
@@ -56,6 +60,11 @@ type section struct {
 	id, title, intro string
 	form             bool
 	questions        []question
+}
+
+func withGroup(group string, q question) question {
+	q.group = group
+	return q
 }
 
 func on(id string) map[string]any  { return map[string]any{id: true} }
@@ -87,76 +96,99 @@ func noLanguages(s engine.State) bool {
 
 var sections = []section{
 	{id: "editor", title: "Editor", form: true,
-		intro: "How text looks and behaves. Every row starts at the recommended value.",
+		intro: "How text looks and behaves. Recommendations follow kickstart.nvim's init.lua where it sets a value, otherwise LazyVim's.",
 		questions: []question{
-			toggle("options.number", "Line numbers", "Show absolute line numbers in the left margin.", true, "on", "off"),
-			toggle("options.relativenumber", "Relative numbers", "Show each line's distance from the cursor, handy for jumps like 5j.", false, "on", "off"),
-			toggle("options.wrap", "Wrap long lines", "Off keeps code shaped as written; long lines scroll sideways.", false, "on", "off"),
-			{id: "indent", title: "Indent with", help: "What the Tab key and automatic indentation insert.", options: []option{
+			withGroup("Display", toggle("options.number", "Line numbers", "Show absolute line numbers in the left margin.", true, "on", "off")),
+			withGroup("Display", toggle("options.relativenumber", "Relative numbers", "Show each line's distance from the cursor, handy for jumps like 5j.", false, "on", "off")),
+			withGroup("Display", toggle("options.cursorline", "Cursor line", "Highlight the line the cursor is on.", true, "highlight", "off")),
+			withGroup("Display", question{id: "options.signcolumn", title: "Sign column", help: "Always keeps room for Git and diagnostic signs so text never shifts.", options: []option{
+				{label: "always", values: is("options.signcolumn", "yes"), recommended: true},
+				{label: "when needed", values: is("options.signcolumn", "auto")},
+			}}),
+			withGroup("Display", question{id: "invisibles", title: "Invisible characters", help: "Reveal tabs and trailing spaces that are otherwise hard to see.", options: []option{
+				{label: "tabs & spaces", values: map[string]any{"options.list": true, "options.listchars": "tab:» ,trail:·,nbsp:␣"}, recommended: true},
+				{label: "trailing spaces", values: map[string]any{"options.list": true, "options.listchars": "tab:  ,trail:·,nbsp:␣"}},
+				{label: "hidden", values: off("options.list")},
+			}}),
+			withGroup("Display", question{id: "options.colorcolumn", title: "Column guide", help: "A vertical line at a column, to keep lines short.", options: []option{
+				{label: "off", values: is("options.colorcolumn", ""), recommended: true},
+				{label: "80", values: is("options.colorcolumn", "80")},
+				{label: "100", values: is("options.colorcolumn", "100")},
+				{label: "120", values: is("options.colorcolumn", "120")},
+			}}),
+			withGroup("Display", question{id: "options.fillchars", title: "Empty lines", help: "Neovim marks lines past the end of a file with ~.", options: []option{
+				{label: "blank", values: is("options.fillchars", "eob: "), recommended: true},
+				{label: "~", values: is("options.fillchars", "eob:~")},
+			}}),
+			withGroup("Wrapping", toggle("options.wrap", "Wrap long lines", "Off keeps code shaped as written; long lines scroll sideways.", false, "on", "off")),
+			withGroup("Wrapping", question{id: "wrapped-lines", title: "Wrapped lines", help: "When lines wrap, break at word boundaries and keep the indentation.", options: []option{
+				{label: "tidy", values: map[string]any{"options.linebreak": true, "options.breakindent": true}, recommended: true},
+				{label: "plain", values: map[string]any{"options.linebreak": false, "options.breakindent": false}},
+			}}),
+			withGroup("Indentation", question{id: "indent", title: "Indent with", help: "What the Tab key and automatic indentation insert.", options: []option{
 				{label: "spaces", values: on("options.expandtab"), recommended: true},
 				{label: "tabs", values: off("options.expandtab")},
-			}},
-			{id: "options.tabstop", title: "Tab width", help: "How many columns a tab character occupies.", options: []option{
+			}}),
+			withGroup("Indentation", question{id: "options.tabstop", title: "Tab width", help: "How many columns a tab character occupies.", options: []option{
 				{label: "2", values: is("options.tabstop", 2.0), recommended: true},
 				{label: "4", values: is("options.tabstop", 4.0)},
 				{label: "8", values: is("options.tabstop", 8.0)},
-			}},
-			{id: "options.shiftwidth", title: "Indent width", help: "How many columns one indentation step uses.", options: []option{
+			}}),
+			withGroup("Indentation", question{id: "options.shiftwidth", title: "Indent width", help: "How many columns one indentation step uses.", options: []option{
 				{label: "2", values: is("options.shiftwidth", 2.0), recommended: true},
 				{label: "4", values: is("options.shiftwidth", 4.0)},
 				{label: "8", values: is("options.shiftwidth", 8.0)},
-			}},
-			{id: "search-case", title: "Search case", help: "Smart case ignores case until you type a capital letter.", options: []option{
+			}}),
+			withGroup("Indentation", question{id: "editor.detect_indent", title: "Detect indentation", help: "Adapt to each file's existing indentation (guess-indent.nvim); project .editorconfig files always apply.", options: []option{
+				{label: "guess-indent", plugin: "guess-indent", values: is("editor.detect_indent", "guess-indent"), recommended: true},
+				{label: "off", values: is("editor.detect_indent", "none")},
+			}}),
+			withGroup("Search", question{id: "search-case", title: "Search case", help: "Smart case ignores case until you type a capital letter.", options: []option{
 				{label: "smart", values: map[string]any{"options.ignorecase": true, "options.smartcase": true}, recommended: true},
 				{label: "ignore", values: map[string]any{"options.ignorecase": true, "options.smartcase": false}},
 				{label: "exact", values: map[string]any{"options.ignorecase": false, "options.smartcase": false}},
-			}},
-			{id: "options.inccommand", title: "Replace preview", help: "Preview :substitute changes while you type; split also lists matches outside the window.", options: []option{
+			}}),
+			withGroup("Search", question{id: "options.inccommand", title: "Replace preview", help: "Preview :substitute changes while you type; split also lists matches outside the window.", options: []option{
 				{label: "split", values: is("options.inccommand", "split"), recommended: true},
 				{label: "inline", values: is("options.inccommand", "nosplit")},
 				{label: "off", values: is("options.inccommand", "")},
-			}},
-			{id: "options.scrolloff", title: "Context lines", help: "Lines kept visible above and below the cursor while scrolling.", options: []option{
-				{label: "8", values: is("options.scrolloff", 8.0), recommended: true},
-				{label: "4", values: is("options.scrolloff", 4.0)},
-				{label: "0", values: is("options.scrolloff", 0.0)},
-			}},
-			{id: "options.sidescrolloff", title: "Context columns", help: "Columns kept visible beside the cursor when lines do not wrap.", options: []option{
-				{label: "8", values: is("options.sidescrolloff", 8.0), recommended: true},
-				{label: "0", values: is("options.sidescrolloff", 0.0)},
-			}},
-			toggle("options.undofile", "Persistent undo", "Undo history survives closing and reopening a file.", true, "on", "off"),
-			{id: "options.confirm", title: "Unsaved changes", help: "When quitting with unsaved changes, ask what to do instead of failing.", options: []option{
-				{label: "ask", values: on("options.confirm"), recommended: true},
-				{label: "refuse", values: off("options.confirm")},
-			}},
-			{id: "splits", title: "New splits open", help: "Where :split and :vsplit place the new window.", options: []option{
-				{label: "right & below", values: map[string]any{"options.splitright": true, "options.splitbelow": true}, recommended: true},
-				{label: "left & above", values: map[string]any{"options.splitright": false, "options.splitbelow": false}},
-			}},
-			{id: "options.mouse", title: "Mouse", help: "Click, scroll and select with the mouse.", options: []option{
+			}}),
+			withGroup("Editing", toggle("options.undofile", "Persistent undo", "Undo history survives closing and reopening a file.", true, "on", "off")),
+			withGroup("Editing", question{id: "options.clipboard", title: "Clipboard", help: "Shared means yank and paste use the system clipboard.", options: []option{
+				{label: "shared", values: is("options.clipboard", "unnamedplus"), recommended: true},
+				{label: "Neovim only", values: is("options.clipboard", "")},
+			}}),
+			withGroup("Editing", question{id: "options.mouse", title: "Mouse", help: "Click, scroll and select with the mouse.", options: []option{
 				{label: "all modes", values: is("options.mouse", "a"), recommended: true},
 				{label: "normal & visual", values: is("options.mouse", "nv")},
 				{label: "off", values: is("options.mouse", "")},
-			}},
-			{id: "options.clipboard", title: "Clipboard", help: "Shared means yank and paste use the system clipboard.", options: []option{
-				{label: "shared", values: is("options.clipboard", "unnamedplus"), recommended: true},
-				{label: "Neovim only", values: is("options.clipboard", "")},
-			}},
-			toggle("options.cursorline", "Cursor line", "Highlight the line the cursor is on.", true, "highlight", "off"),
-			{id: "invisibles", title: "Invisible characters", help: "Reveal trailing spaces (and optionally tabs) that are otherwise hard to see.", options: []option{
-				{label: "trailing spaces", values: map[string]any{"options.list": true, "options.listchars": "tab:  ,trail:·,nbsp:␣"}, recommended: true},
-				{label: "tabs & spaces", values: map[string]any{"options.list": true, "options.listchars": "tab:» ,trail:·,nbsp:␣"}},
-				{label: "hidden", values: off("options.list")},
-			}},
-			{id: "options.signcolumn", title: "Sign column", help: "Always keeps room for Git and diagnostic signs so text never shifts.", options: []option{
-				{label: "always", values: is("options.signcolumn", "yes"), recommended: true},
-				{label: "when needed", values: is("options.signcolumn", "auto")},
-			}},
-			{id: "timing", title: "Key timing", help: "Fast shows shortcut hints sooner and refreshes diagnostics and Git signs quickly.", options: []option{
-				{label: "fast", values: map[string]any{"options.timeoutlen": 400.0, "options.updatetime": 250.0}, recommended: true},
+			}}),
+			withGroup("Editing", toggle("editor.highlight_yank", "Highlight on copy", "Briefly highlight text after it is yanked (copied).", true, "on", "off")),
+			withGroup("Editing", toggle("editor.restore_cursor", "Reopen at last position", "Return to where you left off when reopening a file.", true, "on", "off")),
+			withGroup("Editing", toggle("editor.trim_whitespace", "Trim trailing spaces", "Remove spaces at the end of lines when saving (not in Markdown, where they mean a line break).", false, "on", "off")),
+			withGroup("Editing", toggle("editor.spell_prose", "Spell check prose", "Check spelling in Markdown, plain text and commit messages.", true, "on", "off")),
+			withGroup("Windows", question{id: "splits", title: "New splits open", help: "Where :split and :vsplit place the new window.", options: []option{
+				{label: "right & below", values: map[string]any{"options.splitright": true, "options.splitbelow": true}, recommended: true},
+				{label: "left & above", values: map[string]any{"options.splitright": false, "options.splitbelow": false}},
+			}}),
+			withGroup("Windows", question{id: "options.scrolloff", title: "Context lines", help: "Lines kept visible above and below the cursor while scrolling.", options: []option{
+				{label: "10", values: is("options.scrolloff", 10.0), recommended: true},
+				{label: "8", values: is("options.scrolloff", 8.0)},
+				{label: "4", values: is("options.scrolloff", 4.0)},
+				{label: "0", values: is("options.scrolloff", 0.0)},
+			}}),
+			withGroup("Windows", question{id: "options.sidescrolloff", title: "Context columns", help: "Columns kept visible beside the cursor when lines do not wrap.", options: []option{
+				{label: "8", values: is("options.sidescrolloff", 8.0), recommended: true},
+				{label: "0", values: is("options.sidescrolloff", 0.0)},
+			}}),
+			withGroup("Windows", question{id: "options.confirm", title: "Unsaved changes", help: "When quitting with unsaved changes, ask what to do instead of failing.", options: []option{
+				{label: "ask", values: on("options.confirm"), recommended: true},
+				{label: "refuse", values: off("options.confirm")},
+			}}),
+			withGroup("Timing", question{id: "timing", title: "Key timing", help: "Fast shows shortcut hints sooner and refreshes diagnostics and Git signs quickly.", options: []option{
+				{label: "fast", values: map[string]any{"options.timeoutlen": 300.0, "options.updatetime": 250.0}, recommended: true},
 				{label: "Neovim defaults", values: map[string]any{"options.timeoutlen": 1000.0, "options.updatetime": 4000.0}},
-			}},
+			}}),
 		}},
 	{id: "appearance", title: "Appearance", intro: "The look of the editor.", questions: []question{
 		{id: "appearance.colorscheme", title: "Color scheme", help: "The colors of the whole editor. Swatches show each theme's real colors.", dynamic: themeOptions},
@@ -181,31 +213,58 @@ var sections = []section{
 			{label: "mini.tabline", short: "mini.tabline", plugin: "mini.tabline", detail: "A minimal tab line from mini.nvim", values: is("appearance.buffers", "mini.tabline")},
 			{label: "No tabs", short: "no buffer tabs", detail: "Switch files with the finder or :bnext; kickstart's default", values: is("appearance.buffers", "native")},
 		}},
+		{id: "appearance.indent", title: "Indent guides", help: "Vertical lines that show indentation levels.", options: []option{
+			{label: "indent-blankline.nvim", short: "indent-blankline", plugin: "indent-blankline", detail: "Thin guides at every indentation level; NvChad's choice", values: is("appearance.indent", "indent-blankline"), recommended: true},
+			{label: "Snacks indent", short: "Snacks indent", plugin: "snacks", detail: "Guides with the current scope highlighted; LazyVim's choice", values: is("appearance.indent", "snacks")},
+			{label: "mini.indentscope", short: "mini.indentscope", plugin: "mini.indentscope", detail: "Shows only the scope around the cursor, from mini.nvim", values: is("appearance.indent", "mini.indentscope")},
+			{label: "None", short: "no indent guides", detail: "No guides", values: is("appearance.indent", "none")},
+		}},
+		{id: "appearance.notifications", title: "Notifications", help: "How messages and language server progress appear.", options: []option{
+			{label: "Snacks notifier", short: "Snacks notifications", plugin: "snacks", detail: "Messages as tidy popups, and nicer input prompts; LazyVim's choice", values: is("appearance.notifications", "snacks"), recommended: true},
+			{label: "fidget.nvim", short: "fidget", plugin: "fidget", detail: "Language server progress in a corner; kickstart's choice", values: is("appearance.notifications", "fidget")},
+			{label: "Built in", short: "built-in messages", detail: "Messages in the command line", values: is("appearance.notifications", "none")},
+		}},
 		{id: "options.winborder", title: "Popup borders", help: "Borders around hover docs, signature help and other floating windows.", options: []option{
 			{label: "Rounded", short: "rounded borders", detail: "Soft corners that separate popups from code", values: is("options.winborder", "rounded"), recommended: true},
 			{label: "Square", short: "square borders", detail: "Thin straight lines", values: is("options.winborder", "single")},
 			{label: "None", short: "no borders", detail: "Popups blend into the background", values: is("options.winborder", "")},
 		}},
 	}},
-	{id: "workspace", title: "Workspace", intro: "Shortcuts and discoverability.", questions: []question{
-		{id: "experience.layout", title: "Keyboard shortcuts", help: "Space is the leader key: it starts every workspace shortcut.", options: []option{
-			{label: "ShoshinVim Space shortcuts", short: "Space shortcuts", plugin: "snacks", detail: "ShoshinVim's own set, modeled on LazyVim: groups for files, code, Git and windows, a start screen and a guide on Space ?", values: is("experience.layout", "rich"), recommended: true},
-			{label: "Neovim defaults", short: "Neovim default keys", detail: "Only Neovim's built-in keys", values: is("experience.layout", "native")},
+	{id: "workspace", title: "Workspace", intro: "Shortcuts, hints and the start screen.", questions: []question{
+		{id: "keymaps.style", title: "Shortcut style", help: "Community keymap sets, copied from their source. You can change any key in the next step.", options: []option{
+			{label: "kickstart.nvim", short: "kickstart.nvim shortcuts", source: "kickstart", detail: "Small and easy to learn: Space s… to search, Space f to format, \\ for files",
+				values: is("keymaps.style", "kickstart"), recommended: true},
+			{label: "LazyVim", short: "LazyVim shortcuts", source: "lazyvim", detail: "Larger: Space Space for files, Space c… for code, Shift+H/L between buffers",
+				values: is("keymaps.style", "lazyvim")},
+			{label: "Neovim defaults only", short: "Neovim default keys", detail: "No extra shortcuts; built-in keys like grn (rename) still work",
+				values: is("keymaps.style", "none")},
 		}},
-		{id: "navigation.shortcuts", title: "Shortcut hints", help: "Help while you learn the keys.", options: []option{
-			{label: "which-key.nvim", short: "shortcut hints", plugin: "which-key", detail: "Pause after Space (or any prefix) to see what comes next", values: is("navigation.shortcuts", "which-key"), recommended: true},
+		{id: "keymaps.leader", title: "Leader key", help: "Leader shortcuts start with this key. kickstart.nvim and LazyVim both use Space.", options: []option{
+			{label: "Space", short: "Space leader", detail: "Easy to reach with either thumb", values: is("keymaps.leader", "space"), recommended: true},
+			{label: "Comma", short: "comma leader", detail: "A common choice in older Vim configurations", values: is("keymaps.leader", "comma")},
+			{label: "Backslash", short: "backslash leader", detail: "Neovim's default", values: is("keymaps.leader", "backslash")},
+		}},
+		{id: "keymaps-editor", title: "Your shortcuts", help: "Every shortcut you will have, and where it comes from. Change a key, turn one off, or add your own.", keymaps: true},
+		{id: "navigation.shortcuts", title: "Shortcut hints", help: "A popup that shows what comes next after you press a prefix such as the leader key.", options: []option{
+			{label: "which-key.nvim", short: "which-key", plugin: "which-key", detail: "Pause after a prefix to see the next keys, grouped", values: is("navigation.shortcuts", "which-key"), recommended: true},
+			{label: "mini.clue", short: "mini.clue", plugin: "mini.clue", detail: "A lighter hint window from mini.nvim", values: is("navigation.shortcuts", "mini.clue")},
 			{label: "No hints", short: "no hints", detail: "Keys work silently", values: is("navigation.shortcuts", "native")},
+		}},
+		{id: "workspace.start_screen", title: "Start screen", help: "What Neovim shows when you start it without a file.", options: []option{
+			{label: "Snacks dashboard", short: "Snacks dashboard", plugin: "snacks", detail: "Shortcuts to find, explore and recent files; LazyVim's choice", values: is("workspace.start_screen", "snacks"), recommended: true},
+			{label: "mini.starter", short: "mini.starter", plugin: "mini.starter", detail: "A minimal start screen from mini.nvim", values: is("workspace.start_screen", "mini.starter")},
+			{label: "None", short: "no start screen", detail: "Neovim's own intro message; kickstart's default", values: is("workspace.start_screen", "none")},
 		}},
 	}},
 	{id: "navigation", title: "Navigation", intro: "Moving around a project.", questions: []question{
-		{id: "navigation.picker", title: "Find files and text", help: "The search window for files, text, buffers, help and more. Text search uses ripgrep.", options: []option{
+		{id: "navigation.picker", title: "Find files and text", help: "The search window for files, text, buffers, help and more. Text search uses ripgrep.", actions: []string{"find.files", "find.grep", "find.buffers"}, options: []option{
 			{label: "Telescope", short: "Telescope", plugin: "telescope", detail: "The most widely used finder, with many extensions", values: is("navigation.picker", "telescope"), recommended: true},
 			{label: "Snacks picker", short: "Snacks picker", plugin: "snacks", detail: "Fast finder from snacks.nvim; LazyVim's default", values: is("navigation.picker", "snacks")},
 			{label: "fzf-lua", short: "fzf-lua", plugin: "fzf-lua", detail: "Uses the fzf program for very fast matching on large projects", values: is("navigation.picker", "fzf-lua")},
 			{label: "mini.pick", short: "mini.pick", plugin: "mini.pick", detail: "A compact finder from mini.nvim", values: is("navigation.picker", "mini.pick")},
 			{label: "Built in", short: "built-in finder", detail: "Type a path with Tab completion; :grep for text", values: is("navigation.picker", "native")},
 		}},
-		{id: "navigation.explorer", title: "File explorer", help: "Browse and manage files in the project (Space e).", options: []option{
+		{id: "navigation.explorer", title: "File explorer", help: "Browse and manage files in the project.", actions: []string{"explorer.toggle"}, options: []option{
 			{label: "neo-tree.nvim", short: "neo-tree", plugin: "neo-tree", detail: "A file tree sidebar with Git status", values: is("navigation.explorer", "neo-tree"), recommended: true},
 			{label: "nvim-tree.lua", short: "nvim-tree", plugin: "nvim-tree", detail: "A file tree sidebar; NvChad's choice", values: is("navigation.explorer", "nvim-tree")},
 			{label: "Snacks explorer", short: "Snacks explorer", plugin: "snacks", detail: "A sidebar from snacks.nvim; LazyVim's default", values: is("navigation.explorer", "snacks")},
@@ -242,8 +301,8 @@ var sections = []section{
 			{label: "conform.nvim", short: "conform (Prettier & StyLua)", plugin: "conform", detail: "Runs Prettier for web files and StyLua for Lua; respects project config files", values: is("formatting.provider", "conform"), recommended: true},
 			{label: "Language server", short: "server formatting", detail: "Each server's own formatting, when it has one", values: is("formatting.provider", "native")},
 		}},
-		{id: "formatting.on_save", title: "When to format", help: "Formatting on request avoids surprise changes in shared projects.", skip: noLanguages, options: []option{
-			{label: "When I ask", short: "format on request", detail: "Run :ShoshinFormat (Space c f with Space shortcuts)", values: off("formatting.on_save"), recommended: true},
+		{id: "formatting.on_save", title: "When to format", help: "Formatting on request avoids surprise changes in shared projects.", skip: noLanguages, actions: []string{"code.format"}, options: []option{
+			{label: "When I ask", short: "format on request", detail: "Run :ShoshinFormat or its shortcut", values: off("formatting.on_save"), recommended: true},
 			{label: "Every save", short: "format on save", detail: "Format automatically before writing the file", values: on("formatting.on_save")},
 		}},
 	}},
@@ -482,6 +541,9 @@ func derive(c engine.Catalog, s *engine.State) error {
 			unset(s, id)
 		}
 	}
+	if _, chosen := s.Values["keymaps.style"]; chosen {
+		unset(s, "experience.layout") // Replaced by the separate workspace choices.
+	}
 	if notCustomTheme(*s) {
 		for _, id := range []string{"appearance.custom_theme.repository", "appearance.custom_theme.revision", "appearance.custom_theme.colorscheme"} {
 			unset(s, id)
@@ -521,7 +583,7 @@ func recommendedState(c engine.Catalog) (engine.State, error) {
 	s := engine.NewState()
 	for _, sec := range sections {
 		for _, q := range sec.questions {
-			if q.skipped(s) || q.input != nil {
+			if q.skipped(s) || q.input != nil || q.keymaps {
 				continue
 			}
 			q = q.resolve(s)
@@ -567,6 +629,12 @@ func summary(s engine.State, sec section) string {
 			continue
 		}
 		q = q.resolve(s)
+		if q.keymaps {
+			if n := changedShortcuts(s); n > 0 {
+				parts = append(parts, fmt.Sprintf("%d shortcut change%s", n, map[bool]string{true: "", false: "s"}[n == 1]))
+			}
+			continue
+		}
 		if q.input != nil {
 			if v, _ := s.Values[q.input.setting].(string); v != "" {
 				parts = append(parts, v)
@@ -594,3 +662,54 @@ func summary(s engine.State, sec section) string {
 	}
 	return strings.Join(parts, " · ")
 }
+
+// ---- shortcuts ------------------------------------------------------------------
+
+func withoutKeymap(keys []engine.Keymap, mode, key string) []engine.Keymap {
+	var out []engine.Keymap
+	for _, k := range keys {
+		if k.Mode != mode || k.Key != key {
+			out = append(out, k)
+		}
+	}
+	return out
+}
+
+// rebindShortcut moves a shortcut to a new key. A style's key is turned off with an
+// explicit entry, so the generated file shows exactly what changed.
+func rebindShortcut(s engine.State, k engine.EffectiveKeymap, key string) engine.State {
+	next := engine.Clone(s)
+	next.Keymaps = withoutKeymap(withoutKeymap(next.Keymaps, k.Mode, k.Key), k.Mode, key)
+	if k.Source != "yours" {
+		next.Keymaps = append(next.Keymaps, engine.Keymap{Mode: k.Mode, Key: k.Key, Action: engine.NoAction})
+	}
+	next.Keymaps = append(next.Keymaps, engine.Keymap{Mode: k.Mode, Key: key, Action: k.Action})
+	return next
+}
+
+// turnOffShortcut removes one of the user's shortcuts or turns off a style's key.
+func turnOffShortcut(s engine.State, k engine.EffectiveKeymap) engine.State {
+	next := engine.Clone(s)
+	next.Keymaps = withoutKeymap(next.Keymaps, k.Mode, k.Key)
+	if k.Source != "yours" {
+		next.Keymaps = append(next.Keymaps, engine.Keymap{Mode: k.Mode, Key: k.Key, Action: engine.NoAction})
+	}
+	return next
+}
+
+// addShortcut adds the user's own shortcut, replacing any shortcut on the same key.
+func addShortcut(s engine.State, mode, key, action string) engine.State {
+	next := engine.Clone(s)
+	next.Keymaps = append(withoutKeymap(next.Keymaps, mode, key), engine.Keymap{Mode: mode, Key: key, Action: action})
+	return next
+}
+
+// restoreShortcuts undoes every change to the chosen style.
+func restoreShortcuts(s engine.State) engine.State {
+	next := engine.Clone(s)
+	next.Keymaps = nil
+	return next
+}
+
+// changedShortcuts counts the user's own entries (additions, moves and removals).
+func changedShortcuts(s engine.State) int { return len(s.Keymaps) }
