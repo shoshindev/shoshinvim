@@ -106,6 +106,49 @@ func TestWelcomeOffersNoPresets(t *testing.T) {
 	}
 }
 
+func TestLogoGlyphsAreWellFormed(t *testing.T) {
+	for _, r := range logoWord {
+		g, ok := logoGlyphs[r]
+		if !ok || len(g) != logoRows {
+			t.Fatalf("glyph %q missing or not %d rows tall", r, logoRows)
+		}
+		for _, row := range g {
+			if len(row) != len(g[0]) || strings.Trim(row, "#.") != "" {
+				t.Fatalf("glyph %q has a ragged or invalid row %q", r, row)
+			}
+		}
+	}
+	for _, line := range newTheme(true, true).Logo() {
+		if w := ansi.StringWidth(line); w != logoWidth() {
+			t.Fatalf("logo line is %d wide, want %d: %q", w, logoWidth(), line)
+		}
+	}
+}
+
+func TestWelcomeShowsLogoWhenItFits(t *testing.T) {
+	m := newModel(t)
+	for _, size := range []struct {
+		w, h int
+		big  bool
+	}{{110, 36, true}, {80, 24, true}, {80, 20, false}, {60, 30, false}} {
+		m.Update(tea.WindowSizeMsg{Width: size.w, Height: size.h})
+		text := screenText(m)
+		if big := strings.Contains(text, " █████ ██  ██"); big != size.big {
+			t.Fatalf("%d×%d: large logo shown = %v, want %v:\n%s", size.w, size.h, big, size.big, text)
+		}
+		if !size.big && !strings.Contains(text, "S H O S H I N V I M") {
+			t.Fatalf("%d×%d: missing one-line mark:\n%s", size.w, size.h, text)
+		}
+		if !strings.Contains(text, "Start setup") || !strings.Contains(text, "beginner's mind") {
+			t.Fatalf("%d×%d: welcome lost its menu or tagline:\n%s", size.w, size.h, text)
+		}
+	}
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	if text := screenText(m); !strings.Contains(text, "2. Quit") {
+		t.Fatalf("80×24: logo pushed the menu off screen:\n%s", text)
+	}
+}
+
 func TestEverySectionAndQuestionHasARecommendation(t *testing.T) {
 	c := engine.LoadCatalog()
 	s, err := recommendedState(c)
