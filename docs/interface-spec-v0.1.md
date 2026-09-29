@@ -18,7 +18,7 @@ This document specifies behavior and presentation, not production code. ShoshinV
 Running `shoshinvim` opens a fullscreen guided setup:
 
 1. A welcome panel states what will happen and that nothing is written before review.
-2. Eight sections — **Editor, Appearance, Workspace, Navigation, Languages, Formatting, Coding, Git & tools** — each ask a short series of decisions.
+2. Eight sections — **Editor, Appearance, Workspace, Navigation, Languages, Formatting, Coding, Git** — each ask a short series of decisions.
 3. Every decision offers curated options and marks exactly one as **recommended**; the cursor starts there, so Enter accepts it.
 4. A review summarizes each section, validates the draft in an isolated Neovim, and lists files and downloads before any write.
 5. Saving shows live progress; a final screen says how to start Neovim.
@@ -147,16 +147,16 @@ Every option sets explicit catalog values, so the saved state records each decis
 | **Appearance** | Color scheme: Tokyo Night, 25 more theme plugins, 11 themes built into Neovim, or another theme from GitHub (§3.8) · Variant, when the theme has several (light variants marked) · Status line: lualine.nvim / mini.statusline / built in · Open files: bufferline.nvim / barbar.nvim / mini.tabline / no tabs · Indent guides: indent-blankline.nvim / Snacks indent / mini.indentscope / none · Notifications: Snacks notifier / fidget.nvim / built in · Popup borders: rounded / square / none |
 | **Workspace** | Shortcut style: kickstart.nvim / LazyVim / Neovim defaults only · Leader key: Space / Comma / Backslash · Your shortcuts (§3.9) · Shortcut hints: which-key.nvim / mini.clue / none · Start screen: Snacks dashboard / mini.starter / none |
 | **Navigation** | Find files and text: Telescope / Snacks picker / fzf-lua / mini.pick / built in · File explorer: neo-tree.nvim / nvim-tree.lua / Snacks explorer / oil.nvim / mini.files / netrw |
-| **Languages** | Which languages: TypeScript & JavaScript, HTML, CSS, JSON, Lua (all recommended) · Syntax highlighting: nvim-treesitter / built in (§3.10) · Completion: blink.cmp / nvim-cmp / built in / off · Errors and warnings: inline / signs only · Server settings: written by ShoshinVim / nvim-lspconfig |
-| **Formatting** | Formatter: conform.nvim (Prettier & StyLua) / language server · When to format: when I ask / every save |
+| **Languages** | Language tools: mason.nvim / I'll install them · Which languages (§3.11): 24 in five groups — *Web* TypeScript & JavaScript, HTML, CSS, JSON, Svelte; *Scripting* Lua & Neovim config, Python, Ruby, PHP, Bash & shell, Elixir; *Systems* Go, Rust, C & C++, Zig, Swift; *JVM & .NET* Java, Kotlin, C#; *Config & docs* YAML, TOML, Markdown, Dockerfile, Terraform — with TypeScript, HTML, CSS, JSON and Lua recommended · Syntax highlighting: nvim-treesitter / built in (§3.10) · Completion: blink.cmp / nvim-cmp / built in / off · Errors and warnings: inline / signs only · Server settings: nvim-lspconfig / no plugin (basic recipes) |
+| **Formatting** | Formatter: conform.nvim with each chosen language's formatter (§3.11) / language server · When to format: when I ask / every save |
 | **Coding** | Brackets and quotes: nvim-autopairs / mini.pairs / off · Surround: mini.surround / nvim-surround / off · Text objects: mini.ai / built in · TODO comments: todo-comments.nvim / mini.hipatterns / off · Linting: off / nvim-lint (markdownlint; ESLint in projects configured for it) · Debugger (with TypeScript): off / nvim-dap + nvim-dap-ui / nvim-dap + nvim-dap-view |
-| **Git & tools** | Git changes: gitsigns.nvim / mini.diff / off · Language tools: mason.nvim / I'll install them |
+| **Git** | Git changes: gitsigns.nvim / mini.diff / off |
 
 Plugin options are labeled with the plugin's own name. Each carries a detail line describing what it does and a plugin line (§3.7). Theme options show a color swatch recorded from the real theme.
 
 ### 3.4 Skipped decisions
 
-When the user has decided on languages and selected none, completion, diagnostics, server settings and both Formatting decisions are skipped, and their values are removed from the draft. The language-tools decision is skipped only when nothing needs a separate program (no languages, no Tree-sitter parsers, no linters), and the debugger only when TypeScript is not chosen, since its adapter is for JavaScript and TypeScript. The Variant step is skipped for themes with a single variant; the custom-theme steps appear only after choosing "Another theme from GitHub…". Skipped sections are omitted from navigation and summarized as "skipped".
+When the user has decided on languages and selected none, completion, diagnostics, server settings and both Formatting decisions are skipped, and their values are removed from the draft. The language-tools decision comes first in Languages and is always asked; Mason is installed only when something needs a separate program (a language, Tree-sitter parsers, a linter or the debugger). The debugger is skipped when TypeScript is not chosen, since its adapter is for JavaScript and TypeScript. The Variant step is skipped for themes with a single variant; the custom-theme steps appear only after choosing "Another theme from GitHub…". Skipped sections are omitted from navigation and summarized as "skipped".
 
 ### 3.5 Derived settings
 
@@ -217,6 +217,14 @@ Shortcuts are credited, visible and editable before anything is written.
 - Linting runs each linter only where it applies and only when it is installed: markdownlint for Markdown, and eslint_d for JavaScript and TypeScript only inside a project with an ESLint configuration. `:ShoshinLint` lints the current file.
 - The debugger uses js-debug-adapter (the VS Code JavaScript debugger) with "Launch this file with Node.js" and "Attach to a running Node.js process". Debugger shortcuts come from the style: kickstart's F5/F1/F2/F3, Space b, Space B and F7; LazyVim's Space d… keys. Both debugger views use icons that need no Nerd Font.
 
+### 3.11 Languages
+
+- Every language is one entry in `internal/engine/data/languages.json`: its server (nvim-lspconfig name, program, Mason package, file types, project markers), its formatter when one is common, its Tree-sitter parsers, and the runtimes its tools need. Generation, Mason downloads, dependency checks, parsers and the interface all read that entry.
+- Mason is asked about first, so each language's detail line says what it gets: "pyright + Ruff, installed by Mason; needs Node.js", or without Mason "Needs pyright-langserver and ruff on your PATH". Swift's server comes with Xcode or the Swift toolchain, so the line says so.
+- Runtimes (Node.js, Python, Go, Rust, Java 21+, .NET SDK, Ruby, Elixir, Zig, Terraform) are never installed; the review lists the ones missing for the chosen languages.
+- **Server settings.** With nvim-lspconfig (recommended; every leading starter uses it) its maintained recipe is used as is. ShoshinVim adds only its own settings: Neovim's runtime for the Lua server, Swift's server limited to Swift files (its recipe also claims C and C++, which clangd serves), and a custom executable path when one is set. Without the plugin, ShoshinVim writes a basic recipe per server with the same program, file types and project markers, plus the options formatting needs (for example `provideFormatter` for the HTML, CSS and JSON servers).
+- **Formatters** (conform.nvim): Prettier for web files, YAML and Markdown; StyLua; Ruff; goimports; rustfmt (from rustup); clang-format; ktlint; shfmt; Taplo. Languages without one are formatted by their server.
+
 ## 4. Core flows
 
 ### 4.1 First launch
@@ -234,7 +242,7 @@ Opening the review builds a fresh, non-mutating plan in the background ("Checkin
 - one summary line per section;
 - **Files**: new, updated and removed counts and the target;
 - **Downloads**: plugin and language-tool counts;
-- **Install first**: programs the user must provide (for example ripgrep, fzf for fzf-lua, or Node.js). Tools that Mason will download are not listed.
+- **You install**: programs the user must provide (for example ripgrep, fzf for fzf-lua, Node.js, or a language runtime such as Java). Tools that Mason will download are not listed.
 - **Plugins**: every plugin that will be installed, by name (§3.7).
 
 Then the actions, in order and as applicable:

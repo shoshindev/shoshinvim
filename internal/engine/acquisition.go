@@ -29,12 +29,7 @@ func Actions(s State, target string) ([]Action, error) {
 		out = append(out, Action{ID: id, Kind: "git", Source: "https://github.com/" + repo + ".git", Revision: rev, Destination: filepath.Join(base, "plugins", dir), Description: "Git clone " + repo + " at " + rev})
 	}
 	if Value(s, "tools.provider", "system") == "mason" {
-		pkgs := map[string]bool{}
-		for _, l := range languages {
-			if Enabled(s, "language."+l.ID+".lsp") && toolCommand(s, l.Executable) == l.Executable {
-				pkgs[l.Package] = true
-			}
-		}
+		pkgs := languagePackages(s)
 		if treesitter(s) {
 			pkgs["tree-sitter-cli"] = true
 		}
@@ -43,14 +38,6 @@ func Actions(s State, target string) ([]Action, error) {
 		}
 		if debugging(s) {
 			pkgs["js-debug-adapter"] = true
-		}
-		if Value(s, "formatting.provider", "native") == "conform" {
-			if toolCommand(s, "prettier") == "prettier" && hasWeb(s) {
-				pkgs["prettier"] = true
-			}
-			if toolCommand(s, "stylua") == "stylua" && Enabled(s, "language.lua.lsp") {
-				pkgs["stylua"] = true
-			}
 		}
 		for _, pkg := range sorted(pkgs) {
 			out = append(out, Action{ID: "mason:" + pkg, Kind: "mason", Package: pkg, Destination: filepath.Join(base, "mason"), Description: "Mason registry/download/build for " + pkg + " (registry-selected version; may invoke npm or download binaries)"})
@@ -371,13 +358,4 @@ func Retry(ctx context.Context, target, bin string, progress func(string)) ([]Ac
 	}
 	defer unlock()
 	return RunActions(ctx, ins.Target, nvim, failed, progress), nil
-}
-
-func hasWeb(s State) bool {
-	for _, l := range languages {
-		if l.ID != "lua" && Enabled(s, "language."+l.ID+".lsp") {
-			return true
-		}
-	}
-	return false
 }

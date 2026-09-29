@@ -48,6 +48,81 @@ type inputSpec struct {
 	lookup               bool // Submitting looks the repository up on GitHub.
 }
 
+// languageOptions lists every language, grouped, saying what each one installs.
+func languageOptions(s engine.State) []option {
+	mason := engine.Value(s, "tools.provider", "system") == "mason"
+	var out []option
+	for _, l := range engine.Languages() {
+		out = append(out, option{label: l.Label, short: l.Name(), group: l.Group, detail: languageDetail(l, mason), values: on("language." + l.ID + ".lsp"), recommended: l.Recommended})
+	}
+	return out
+}
+
+// languageDetail names a language's tools and, with Mason, the runtimes they need.
+func languageDetail(l engine.Language, mason bool) string {
+	if l.Server.Package == "" {
+		return l.Server.Command + ", which " + l.Server.Note
+	}
+	tools := []string{l.Server.Package}
+	programs := []string{l.Server.Command}
+	needs := append([]string{}, l.Server.Needs...)
+	if f := l.Formatter; f != nil {
+		tools = append(tools, f.Label)
+		programs = append(programs, f.Command)
+		needs = append(needs, f.Needs...)
+		if f.Package == "" {
+			tools = tools[:1] // Comes with the language's own toolchain.
+		}
+	}
+	if !mason {
+		return "Needs " + strings.Join(programs, " and ") + " on your PATH"
+	}
+	text := strings.Join(tools, " + ") + ", installed by Mason"
+	var names []string
+	seen := map[string]bool{}
+	for _, n := range needs {
+		if !seen[n] {
+			seen[n] = true
+			names = append(names, engine.RuntimeName(n))
+		}
+	}
+	if len(names) > 0 {
+		text += "; needs " + strings.Join(names, " and ")
+	}
+	return text
+}
+
+// formatterOptions names the formatters conform.nvim runs for the chosen languages.
+func formatterOptions(s engine.State) []option {
+	var labels []string
+	seen := map[string]bool{}
+	next := engine.Clone(s)
+	next.Values["formatting.provider"] = "conform"
+	for _, f := range engine.Formatters(next) {
+		if !seen[f.Label] {
+			seen[f.Label] = true
+			labels = append(labels, f.Label)
+		}
+	}
+	detail, short := "Your languages have no separate formatter; each server formats instead", "conform"
+	if len(labels) > 0 {
+		detail = "Runs " + joinWords(labels) + ", following each project's own config files"
+		short = "conform (" + strings.Join(labels, ", ") + ")"
+	}
+	return []option{
+		{label: "conform.nvim", short: short, plugin: "conform", detail: detail, values: is("formatting.provider", "conform"), recommended: true},
+		{label: "Language server", short: "server formatting", detail: "Each server's own formatting, when it has one", values: is("formatting.provider", "native")},
+	}
+}
+
+// joinWords lists items as "a, b and c".
+func joinWords(items []string) string {
+	if len(items) < 2 {
+		return strings.Join(items, "")
+	}
+	return strings.Join(items[:len(items)-1], ", ") + " and " + items[len(items)-1]
+}
+
 // syntaxOptions counts the parsers Tree-sitter would compile for the chosen languages.
 func syntaxOptions(s engine.State) []option {
 	next := engine.Clone(s)
@@ -90,25 +165,17 @@ func toggle(id, title, help string, recommendOn bool, onLabel, offLabel string) 
 	}}
 }
 
-var languageIDs = []string{"typescript", "html", "css", "json", "lua"}
-
 // noLanguages is true once the user has decided on languages and selected none.
 func noLanguages(s engine.State) bool {
 	decided := false
-	for _, id := range languageIDs {
-		v, ok := s.Values["language."+id+".lsp"]
+	for _, l := range engine.Languages() {
+		v, ok := s.Values["language."+l.ID+".lsp"]
 		if v == true {
 			return false
 		}
 		decided = decided || ok
 	}
 	return decided
-}
-
-// noTools is true when nothing chosen needs a separate program: no languages, no
-// Tree-sitter parsers to compile and no linters.
-func noTools(s engine.State) bool {
-	return noLanguages(s) && engine.Value(s, "syntax.engine", "native") != "nvim-treesitter" && engine.Value(s, "coding.lint", "none") == "none"
 }
 
 // noTypeScript skips the debugger, whose adapter is for JavaScript and TypeScript.
@@ -307,13 +374,11 @@ var sections = []section{
 		}},
 	}},
 	{id: "languages", title: "Languages", intro: "Code intelligence for the languages you use.", questions: []question{
-		{id: "languages", title: "Which languages do you use?", multi: true, help: "Language servers add completion, go to definition, hover docs and diagnostics.", options: []option{
-			{label: "TypeScript & JavaScript", short: "TypeScript", detail: "typescript-language-server", values: on("language.typescript.lsp"), recommended: true},
-			{label: "HTML", short: "HTML", detail: "vscode-html-language-server", values: on("language.html.lsp"), recommended: true},
-			{label: "CSS, SCSS & Less", short: "CSS", detail: "vscode-css-language-server", values: on("language.css.lsp"), recommended: true},
-			{label: "JSON", short: "JSON", detail: "vscode-json-language-server", values: on("language.json.lsp"), recommended: true},
-			{label: "Lua & Neovim config", short: "Lua", detail: "lua-language-server", values: on("language.lua.lsp"), recommended: true},
+		{id: "tools.provider", title: "Language tools", help: "Language servers, formatters, linters and the Tree-sitter compiler are separate programs. Mason can download them for you.", options: []option{
+			{label: "mason.nvim", short: "Mason installs tools", plugin: "mason", detail: "After you review, downloads the servers, formatters and other tools your choices need", values: is("tools.provider", "mason"), recommended: true},
+			{label: "I'll install them", short: "tools from PATH", detail: "Use what is already on your PATH", values: is("tools.provider", "system")},
 		}},
+		{id: "languages", title: "Which languages do you use?", multi: true, help: "Each gets its language server for completion, go to definition, hover docs and diagnostics, a formatter where one is common, and syntax parsers.", dynamic: languageOptions},
 		{id: "syntax.engine", title: "Syntax highlighting", help: "How Neovim reads code to color and indent it.", dynamic: syntaxOptions},
 		{id: "completion", title: "Completion", help: "Suggestions while you type.", skip: noLanguages, options: []option{
 			{label: "blink.cmp", short: "blink.cmp", plugin: "blink.cmp", detail: "Fast completion with docs, snippets and signature help; kickstart's and LazyVim's choice", values: map[string]any{"completion.engine": "blink.cmp", "completion.native": false}, recommended: true},
@@ -325,16 +390,13 @@ var sections = []section{
 			{label: "Inline", short: "inline diagnostics", detail: "Messages appear at the end of the affected line", values: on("diagnostics.virtual_text"), recommended: true},
 			{label: "Signs only", short: "diagnostic signs", detail: "A mark in the sign column; open details on demand", values: off("diagnostics.virtual_text")},
 		}},
-		{id: "lsp.provider", title: "Server settings", help: "Where each language server's configuration comes from.", skip: noLanguages, options: []option{
-			{label: "Written by ShoshinVim", short: "built-in server settings", detail: "Readable server settings in your config; nothing extra to download", values: is("lsp.provider", "native"), recommended: true},
-			{label: "nvim-lspconfig", short: "nvim-lspconfig", plugin: "lspconfig", detail: "Community-maintained defaults on top", values: is("lsp.provider", "lspconfig")},
+		{id: "lsp.provider", title: "Server settings", help: "Each language server needs a recipe: the program to run, its file types and how to find your project.", skip: noLanguages, options: []option{
+			{label: "nvim-lspconfig", short: "nvim-lspconfig recipes", plugin: "lspconfig", detail: "Recipes for hundreds of servers, maintained alongside Neovim", values: is("lsp.provider", "lspconfig"), recommended: true},
+			{label: "No plugin", short: "basic recipes", detail: "ShoshinVim writes a basic recipe for each server into your config", values: is("lsp.provider", "native")},
 		}},
 	}},
 	{id: "formatting", title: "Formatting", intro: "Keeping code tidy.", questions: []question{
-		{id: "formatting.provider", title: "Formatter", help: "The tool that rewrites code into a consistent style.", skip: noLanguages, options: []option{
-			{label: "conform.nvim", short: "conform (Prettier & StyLua)", plugin: "conform", detail: "Runs Prettier for web files and StyLua for Lua; respects project config files", values: is("formatting.provider", "conform"), recommended: true},
-			{label: "Language server", short: "server formatting", detail: "Each server's own formatting, when it has one", values: is("formatting.provider", "native")},
-		}},
+		{id: "formatting.provider", title: "Formatter", help: "The tool that rewrites code into a consistent style.", skip: noLanguages, dynamic: formatterOptions},
 		{id: "formatting.on_save", title: "When to format", help: "Formatting on request avoids surprise changes in shared projects.", skip: noLanguages, actions: []string{"code.format"}, options: []option{
 			{label: "When I ask", short: "format on request", detail: "Run :ShoshinFormat or its shortcut", values: off("formatting.on_save"), recommended: true},
 			{label: "Every save", short: "format on save", detail: "Format automatically before writing the file", values: on("formatting.on_save")},
@@ -366,15 +428,11 @@ var sections = []section{
 			{label: "nvim-dap + nvim-dap-view", short: "nvim-dap-view", plugin: "nvim-dap-view", detail: "One lighter window with a tab for each view", values: is("coding.debug", "nvim-dap-view")},
 		}},
 	}},
-	{id: "tools", title: "Git & tools", intro: "Version control and installing language tools.", questions: []question{
+	{id: "tools", title: "Git", intro: "Version control.", questions: []question{
 		{id: "git.hunks", title: "Git changes", help: "See what changed since the last commit.", options: []option{
 			{label: "gitsigns.nvim", short: "gitsigns", plugin: "gitsigns", detail: "Markers for added, changed and deleted lines; preview, stage and blame", values: is("git.hunks", "gitsigns"), recommended: true},
 			{label: "mini.diff", short: "mini.diff", plugin: "mini.diff", detail: "Lightweight change markers with an inline diff overlay, from mini.nvim", values: is("git.hunks", "mini.diff")},
 			{label: "Off", short: "no Git markers", detail: "Use Git from the terminal", values: is("git.hunks", "native")},
-		}},
-		{id: "tools.provider", title: "Language tools", help: "Language servers, formatters, linters and the Tree-sitter compiler are separate programs.", skip: noTools, options: []option{
-			{label: "mason.nvim", short: "Mason installs tools", plugin: "mason", detail: "After you review, downloads the tools your choices need (web tools need Node.js)", values: is("tools.provider", "mason"), recommended: true},
-			{label: "I'll install them", short: "tools from PATH", detail: "Use what is already on your PATH", values: is("tools.provider", "system")},
 		}},
 	}},
 }
@@ -600,9 +658,6 @@ func derive(c engine.Catalog, s *engine.State) error {
 		for _, id := range []string{"completion.native", "completion.engine", "diagnostics.virtual_text", "lsp.provider", "formatting.provider", "formatting.on_save"} {
 			unset(s, id)
 		}
-	}
-	if noTools(*s) {
-		unset(s, "tools.provider")
 	}
 	if noTypeScript(*s) {
 		unset(s, "coding.debug")

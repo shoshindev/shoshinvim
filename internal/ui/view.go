@@ -736,7 +736,7 @@ func (m *Model) reviewContent(cw, h int) []string {
 		for i, w := range m.missingTools() {
 			label := ""
 			if i == 0 {
-				label = "Install first"
+				label = "You install"
 			}
 			lines = append(lines, m.th.Dim(padRight(label, 13))+m.th.Warn(ansi.Truncate(w, max(10, cw-13), "…")))
 		}
@@ -768,14 +768,10 @@ func (m *Model) dependencies() []engine.Dependency {
 
 // missingTools lists programs the user must install; Mason downloads language tools itself.
 func (m *Model) missingTools() []string {
-	mason := engine.Value(m.draft, "tools.provider", "system") == "mason"
-	runtimes := map[string]bool{"nvim": true, "git": true, "rg": true, "fzf": true, "node": true, "npm": true, "cc": true, "curl": true, "tar": true}
+	provided := engine.MasonProvides(m.draft)
 	var out []string
 	for _, d := range m.dependencies() {
-		if d.Status != "missing" {
-			continue
-		}
-		if _, custom := m.draft.Values["tools.path."+d.ID]; mason && !custom && !runtimes[d.ID] {
+		if d.Status != "missing" || provided[d.ID] {
 			continue
 		}
 		out = append(out, d.ID+" · "+d.Purpose)

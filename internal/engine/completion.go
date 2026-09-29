@@ -54,12 +54,3 @@ func completionCapabilities(s State) string {
 	}
 	return ""
 }
-
-func anyLanguage(s State) bool {
-	for _, l := range languages {
-		if Enabled(s, "language."+l.ID+".lsp") {
-			return true
-		}
-	}
-	return false
-}

@@ -53,6 +53,10 @@ func LoadCatalog() Catalog {
 			c.Settings[i].Choices = themeChoices()
 		}
 	}
+	for _, l := range Languages() {
+		c.Settings = append(c.Settings, Setting{ID: "language." + l.ID + ".lsp", Label: l.Label + " language server", Type: "boolean",
+			Description: "Use " + l.Server.Name + " (" + l.Server.Command + ") for " + l.Label + "."})
+	}
 	return c
 }
 
@@ -64,13 +68,7 @@ var filetypeID = regexp.MustCompile(`^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$`)
 func (c Catalog) Find(id string) (Setting, error) {
 	if strings.HasPrefix(id, "tools.path.") {
 		name := strings.TrimPrefix(id, "tools.path.")
-		valid := name == "prettier" || name == "stylua"
-		for _, l := range languages {
-			if l.Executable == name {
-				valid = true
-			}
-		}
-		if valid {
+		if toolExecutables()[name] {
 			return Setting{ID: id, Label: name + " executable", Type: "string", Description: "Absolute path to an existing system or project executable; empty uses PATH/Mason."}, nil
 		}
 	}

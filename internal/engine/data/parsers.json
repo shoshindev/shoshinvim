@@ -7,6 +7,14 @@
     "repository": "tree-sitter/tree-sitter-c",
     "revision": "b780e47fc780ddc8da13afa35a3f4ed5c157823d"
   },
+  "c_sharp": {
+    "repository": "tree-sitter/tree-sitter-c-sharp",
+    "revision": "v0.23.5"
+  },
+  "cpp": {
+    "repository": "tree-sitter/tree-sitter-cpp",
+    "revision": "c009222808634c1014f82438d4883753516a2c24"
+  },
   "css": {
     "repository": "tree-sitter/tree-sitter-css",
     "revision": "dda5cfc5722c429eaba1c910ca32c2c0c5bb1a3f"
@@ -15,9 +23,49 @@
     "repository": "tree-sitter-grammars/tree-sitter-diff",
     "revision": "ada384ac7bfc1307f32de474620120add29998fb"
   },
+  "dockerfile": {
+    "repository": "camdencheek/tree-sitter-dockerfile",
+    "revision": "971acdd908568b4531b0ba28a445bf0bb720aba5"
+  },
+  "eex": {
+    "repository": "connorlay/tree-sitter-eex",
+    "revision": "f742f2fe327463335e8671a87c0b9b396905d1d1"
+  },
+  "elixir": {
+    "repository": "elixir-lang/tree-sitter-elixir",
+    "revision": "4b0c7118760af58a2e7081bbc8396e136f820b37"
+  },
+  "go": {
+    "repository": "tree-sitter/tree-sitter-go",
+    "revision": "2346a3ab1bb3857b48b29d779a1ef9799a248cd7"
+  },
+  "gomod": {
+    "repository": "camdencheek/tree-sitter-go-mod",
+    "revision": "2e886870578eeba1927a2dc4bd2e2b3f598c5f9a"
+  },
+  "gosum": {
+    "repository": "tree-sitter-grammars/tree-sitter-go-sum",
+    "revision": "27816eb6b7315746ae9fcf711e4e1396dc1cf237"
+  },
+  "gowork": {
+    "repository": "omertuc/tree-sitter-go-work",
+    "revision": "949a8a470559543857a62102c84700d291fc984c"
+  },
+  "hcl": {
+    "repository": "tree-sitter-grammars/tree-sitter-hcl",
+    "revision": "64ad62785d442eb4d45df3a1764962dafd5bc98b"
+  },
+  "heex": {
+    "repository": "connorlay/tree-sitter-heex",
+    "revision": "5842537f734d7c12685bf27d6005313e3e5a47a0"
+  },
   "html": {
     "repository": "tree-sitter/tree-sitter-html",
     "revision": "73a3947324f6efddf9e17c0ea58d454843590cc0"
+  },
+  "java": {
+    "repository": "tree-sitter/tree-sitter-java",
+    "revision": "e10607b45ff745f5f876bfa3e94fbcc6b44bdc11"
   },
   "javascript": {
     "repository": "tree-sitter/tree-sitter-javascript",
@@ -30,6 +78,10 @@
   "json": {
     "repository": "tree-sitter/tree-sitter-json",
     "revision": "254c42a6476413b776221e03982ac8ae159eeb72"
+  },
+  "kotlin": {
+    "repository": "fwcd/tree-sitter-kotlin",
+    "revision": "1852ea17b7f60fb3f9d84e0b1555d56b46b39fb1"
   },
   "lua": {
     "repository": "tree-sitter-grammars/tree-sitter-lua",
@@ -47,13 +99,53 @@
     "repository": "tree-sitter-grammars/tree-sitter-markdown",
     "revision": "a0a00f817d02412bd92c54d316f164d827b57b5c"
   },
+  "php": {
+    "repository": "tree-sitter/tree-sitter-php",
+    "revision": "92b5271b60bec77fb65b5e5bc41561e8dac81299"
+  },
+  "php_only": {
+    "repository": "tree-sitter/tree-sitter-php",
+    "revision": "92b5271b60bec77fb65b5e5bc41561e8dac81299"
+  },
+  "phpdoc": {
+    "repository": "claytonrcarter/tree-sitter-phpdoc",
+    "revision": "12d50307e6c02e5f4f876fa6cf2edea1f7808c0d"
+  },
+  "python": {
+    "repository": "tree-sitter/tree-sitter-python",
+    "revision": "v0.25.0"
+  },
   "query": {
     "repository": "tree-sitter-grammars/tree-sitter-query",
     "revision": "8e9e223812ff30854fbc912adbec696ba5f0e023"
   },
+  "ruby": {
+    "repository": "tree-sitter/tree-sitter-ruby",
+    "revision": "ad907a69da0c8a4f7a943a7fe012712208da6dee"
+  },
+  "rust": {
+    "repository": "tree-sitter/tree-sitter-rust",
+    "revision": "77a3747266f4d621d0757825e6b11edcbf991ca5"
+  },
   "scss": {
     "repository": "serenadeai/tree-sitter-scss",
     "revision": "c478c6868648eff49eb04a4df90d703dc45b312a"
+  },
+  "svelte": {
+    "repository": "tree-sitter-grammars/tree-sitter-svelte",
+    "revision": "ae5199db47757f785e43a14b332118a5474de1a2"
+  },
+  "swift": {
+    "repository": "alex-pinkus/tree-sitter-swift",
+    "revision": "187fd4d3e55e2088da9cb31e414a2bac866292e8"
+  },
+  "terraform": {
+    "repository": "MichaHoffmann/tree-sitter-hcl",
+    "revision": "64ad62785d442eb4d45df3a1764962dafd5bc98b"
+  },
+  "toml": {
+    "repository": "tree-sitter-grammars/tree-sitter-toml",
+    "revision": "64b56832c2cffe41758f28e05c756a3a98d16f41"
   },
   "tsx": {
     "repository": "tree-sitter/tree-sitter-typescript",
@@ -70,5 +162,13 @@
   "vimdoc": {
     "repository": "neovim/tree-sitter-vimdoc",
     "revision": "23daa416c1ff5d15f59a1aa648f031d6e3ee15c5"
+  },
+  "yaml": {
+    "repository": "tree-sitter-grammars/tree-sitter-yaml",
+    "revision": "a1c4812a73ec5e089de8e441fdea3a921e8d5079"
+  },
+  "zig": {
+    "repository": "tree-sitter-grammars/tree-sitter-zig",
+    "revision": "6479aa13f32f701c383083d8b28360ebd682fb7d"
   }
 }

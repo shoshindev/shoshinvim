@@ -43,13 +43,6 @@ func parserTable() map[string]ParserSource {
 // own file types, useful whatever languages are chosen.
 var baseParsers = []string{"bash", "c", "diff", "html", "lua", "luadoc", "markdown", "markdown_inline", "query", "vim", "vimdoc"}
 
-// languageParsers adds the parsers each language choice needs.
-var languageParsers = map[string][]string{
-	"typescript": {"javascript", "jsdoc", "tsx", "typescript"},
-	"css":        {"css", "scss"},
-	"json":       {"json"},
-}
-
 func treesitter(s State) bool { return Value(s, "syntax.engine", "native") == "nvim-treesitter" }
 
 // Parsers lists the Tree-sitter parsers a state installs, with their sources.
@@ -61,11 +54,9 @@ func Parsers(s State) []ParserSource {
 	for _, p := range baseParsers {
 		set[p] = true
 	}
-	for lang, parsers := range languageParsers {
-		if Enabled(s, "language."+lang+".lsp") {
-			for _, p := range parsers {
-				set[p] = true
-			}
+	for _, l := range chosenLanguages(s) {
+		for _, p := range l.Parsers {
+			set[p] = true
 		}
 	}
 	var out []ParserSource

@@ -203,9 +203,11 @@ func BuildPlan(ctx context.Context, target string, s State, bin string, external
 	if err != nil {
 		return p, err
 	}
+	provided := MasonProvides(s)
 	for _, d := range Dependencies(s, ins.Target) {
 		// The chosen Neovim was resolved above; a PATH lookup would contradict --nvim.
-		if d.Status == "missing" && d.ID != "nvim" {
+		// Programs Mason will download are part of the actions, not missing.
+		if d.Status == "missing" && d.ID != "nvim" && !provided[d.ID] {
 			p.Warnings = append(p.Warnings, d.Purpose+": missing "+d.ID)
 		}
 	}

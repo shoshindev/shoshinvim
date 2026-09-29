@@ -1,0 +1,825 @@
+[
+  {
+    "id": "typescript",
+    "label": "TypeScript & JavaScript",
+    "short": "TypeScript",
+    "group": "Web",
+    "recommended": true,
+    "server": {
+      "name": "ts_ls",
+      "command": "typescript-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "package": "typescript-language-server",
+      "needs": [
+        "node"
+      ],
+      "filetypes": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact"
+      ],
+      "roots": [
+        "tsconfig.json",
+        "jsconfig.json",
+        "package.json",
+        ".git"
+      ],
+      "basic": "init_options = { hostInfo = 'neovim' }, root_dir = function(bufnr, on_dir)\n  if vim.fs.root(bufnr, { 'deno.json', 'deno.jsonc' }) then return end\n  on_dir(vim.fs.root(bufnr, { 'tsconfig.json', 'jsconfig.json', 'package.json', '.git' }) or vim.fn.getcwd())\nend,"
+    },
+    "formatter": {
+      "name": "prettier",
+      "command": "prettier",
+      "filetypes": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact"
+      ],
+      "package": "prettier",
+      "needs": [
+        "node"
+      ],
+      "label": "Prettier"
+    },
+    "parsers": [
+      "javascript",
+      "jsdoc",
+      "tsx",
+      "typescript"
+    ]
+  },
+  {
+    "id": "html",
+    "label": "HTML",
+    "group": "Web",
+    "recommended": true,
+    "server": {
+      "name": "html",
+      "command": "vscode-html-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "package": "html-lsp",
+      "needs": [
+        "node"
+      ],
+      "filetypes": [
+        "html"
+      ],
+      "roots": [
+        "package.json",
+        ".git"
+      ],
+      "basic": "init_options = { provideFormatter = true, embeddedLanguages = { css = true, javascript = true }, configurationSection = { 'html', 'css', 'javascript' } },"
+    },
+    "formatter": {
+      "name": "prettier",
+      "command": "prettier",
+      "filetypes": [
+        "html"
+      ],
+      "package": "prettier",
+      "needs": [
+        "node"
+      ],
+      "label": "Prettier"
+    },
+    "parsers": [
+      "html"
+    ]
+  },
+  {
+    "id": "css",
+    "label": "CSS, SCSS & Less",
+    "short": "CSS",
+    "group": "Web",
+    "recommended": true,
+    "server": {
+      "name": "cssls",
+      "command": "vscode-css-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "package": "css-lsp",
+      "needs": [
+        "node"
+      ],
+      "filetypes": [
+        "css",
+        "scss",
+        "less"
+      ],
+      "roots": [
+        "package.json",
+        ".git"
+      ],
+      "basic": "init_options = { provideFormatter = true }, settings = { css = { validate = true }, scss = { validate = true }, less = { validate = true } },"
+    },
+    "formatter": {
+      "name": "prettier",
+      "command": "prettier",
+      "filetypes": [
+        "css",
+        "scss",
+        "less"
+      ],
+      "package": "prettier",
+      "needs": [
+        "node"
+      ],
+      "label": "Prettier"
+    },
+    "parsers": [
+      "css",
+      "scss"
+    ]
+  },
+  {
+    "id": "json",
+    "label": "JSON",
+    "group": "Web",
+    "recommended": true,
+    "server": {
+      "name": "jsonls",
+      "command": "vscode-json-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "package": "json-lsp",
+      "needs": [
+        "node"
+      ],
+      "filetypes": [
+        "json",
+        "jsonc"
+      ],
+      "roots": [
+        "package.json",
+        ".git"
+      ],
+      "basic": "init_options = { provideFormatter = true },"
+    },
+    "formatter": {
+      "name": "prettier",
+      "command": "prettier",
+      "filetypes": [
+        "json",
+        "jsonc"
+      ],
+      "package": "prettier",
+      "needs": [
+        "node"
+      ],
+      "label": "Prettier"
+    },
+    "parsers": [
+      "json"
+    ]
+  },
+  {
+    "id": "svelte",
+    "label": "Svelte",
+    "group": "Web",
+    "server": {
+      "name": "svelte",
+      "command": "svelteserver",
+      "args": [
+        "--stdio"
+      ],
+      "package": "svelte-language-server",
+      "needs": [
+        "node"
+      ],
+      "filetypes": [
+        "svelte"
+      ],
+      "roots": [
+        "package.json",
+        ".git"
+      ]
+    },
+    "parsers": [
+      "svelte"
+    ]
+  },
+  {
+    "id": "lua",
+    "label": "Lua & Neovim config",
+    "short": "Lua",
+    "group": "Scripting",
+    "recommended": true,
+    "server": {
+      "name": "lua_ls",
+      "command": "lua-language-server",
+      "package": "lua-language-server",
+      "filetypes": [
+        "lua"
+      ],
+      "roots": [
+        ".luarc.json",
+        ".luarc.jsonc",
+        ".stylua.toml",
+        "stylua.toml",
+        ".git"
+      ],
+      "always": "settings = { Lua = { runtime = { version = 'LuaJIT' }, diagnostics = { globals = { 'vim' } }, workspace = { checkThirdParty = false, library = { vim.env.VIMRUNTIME } }, telemetry = { enable = false } } },"
+    },
+    "formatter": {
+      "name": "stylua",
+      "command": "stylua",
+      "filetypes": [
+        "lua"
+      ],
+      "package": "stylua",
+      "label": "StyLua"
+    },
+    "parsers": [
+      "lua",
+      "luadoc"
+    ]
+  },
+  {
+    "id": "python",
+    "label": "Python",
+    "group": "Scripting",
+    "server": {
+      "name": "pyright",
+      "command": "pyright-langserver",
+      "args": [
+        "--stdio"
+      ],
+      "package": "pyright",
+      "needs": [
+        "node"
+      ],
+      "filetypes": [
+        "python"
+      ],
+      "roots": [
+        "pyrightconfig.json",
+        "pyproject.toml",
+        "setup.py",
+        "setup.cfg",
+        "requirements.txt",
+        "Pipfile",
+        ".git"
+      ],
+      "basic": "settings = { python = { analysis = { autoSearchPaths = true, useLibraryCodeForTypes = true, diagnosticMode = 'openFilesOnly' } } },"
+    },
+    "formatter": {
+      "name": "ruff_format",
+      "command": "ruff",
+      "filetypes": [
+        "python"
+      ],
+      "package": "ruff",
+      "label": "Ruff"
+    },
+    "parsers": [
+      "python"
+    ]
+  },
+  {
+    "id": "ruby",
+    "label": "Ruby",
+    "group": "Scripting",
+    "server": {
+      "name": "ruby_lsp",
+      "command": "ruby-lsp",
+      "package": "ruby-lsp",
+      "needs": [
+        "ruby"
+      ],
+      "filetypes": [
+        "ruby",
+        "eruby"
+      ],
+      "roots": [
+        "Gemfile",
+        ".git"
+      ],
+      "basic": "init_options = { formatter = 'auto' },"
+    },
+    "parsers": [
+      "ruby"
+    ]
+  },
+  {
+    "id": "php",
+    "label": "PHP",
+    "group": "Scripting",
+    "server": {
+      "name": "intelephense",
+      "command": "intelephense",
+      "args": [
+        "--stdio"
+      ],
+      "package": "intelephense",
+      "needs": [
+        "node"
+      ],
+      "filetypes": [
+        "php"
+      ],
+      "roots": [
+        "composer.json",
+        ".git"
+      ]
+    },
+    "parsers": [
+      "php",
+      "php_only",
+      "phpdoc"
+    ]
+  },
+  {
+    "id": "bash",
+    "label": "Bash & shell",
+    "short": "Bash",
+    "group": "Scripting",
+    "server": {
+      "name": "bashls",
+      "command": "bash-language-server",
+      "args": [
+        "start"
+      ],
+      "package": "bash-language-server",
+      "needs": [
+        "node"
+      ],
+      "filetypes": [
+        "sh",
+        "bash"
+      ],
+      "roots": [
+        ".git"
+      ]
+    },
+    "formatter": {
+      "name": "shfmt",
+      "command": "shfmt",
+      "filetypes": [
+        "sh",
+        "bash"
+      ],
+      "package": "shfmt",
+      "label": "shfmt"
+    },
+    "parsers": [
+      "bash"
+    ]
+  },
+  {
+    "id": "elixir",
+    "label": "Elixir",
+    "group": "Scripting",
+    "server": {
+      "name": "elixirls",
+      "command": "elixir-ls",
+      "package": "elixir-ls",
+      "needs": [
+        "elixir"
+      ],
+      "filetypes": [
+        "elixir",
+        "eelixir",
+        "heex",
+        "surface"
+      ],
+      "roots": [
+        "mix.exs",
+        ".git"
+      ]
+    },
+    "parsers": [
+      "elixir",
+      "heex",
+      "eex"
+    ]
+  },
+  {
+    "id": "go",
+    "label": "Go",
+    "group": "Systems",
+    "server": {
+      "name": "gopls",
+      "command": "gopls",
+      "package": "gopls",
+      "needs": [
+        "go"
+      ],
+      "filetypes": [
+        "go",
+        "gomod",
+        "gowork",
+        "gotmpl"
+      ],
+      "roots": [
+        "go.work",
+        "go.mod",
+        ".git"
+      ]
+    },
+    "formatter": {
+      "name": "goimports",
+      "command": "goimports",
+      "filetypes": [
+        "go"
+      ],
+      "package": "goimports",
+      "needs": [
+        "go"
+      ],
+      "label": "goimports"
+    },
+    "parsers": [
+      "go",
+      "gomod",
+      "gosum",
+      "gowork"
+    ]
+  },
+  {
+    "id": "rust",
+    "label": "Rust",
+    "group": "Systems",
+    "server": {
+      "name": "rust_analyzer",
+      "command": "rust-analyzer",
+      "package": "rust-analyzer",
+      "needs": [
+        "cargo"
+      ],
+      "filetypes": [
+        "rust"
+      ],
+      "roots": [
+        "Cargo.toml",
+        "rust-project.json",
+        ".git"
+      ]
+    },
+    "formatter": {
+      "name": "rustfmt",
+      "command": "rustfmt",
+      "filetypes": [
+        "rust"
+      ],
+      "needs": [
+        "cargo"
+      ],
+      "label": "rustfmt"
+    },
+    "parsers": [
+      "rust"
+    ]
+  },
+  {
+    "id": "cpp",
+    "label": "C & C++",
+    "short": "C/C++",
+    "group": "Systems",
+    "server": {
+      "name": "clangd",
+      "command": "clangd",
+      "package": "clangd",
+      "filetypes": [
+        "c",
+        "cpp",
+        "objc",
+        "objcpp",
+        "cuda"
+      ],
+      "roots": [
+        ".clangd",
+        ".clang-tidy",
+        ".clang-format",
+        "compile_commands.json",
+        "compile_flags.txt",
+        "configure.ac",
+        ".git"
+      ]
+    },
+    "formatter": {
+      "name": "clang-format",
+      "command": "clang-format",
+      "filetypes": [
+        "c",
+        "cpp"
+      ],
+      "package": "clang-format",
+      "needs": [
+        "python3"
+      ],
+      "label": "clang-format"
+    },
+    "parsers": [
+      "c",
+      "cpp"
+    ]
+  },
+  {
+    "id": "zig",
+    "label": "Zig",
+    "group": "Systems",
+    "server": {
+      "name": "zls",
+      "command": "zls",
+      "package": "zls",
+      "needs": [
+        "zig"
+      ],
+      "filetypes": [
+        "zig",
+        "zir"
+      ],
+      "roots": [
+        "zls.json",
+        "build.zig",
+        ".git"
+      ]
+    },
+    "parsers": [
+      "zig"
+    ]
+  },
+  {
+    "id": "swift",
+    "label": "Swift",
+    "group": "Systems",
+    "server": {
+      "name": "sourcekit",
+      "command": "sourcekit-lsp",
+      "filetypes": [
+        "swift"
+      ],
+      "roots": [
+        "Package.swift",
+        "buildServer.json",
+        ".git"
+      ],
+      "always": "filetypes = { 'swift' },",
+      "note": "comes with Xcode or the Swift toolchain"
+    },
+    "parsers": [
+      "swift"
+    ]
+  },
+  {
+    "id": "java",
+    "label": "Java",
+    "group": "JVM & .NET",
+    "server": {
+      "name": "jdtls",
+      "command": "jdtls",
+      "package": "jdtls",
+      "needs": [
+        "java"
+      ],
+      "filetypes": [
+        "java"
+      ],
+      "roots": [
+        "mvnw",
+        "gradlew",
+        "settings.gradle",
+        "settings.gradle.kts",
+        "build.gradle",
+        "build.gradle.kts",
+        "pom.xml",
+        "build.xml",
+        ".git"
+      ]
+    },
+    "parsers": [
+      "java"
+    ]
+  },
+  {
+    "id": "kotlin",
+    "label": "Kotlin",
+    "group": "JVM & .NET",
+    "server": {
+      "name": "kotlin_language_server",
+      "command": "kotlin-language-server",
+      "package": "kotlin-language-server",
+      "needs": [
+        "java"
+      ],
+      "filetypes": [
+        "kotlin"
+      ],
+      "roots": [
+        "settings.gradle",
+        "settings.gradle.kts",
+        "build.gradle",
+        "build.gradle.kts",
+        "pom.xml",
+        ".git"
+      ]
+    },
+    "formatter": {
+      "name": "ktlint",
+      "command": "ktlint",
+      "filetypes": [
+        "kotlin"
+      ],
+      "package": "ktlint",
+      "needs": [
+        "java"
+      ],
+      "label": "ktlint"
+    },
+    "parsers": [
+      "kotlin"
+    ]
+  },
+  {
+    "id": "csharp",
+    "label": "C#",
+    "group": "JVM & .NET",
+    "server": {
+      "name": "csharp_ls",
+      "command": "csharp-ls",
+      "package": "csharp-language-server",
+      "needs": [
+        "dotnet"
+      ],
+      "filetypes": [
+        "cs"
+      ],
+      "basic": "root_dir = function(bufnr, on_dir)\n  on_dir(vim.fs.root(bufnr, function(name) return name:match('%.sln$') ~= nil or name:match('%.csproj$') ~= nil end) or vim.fs.root(bufnr, { '.git' }))\nend,"
+    },
+    "parsers": [
+      "c_sharp"
+    ]
+  },
+  {
+    "id": "yaml",
+    "label": "YAML",
+    "group": "Config & docs",
+    "server": {
+      "name": "yamlls",
+      "command": "yaml-language-server",
+      "args": [
+        "--stdio"
+      ],
+      "package": "yaml-language-server",
+      "needs": [
+        "node"
+      ],
+      "filetypes": [
+        "yaml",
+        "yaml.docker-compose",
+        "yaml.gitlab",
+        "yaml.helm-values"
+      ],
+      "roots": [
+        ".git"
+      ],
+      "basic": "settings = { redhat = { telemetry = { enabled = false } } },"
+    },
+    "formatter": {
+      "name": "prettier",
+      "command": "prettier",
+      "filetypes": [
+        "yaml"
+      ],
+      "package": "prettier",
+      "needs": [
+        "node"
+      ],
+      "label": "Prettier"
+    },
+    "parsers": [
+      "yaml"
+    ]
+  },
+  {
+    "id": "toml",
+    "label": "TOML",
+    "group": "Config & docs",
+    "server": {
+      "name": "taplo",
+      "command": "taplo",
+      "args": [
+        "lsp",
+        "stdio"
+      ],
+      "package": "taplo",
+      "filetypes": [
+        "toml"
+      ],
+      "roots": [
+        ".taplo.toml",
+        "taplo.toml",
+        ".git"
+      ]
+    },
+    "formatter": {
+      "name": "taplo",
+      "command": "taplo",
+      "filetypes": [
+        "toml"
+      ],
+      "package": "taplo",
+      "label": "Taplo"
+    },
+    "parsers": [
+      "toml"
+    ]
+  },
+  {
+    "id": "markdown",
+    "label": "Markdown",
+    "group": "Config & docs",
+    "server": {
+      "name": "marksman",
+      "command": "marksman",
+      "args": [
+        "server"
+      ],
+      "package": "marksman",
+      "filetypes": [
+        "markdown",
+        "markdown.mdx"
+      ],
+      "roots": [
+        ".marksman.toml",
+        ".git"
+      ]
+    },
+    "formatter": {
+      "name": "prettier",
+      "command": "prettier",
+      "filetypes": [
+        "markdown"
+      ],
+      "package": "prettier",
+      "needs": [
+        "node"
+      ],
+      "label": "Prettier"
+    },
+    "parsers": [
+      "markdown",
+      "markdown_inline"
+    ]
+  },
+  {
+    "id": "docker",
+    "label": "Dockerfile",
+    "group": "Config & docs",
+    "server": {
+      "name": "dockerls",
+      "command": "docker-langserver",
+      "args": [
+        "--stdio"
+      ],
+      "package": "dockerfile-language-server",
+      "needs": [
+        "node"
+      ],
+      "filetypes": [
+        "dockerfile"
+      ],
+      "roots": [
+        "Dockerfile"
+      ]
+    },
+    "parsers": [
+      "dockerfile"
+    ]
+  },
+  {
+    "id": "terraform",
+    "label": "Terraform",
+    "group": "Config & docs",
+    "server": {
+      "name": "terraformls",
+      "command": "terraform-ls",
+      "args": [
+        "serve"
+      ],
+      "package": "terraform-ls",
+      "needs": [
+        "terraform"
+      ],
+      "filetypes": [
+        "terraform",
+        "terraform-vars"
+      ],
+      "roots": [
+        ".terraform",
+        ".git"
+      ]
+    },
+    "parsers": [
+      "terraform",
+      "hcl"
+    ]
+  }
+]
