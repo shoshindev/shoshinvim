@@ -14,11 +14,12 @@ type theme struct {
 	plain                               bool
 	accent, accent2, ok, warn, bad, dim color.Color
 	border                              color.Color
+	logo                                []color.Color // wordmark bands, top to bottom
 }
 
 func newTheme(dark, plain bool) theme {
 	pick := lipgloss.LightDark(dark)
-	return theme{
+	t := theme{
 		plain:   plain,
 		accent:  pick(lipgloss.Color("#B35B79"), lipgloss.Color("#D27E99")),
 		accent2: pick(lipgloss.Color("#4D699B"), lipgloss.Color("#7E9CD8")),
@@ -28,6 +29,9 @@ func newTheme(dark, plain bool) theme {
 		dim:     pick(lipgloss.Color("#8A8980"), lipgloss.Color("#727169")),
 		border:  pick(lipgloss.Color("#C9CBD1"), lipgloss.Color("#54546D")),
 	}
+	// The wordmark shades from one accent to the other, one band per row.
+	t.logo = lipgloss.Blend1D(logoRows, t.accent, t.accent2)
+	return t
 }
 
 func (t theme) fg(c color.Color) lipgloss.Style {
@@ -88,8 +92,8 @@ func (t theme) Swatch(colors []string) string {
 	return b.String()
 }
 
-func (t theme) Panel(width int, body string) string {
-	style := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(1, 3).Width(width)
+func (t theme) Panel(width, padY int, body string) string {
+	style := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(padY, 3).Width(width)
 	if !t.plain {
 		style = style.BorderForeground(t.border)
 	}

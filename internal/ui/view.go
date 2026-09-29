@@ -832,10 +832,24 @@ func (m *Model) welcomeContent(cw, h int) []string {
 			"Nothing is written or downloaded until you review and save."}
 	}
 	panelW := min(cw, 72)
-	logo := m.th.Accent("◯") + "  " + m.th.Gradient("S H O S H I N V I M") + "   " + m.th.Dim("初心 · beginner's mind")
-	content := logo + "\n\n" + strings.Join(wrapAll(body, panelW-8), "\n")
-	lines := strings.Split(m.th.Panel(panelW, content), "\n")
-	lines = append(lines, "", m.th.Dim("Target  ")+shortPath(m.target)+m.th.Dim(" · ")+m.statusTag(), "")
+	text := strings.Join(wrapAll(body, panelW-8), "\n")
+	tagline := m.th.Dim("初心 · beginner's mind")
+	target := []string{"", m.th.Dim("Target  ") + shortPath(m.target) + m.th.Dim(" · ") + m.statusTag(), ""}
+	// The large wordmark heads the screen when the terminal has room for it and the
+	// menu (tightening the panel if needed); otherwise a one-line mark heads the panel.
+	mark := m.th.Accent("◯") + "  " + m.th.Gradient("S H O S H I N V I M") + "   " + tagline
+	lines := strings.Split(m.th.Panel(panelW, 1, mark+"\n\n"+text), "\n")
+	if lw := logoWidth(); lw <= cw {
+		logo := append(m.th.Logo(), strings.Repeat(" ", max(0, lw-lipgloss.Width(tagline)))+tagline)
+		for _, padY := range []int{1, 0} {
+			panel := strings.Split(m.th.Panel(panelW, padY, text), "\n")
+			if len(logo)+len(panel)+len(target)+len(m.menu)+1 <= h {
+				lines = append(logo, panel...)
+				break
+			}
+		}
+	}
+	lines = append(lines, target...)
 	return append(lines, m.menuLines(m.menu, cw, h-len(lines))...)
 }
 
@@ -961,7 +975,7 @@ func (m *Model) renderOverlay(cw, h int) []string {
 	if len(commands) == 0 {
 		lines = append(lines, m.th.Dim("No matching command"))
 	}
-	panel := strings.Split(m.th.Panel(min(cw, 56), strings.Join(window(lines, h-4, m.cursor+2), "\n")), "\n")
+	panel := strings.Split(m.th.Panel(min(cw, 56), 1, strings.Join(window(lines, h-4, m.cursor+2), "\n")), "\n")
 	return indent(append([]string{m.th.Bold("Commands"), ""}, panel...))
 }
 
