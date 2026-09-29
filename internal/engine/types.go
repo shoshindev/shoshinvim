@@ -43,13 +43,14 @@ type Manifest struct {
 }
 
 type Action struct {
-	ID          string `json:"id"`
-	Kind        string `json:"kind"`
-	Source      string `json:"source,omitempty"`
-	Revision    string `json:"revision,omitempty"`
-	Package     string `json:"package,omitempty"`
-	Destination string `json:"destination"`
-	Description string `json:"description"`
+	ID          string   `json:"id"`
+	Kind        string   `json:"kind"`
+	Source      string   `json:"source,omitempty"`
+	Revision    string   `json:"revision,omitempty"`
+	Package     string   `json:"package,omitempty"`
+	Parsers     []string `json:"parsers,omitempty"`
+	Destination string   `json:"destination"`
+	Description string   `json:"description"`
 }
 
 type Plan struct {

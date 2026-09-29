@@ -70,11 +70,55 @@ func RunPlain(target, bin string, in io.Reader, out io.Writer) error {
 			i += dir
 			continue
 		}
+		q = q.resolve(s)
 		if st.sec != shown {
 			fmt.Fprintf(out, "\n── %d/%d %s ── %s\n", st.sec+1, len(sections), sec.title, sec.intro)
 			shown = st.sec
 		}
 		fmt.Fprintf(out, "\n%s — %s\n", q.title, q.help)
+		if hint := shortcutHint(s, q.actions); hint != "" {
+			fmt.Fprintln(out, hint)
+		}
+		if q.keymaps {
+			for _, k := range engine.EffectiveKeymaps(s) {
+				fmt.Fprintf(out, "  %-18s %-46s %s\n", engine.KeyLabel(s, k.Key), shortcutLabel(k), k.Source)
+			}
+			line, ok := read("Press Enter to keep these (customize them in the full-screen setup or with plan --state), b to go back: ")
+			if !ok {
+				return ended()
+			}
+			if strings.EqualFold(line, "b") {
+				i, dir = i-1, -1
+				continue
+			}
+			i, dir = i+1, 1
+			continue
+		}
+		if q.input != nil {
+			def, _ := s.Values[q.input.setting].(string)
+			line, ok := read(q.title + " (" + q.input.placeholder + ") [" + def + "]: ")
+			if !ok {
+				return ended()
+			}
+			switch {
+			case strings.EqualFold(line, "q"):
+				fmt.Fprintln(out, "Quit without saving. No configuration was written.")
+				return nil
+			case strings.EqualFold(line, "b"):
+				i, dir = i-1, -1
+				continue
+			case line == "":
+				line = def
+			}
+			next, err := plainInput(c, s, q, line, out)
+			if err != nil {
+				fmt.Fprintln(out, "  "+err.Error())
+				continue
+			}
+			s = next
+			i, dir = i+1, 1
+			continue
+		}
 		var def string
 		if q.multi {
 			selected := checked(s, q)
@@ -97,11 +141,17 @@ func RunPlain(target, bin string, in io.Reader, out io.Writer) error {
 				current = recommendedIndex(q)
 			}
 			for k, o := range q.options {
+				if o.group != "" && (k == 0 || o.group != q.options[k-1].group) {
+					fmt.Fprintf(out, "  %s\n", strings.ToUpper(o.group))
+				}
 				detail := ""
 				if o.detail != "" {
 					detail = " — " + o.detail
 				}
 				fmt.Fprintf(out, "  %d. %s%s%s\n", k+1, o.label, recommendedNote(o), detail)
+				if line := pluginLine(o.plugin); line != "" {
+					fmt.Fprintf(out, "       %s\n", line)
+				}
 			}
 			def = strconv.Itoa(current + 1)
 		}
@@ -200,6 +250,31 @@ func RunPlain(target, bin string, in io.Reader, out io.Writer) error {
 		}
 	}
 	return nil
+}
+
+// plainInput stores typed text; a theme repository is looked up on GitHub first.
+func plainInput(c engine.Catalog, s engine.State, q question, value string, out io.Writer) (engine.State, error) {
+	if value == "" {
+		return s, fmt.Errorf("type %s, b to go back, or q to quit", q.input.placeholder)
+	}
+	next := engine.Clone(s)
+	if !q.input.lookup {
+		return next, c.Set(&next, q.input.setting, value, true)
+	}
+	fmt.Fprintln(out, "  Looking up "+value+" on GitHub…")
+	l, err := lookupTheme(context.Background(), value)
+	if err != nil {
+		return s, err
+	}
+	themeLookups[l.Repository+"@"+l.Revision] = l
+	fmt.Fprintf(out, "  Pinned %s at %s (not reviewed by ShoshinVim).\n", l.Repository, l.Revision[:7])
+	if repo, _ := next.Values["appearance.custom_theme.repository"].(string); repo != l.Repository {
+		unset(&next, "appearance.custom_theme.colorscheme")
+	}
+	if err := c.Set(&next, "appearance.custom_theme.repository", l.Repository, true); err != nil {
+		return s, err
+	}
+	return next, c.Set(&next, "appearance.custom_theme.revision", l.Revision, true)
 }
 
 func recommendedNote(o option) string {

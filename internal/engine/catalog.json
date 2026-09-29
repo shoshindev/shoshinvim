@@ -103,21 +103,9 @@
       "label": "Colorscheme",
       "type": "enum",
       "choices": [
-        "tokyonight",
-        "default",
-        "habamax",
-        "slate",
-        "desert",
-        "elflord",
-        "industry",
-        "evening",
-        "quiet",
-        "retrobox",
-        "sorbet",
-        "wildcharm",
-        "zaibatsu"
+        "(filled from themes.json)"
       ],
-      "description": "Tokyo Night gives Rich IDE a cohesive dark palette; built-in themes need no downloads."
+      "description": "Color theme; plugin themes are downloaded and pinned, built-in themes need no download."
     },
     {
       "id": "plugins.manager",
@@ -136,6 +124,8 @@
       "choices": [
         "native",
         "snacks",
+        "telescope",
+        "fzf-lua",
         "mini.pick"
       ],
       "description": "Native commands have no dependencies; Snacks offers broad sources; mini.pick is compact."
@@ -146,8 +136,11 @@
       "type": "enum",
       "choices": [
         "native",
+        "snacks",
+        "neo-tree",
+        "nvim-tree",
         "oil",
-        "snacks"
+        "mini.files"
       ],
       "description": "Native directories, Oil editable directories, or a Snacks sidebar with search and file operations."
     },
@@ -157,7 +150,8 @@
       "type": "enum",
       "choices": [
         "native",
-        "gitsigns"
+        "gitsigns",
+        "mini.diff"
       ],
       "description": "Native diff or inline Git changes with Gitsigns."
     },
@@ -245,7 +239,8 @@
       "type": "enum",
       "choices": [
         "native",
-        "lualine"
+        "lualine",
+        "mini.statusline"
       ],
       "description": "Mode, Git branch, diagnostics, active language servers and cursor position."
     },
@@ -255,7 +250,9 @@
       "type": "enum",
       "choices": [
         "native",
-        "bufferline"
+        "bufferline",
+        "barbar",
+        "mini.tabline"
       ],
       "description": "Visible open buffers with diagnostic counts; Shift-H / Shift-L switch files."
     },
@@ -265,9 +262,10 @@
       "type": "enum",
       "choices": [
         "native",
-        "which-key"
+        "which-key",
+        "mini.clue"
       ],
-      "description": "Press Space and pause to see available commands grouped by task."
+      "description": "Press the leader key and pause to see available commands grouped by task."
     },
     {
       "id": "experience.layout",
@@ -278,6 +276,199 @@
         "rich"
       ],
       "description": "Rich adds a welcome screen, sidebar, floating input and terminal, indentation guides and consistent shortcuts."
+    },
+    {
+      "id": "appearance.custom_theme.repository",
+      "label": "Custom theme repository",
+      "type": "string",
+      "description": "GitHub repository of a theme ShoshinVim does not list, as owner/name."
+    },
+    {
+      "id": "appearance.custom_theme.revision",
+      "label": "Custom theme revision",
+      "type": "string",
+      "description": "The exact commit of the custom theme that was reviewed and will be downloaded."
+    },
+    {
+      "id": "appearance.custom_theme.colorscheme",
+      "label": "Custom theme colorscheme",
+      "type": "string",
+      "description": "The :colorscheme name the custom theme provides."
+    },
+    {
+      "id": "completion.engine",
+      "label": "Completion engine",
+      "type": "enum",
+      "choices": [
+        "native",
+        "blink.cmp",
+        "nvim-cmp"
+      ],
+      "description": "Which engine shows completion suggestions."
+    },
+    {
+      "id": "coding.pairs",
+      "label": "Auto-close pairs",
+      "type": "enum",
+      "choices": [
+        "none",
+        "nvim-autopairs",
+        "mini.pairs"
+      ],
+      "description": "Insert the closing bracket or quote when you type the opening one."
+    },
+    {
+      "id": "coding.surround",
+      "label": "Surround",
+      "type": "enum",
+      "choices": [
+        "none",
+        "mini.surround",
+        "nvim-surround"
+      ],
+      "description": "Add, change and delete brackets, quotes and tags around text."
+    },
+    {
+      "id": "coding.textobjects",
+      "label": "Text objects",
+      "type": "enum",
+      "choices": [
+        "none",
+        "mini.ai"
+      ],
+      "description": "Extra around/inside selections such as function arguments and calls."
+    },
+    {
+      "id": "coding.todo",
+      "label": "TODO comments",
+      "type": "enum",
+      "choices": [
+        "none",
+        "todo-comments",
+        "mini.hipatterns"
+      ],
+      "description": "Highlight TODO, FIXME, HACK and NOTE in comments."
+    },
+    {
+      "id": "coding.lint",
+      "label": "Linting",
+      "type": "enum",
+      "choices": [
+        "none",
+        "nvim-lint"
+      ],
+      "description": "Run linters on save: markdownlint for Markdown and ESLint in projects configured for it."
+    },
+    {
+      "id": "coding.debug",
+      "label": "Debugger",
+      "type": "enum",
+      "choices": [
+        "none",
+        "nvim-dap-ui",
+        "nvim-dap-view"
+      ],
+      "description": "Step through JavaScript and TypeScript with nvim-dap and a debugger view."
+    },
+    {
+      "id": "syntax.engine",
+      "label": "Syntax engine",
+      "type": "enum",
+      "choices": [
+        "native",
+        "nvim-treesitter"
+      ],
+      "description": "How code is parsed for colors and indentation: Neovim's syntax files, or Tree-sitter parsers installed through nvim-treesitter."
+    },
+    {
+      "id": "keymaps.style",
+      "label": "Shortcut style",
+      "type": "enum",
+      "choices": [
+        "none",
+        "kickstart",
+        "lazyvim"
+      ],
+      "description": "Which community keymap set to start from; your own shortcuts are added on top."
+    },
+    {
+      "id": "keymaps.leader",
+      "label": "Leader key",
+      "type": "enum",
+      "choices": [
+        "space",
+        "comma",
+        "backslash"
+      ],
+      "description": "The key that starts leader shortcuts such as <leader>ff."
+    },
+    {
+      "id": "workspace.start_screen",
+      "label": "Start screen",
+      "type": "enum",
+      "choices": [
+        "none",
+        "snacks",
+        "mini.starter"
+      ],
+      "description": "What Neovim shows when started without a file."
+    },
+    {
+      "id": "appearance.indent",
+      "label": "Indent guides",
+      "type": "enum",
+      "choices": [
+        "none",
+        "indent-blankline",
+        "snacks",
+        "mini.indentscope"
+      ],
+      "description": "Vertical lines that show indentation levels."
+    },
+    {
+      "id": "appearance.notifications",
+      "label": "Notifications",
+      "type": "enum",
+      "choices": [
+        "none",
+        "snacks",
+        "fidget"
+      ],
+      "description": "How messages and language server progress are shown."
+    },
+    {
+      "id": "editor.detect_indent",
+      "label": "Detect indentation",
+      "type": "enum",
+      "choices": [
+        "none",
+        "guess-indent"
+      ],
+      "description": "Adapt tab width and spaces to each file's existing indentation."
+    },
+    {
+      "id": "editor.highlight_yank",
+      "label": "Highlight on copy",
+      "type": "boolean",
+      "description": "Briefly highlight text after it is yanked (copied)."
+    },
+    {
+      "id": "editor.trim_whitespace",
+      "label": "Trim trailing spaces",
+      "type": "boolean",
+      "description": "Remove spaces at the end of lines when saving."
+    },
+    {
+      "id": "editor.restore_cursor",
+      "label": "Reopen at last position",
+      "type": "boolean",
+      "description": "Return to where you left off when reopening a file."
+    },
+    {
+      "id": "editor.spell_prose",
+      "label": "Spell check prose",
+      "type": "boolean",
+      "description": "Check spelling in Markdown, text and commit messages."
     }
   ],
   "profiles": {
@@ -329,52 +520,56 @@
       "tools.provider": "mason"
     },
     "rich-ide": {
-      "editor.number": true,
-      "editor.wrap": false,
-      "editor.ignorecase": true,
-      "editor.smartcase": true,
-      "editor.confirm": true,
-      "editor.undofile": true,
-      "editor.splitright": true,
-      "editor.splitbelow": true,
-      "editor.scrolloff": 8,
+      "appearance.buffers": "bufferline",
+      "appearance.colorscheme": "tokyonight",
+      "appearance.indent": "snacks",
+      "appearance.notifications": "snacks",
+      "appearance.statusline": "lualine",
       "completion.native": true,
       "diagnostics.virtual_text": true,
+      "editor.confirm": true,
       "editor.expandtab": true,
-      "editor.tabstop": 2,
-      "editor.shiftwidth": 2,
-      "plugins.manager": "lazy",
-      "navigation.picker": "snacks",
-      "git.hunks": "gitsigns",
-      "language.typescript.lsp": true,
-      "language.html.lsp": true,
-      "language.css.lsp": true,
-      "language.json.lsp": true,
-      "formatting.provider": "conform",
-      "tools.provider": "mason",
-      "language.lua.lsp": true,
-      "appearance.colorscheme": "tokyonight",
-      "appearance.statusline": "lualine",
-      "appearance.buffers": "bufferline",
-      "navigation.shortcuts": "which-key",
-      "experience.layout": "rich",
-      "navigation.explorer": "snacks",
+      "editor.ignorecase": true,
       "editor.mouse": "a",
-      "options.termguicolors": true,
-      "options.cursorline": true,
-      "options.signcolumn": "yes",
-      "options.laststatus": 3,
-      "options.showmode": false,
-      "options.updatetime": 250,
-      "options.timeoutlen": 400,
-      "options.completeopt": "menu,menuone,noselect,popup",
-      "options.pumheight": 12,
-      "options.winborder": "rounded",
+      "editor.number": true,
+      "editor.scrolloff": 8,
+      "editor.shiftwidth": 2,
+      "editor.smartcase": true,
+      "editor.splitbelow": true,
+      "editor.splitright": true,
+      "editor.tabstop": 2,
+      "editor.undofile": true,
+      "editor.wrap": false,
+      "formatting.provider": "conform",
+      "git.hunks": "gitsigns",
+      "keymaps.leader": "space",
+      "keymaps.style": "lazyvim",
+      "language.css.lsp": true,
+      "language.html.lsp": true,
+      "language.json.lsp": true,
+      "language.lua.lsp": true,
+      "language.typescript.lsp": true,
+      "navigation.explorer": "snacks",
+      "navigation.picker": "snacks",
+      "navigation.shortcuts": "which-key",
       "options.clipboard": "unnamedplus",
-      "options.sidescrolloff": 8,
+      "options.completeopt": "menu,menuone,noselect,popup",
+      "options.cursorline": true,
+      "options.inccommand": "split",
+      "options.laststatus": 3,
       "options.list": true,
       "options.listchars": "tab:  ,trail:·,nbsp:␣",
-      "options.inccommand": "split"
+      "options.pumheight": 12,
+      "options.showmode": false,
+      "options.sidescrolloff": 8,
+      "options.signcolumn": "yes",
+      "options.termguicolors": true,
+      "options.timeoutlen": 400,
+      "options.updatetime": 250,
+      "options.winborder": "rounded",
+      "plugins.manager": "lazy",
+      "tools.provider": "mason",
+      "workspace.start_screen": "snacks"
     }
   }
 }

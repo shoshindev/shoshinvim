@@ -2,61 +2,751 @@
   "lazy": {
     "repository": "folke/lazy.nvim",
     "revision": "306a05526ada86a7b30af95c5cc81ffba93fef97",
-    "reviewed": "2026-09-28"
+    "reviewed": "2026-09-28",
+    "stars": 21609,
+    "updated": "2026-06",
+    "license": "Apache-2.0",
+    "used_by": [
+      "LazyVim",
+      "NvChad",
+      "AstroNvim"
+    ]
   },
   "snacks": {
     "repository": "folke/snacks.nvim",
     "revision": "882c996cf28183f4d63640de0b4c02ec886d01f2",
-    "reviewed": "2026-09-28"
+    "reviewed": "2026-09-28",
+    "stars": 8111,
+    "updated": "2026-05",
+    "license": "Apache-2.0",
+    "used_by": [
+      "LazyVim",
+      "AstroNvim"
+    ]
   },
   "mini.pick": {
     "repository": "nvim-mini/mini.pick",
     "revision": "360c1bb33610e030698d07ed15969ab4762dbcd6",
-    "reviewed": "2026-09-28"
+    "reviewed": "2026-09-28",
+    "stars": 211,
+    "updated": "2026-09",
+    "license": "MIT"
   },
   "oil": {
     "repository": "stevearc/oil.nvim",
     "revision": "b73018b75affd13fa38e2fc94ef753b465f770d7",
-    "reviewed": "2026-09-28"
+    "reviewed": "2026-09-28",
+    "stars": 6922,
+    "updated": "2026-06",
+    "license": "MIT"
   },
   "gitsigns": {
     "repository": "lewis6991/gitsigns.nvim",
     "revision": "070a5d7b985546cc57e1fc61e5bc507fecac6045",
-    "reviewed": "2026-09-28"
+    "reviewed": "2026-09-28",
+    "stars": 7125,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "LazyVim",
+      "kickstart",
+      "NvChad",
+      "AstroNvim"
+    ]
   },
   "conform": {
     "repository": "stevearc/conform.nvim",
     "revision": "016802de402556da54c36bd7359b441266b01cdd",
-    "reviewed": "2026-09-28"
+    "reviewed": "2026-09-28",
+    "stars": 5358,
+    "updated": "2026-08",
+    "license": "MIT",
+    "used_by": [
+      "LazyVim",
+      "kickstart",
+      "NvChad"
+    ]
   },
   "lspconfig": {
     "repository": "neovim/nvim-lspconfig",
     "revision": "a9bb4d5f4276aa5cddc015faa3ecc5a7b5a26b14",
-    "reviewed": "2026-09-28"
+    "reviewed": "2026-09-28",
+    "stars": 13960,
+    "updated": "2026-09",
+    "license": "Apache-2.0",
+    "used_by": [
+      "LazyVim",
+      "kickstart",
+      "NvChad",
+      "AstroNvim"
+    ]
   },
   "mason": {
     "repository": "mason-org/mason.nvim",
     "revision": "2a6940af80375532e5e9e7c1f2fc6319a1b7a69d",
-    "reviewed": "2026-09-28"
+    "reviewed": "2026-09-28",
+    "stars": 10496,
+    "updated": "2026-06",
+    "license": "Apache-2.0",
+    "used_by": [
+      "LazyVim",
+      "kickstart",
+      "NvChad",
+      "AstroNvim"
+    ]
   },
   "tokyonight": {
     "repository": "folke/tokyonight.nvim",
     "revision": "cdc07ac78467a233fd62c493de29a17e0cf2b2b6",
-    "reviewed": "2026-09-28"
+    "reviewed": "2026-09-28",
+    "stars": 8208,
+    "updated": "2026-03",
+    "license": "Apache-2.0",
+    "used_by": [
+      "LazyVim",
+      "kickstart"
+    ]
   },
   "lualine": {
     "repository": "nvim-lualine/lualine.nvim",
     "revision": "221ce6b2d999187044529f49da6554a92f740a96",
-    "reviewed": "2026-09-28"
+    "reviewed": "2026-09-28",
+    "stars": 8144,
+    "updated": "2026-05",
+    "license": "MIT",
+    "used_by": [
+      "LazyVim"
+    ]
   },
   "bufferline": {
     "repository": "akinsho/bufferline.nvim",
     "revision": "655133c3b4c3e5e05ec549b9f8cc2894ac6f51b3",
-    "reviewed": "2026-09-28"
+    "reviewed": "2026-09-28",
+    "stars": 4372,
+    "updated": "2025-01",
+    "license": "GPL-3.0",
+    "used_by": [
+      "LazyVim"
+    ]
   },
   "which-key": {
     "repository": "folke/which-key.nvim",
     "revision": "3aab2147e74890957785941f0c1ad87d0a44c15a",
-    "reviewed": "2026-09-28"
+    "reviewed": "2026-09-28",
+    "stars": 7317,
+    "updated": "2025-10",
+    "license": "Apache-2.0",
+    "used_by": [
+      "LazyVim",
+      "kickstart",
+      "NvChad",
+      "AstroNvim"
+    ]
+  },
+  "catppuccin": {
+    "repository": "catppuccin/nvim",
+    "revision": "edefef779ab08ce1a4a404713e3012b0d202bd35",
+    "reviewed": "2026-09-29",
+    "stars": 7640,
+    "updated": "2026-08",
+    "license": "MIT",
+    "used_by": [
+      "LazyVim"
+    ]
+  },
+  "kanagawa": {
+    "repository": "rebelot/kanagawa.nvim",
+    "revision": "bb85e4bfc8d89b0e62c8fa53ccdd13d12e2f77b3",
+    "reviewed": "2026-09-29",
+    "stars": 6405,
+    "updated": "2026-05",
+    "license": "MIT"
+  },
+  "everforest": {
+    "repository": "sainnhe/everforest",
+    "revision": "85a86eb62409e3ec88713bff3d1b9d7374e112e4",
+    "reviewed": "2026-09-29",
+    "stars": 4234,
+    "updated": "2026-06",
+    "license": "MIT"
+  },
+  "nightfox": {
+    "repository": "EdenEast/nightfox.nvim",
+    "revision": "4dacd3f0185a2227bdf3b6c0975a8f0bf87cac9a",
+    "reviewed": "2026-09-29",
+    "stars": 4078,
+    "updated": "2026-07",
+    "license": "MIT"
+  },
+  "rose-pine": {
+    "repository": "rose-pine/neovim",
+    "revision": "ff483051a47e27d84bdef47703538df1ed9f4a47",
+    "reviewed": "2026-09-29",
+    "stars": 3097,
+    "updated": "2026-05",
+    "license": "MIT"
+  },
+  "gruvbox-material": {
+    "repository": "sainnhe/gruvbox-material",
+    "revision": "11d779b26a9ab2b3db8c22c6ac9fb6e8ed4fea79",
+    "reviewed": "2026-09-29",
+    "stars": 2650,
+    "updated": "2026-04",
+    "license": "MIT"
+  },
+  "gruvbox": {
+    "repository": "ellisonleao/gruvbox.nvim",
+    "revision": "154eb5ff5b96d0641307113fa385eaf0d36d9796",
+    "reviewed": "2026-09-29",
+    "stars": 2614,
+    "updated": "2026-04",
+    "license": "MIT"
+  },
+  "github-theme": {
+    "repository": "projekt0n/github-nvim-theme",
+    "revision": "c106c9472154d6b2c74b74565616b877ae8ed31d",
+    "reviewed": "2026-09-29",
+    "stars": 2471,
+    "updated": "2024-12",
+    "license": "MIT"
+  },
+  "onedark": {
+    "repository": "navarasu/onedark.nvim",
+    "revision": "df4792accde9db0043121f32628bcf8e645d9aea",
+    "reviewed": "2026-09-29",
+    "stars": 2009,
+    "updated": "2026-04",
+    "license": "MIT"
+  },
+  "sonokai": {
+    "repository": "sainnhe/sonokai",
+    "revision": "b023c5280b16fe2366f5e779d8d2756b3e5ee9c3",
+    "reviewed": "2026-09-29",
+    "stars": 1954,
+    "updated": "2026-01",
+    "license": "MIT"
+  },
+  "oxocarbon": {
+    "repository": "nyoom-engineering/oxocarbon.nvim",
+    "revision": "cd6523a0836d6e8ee823d343149fd06c7b71fdde",
+    "reviewed": "2026-09-29",
+    "stars": 1641,
+    "updated": "2026-09",
+    "license": "MIT"
+  },
+  "cyberdream": {
+    "repository": "scottmckendry/cyberdream.nvim",
+    "revision": "b3f4ef5e9b8ee370c913a48b63e130b730ee8782",
+    "reviewed": "2026-09-29",
+    "stars": 1412,
+    "updated": "2026-09",
+    "license": "MIT"
+  },
+  "moonfly": {
+    "repository": "bluz71/vim-moonfly-colors",
+    "revision": "2c883835f5b7b380a0a9e80695c420f7efebdfe4",
+    "reviewed": "2026-09-29",
+    "stars": 1331,
+    "updated": "2026-09",
+    "license": "MIT"
+  },
+  "vague": {
+    "repository": "vague-theme/vague.nvim",
+    "revision": "f9060fdaf7b20f68575d6f8214da6f1cf0c72825",
+    "reviewed": "2026-09-29",
+    "stars": 1192,
+    "updated": "2026-07",
+    "license": "MIT"
+  },
+  "onedarkpro": {
+    "repository": "olimorris/onedarkpro.nvim",
+    "revision": "24c806cb85c1f84d9faaff457cf7aa87c685a070",
+    "reviewed": "2026-09-29",
+    "stars": 1100,
+    "updated": "2026-09",
+    "license": "MIT"
+  },
+  "material": {
+    "repository": "marko-cerovac/material.nvim",
+    "revision": "92f7366a9315cd386bc4fa4d716fde375dda210f",
+    "reviewed": "2026-09-29",
+    "stars": 1091,
+    "updated": "2026-02",
+    "license": "GPL-2.0"
+  },
+  "nordic": {
+    "repository": "AlexvZyl/nordic.nvim",
+    "revision": "9fb62116b891184049c50ca6ffb0d3bc100a1a6e",
+    "reviewed": "2026-09-29",
+    "stars": 1065,
+    "updated": "2026-05",
+    "license": "MIT"
+  },
+  "edge": {
+    "repository": "sainnhe/edge",
+    "revision": "7ec78c21bd8f0b2b0b47043bb1e730c561647c72",
+    "reviewed": "2026-09-29",
+    "stars": 1046,
+    "updated": "2026-01",
+    "license": "MIT"
+  },
+  "solarized-osaka": {
+    "repository": "craftzdog/solarized-osaka.nvim",
+    "revision": "a21176efde15fab21fabda0bf2ba123ed6d7332d",
+    "reviewed": "2026-09-29",
+    "stars": 1035,
+    "updated": "2026-08",
+    "license": "Apache-2.0"
+  },
+  "vscode": {
+    "repository": "Mofiqul/vscode.nvim",
+    "revision": "6439ed89d0e10193f07e92268a321d7c6f6e93ee",
+    "reviewed": "2026-09-29",
+    "stars": 1000,
+    "updated": "2026-09",
+    "license": "MIT"
+  },
+  "melange": {
+    "repository": "savq/melange-nvim",
+    "revision": "ce42f6b629beeaa00591ba73a77d3eeac4cf28ce",
+    "reviewed": "2026-09-29",
+    "stars": 980,
+    "updated": "2025-12",
+    "license": "MIT"
+  },
+  "nightfly": {
+    "repository": "bluz71/vim-nightfly-colors",
+    "revision": "2c31d07ce05efa92bcb7f893f9c74a846226c898",
+    "reviewed": "2026-09-29",
+    "stars": 940,
+    "updated": "2026-09",
+    "license": "MIT"
+  },
+  "dracula": {
+    "repository": "Mofiqul/dracula.nvim",
+    "revision": "ae752c13e95fb7c5f58da4b5123cb804ea7568ee",
+    "reviewed": "2026-09-29",
+    "stars": 783,
+    "updated": "2025-11",
+    "license": "MIT"
+  },
+  "monokai-pro": {
+    "repository": "loctvl842/monokai-pro.nvim",
+    "revision": "a68e38b8e55d69a215d0f02598900a79c356da9d",
+    "reviewed": "2026-09-29",
+    "stars": 719,
+    "updated": "2026-05",
+    "license": "MIT"
+  },
+  "nord": {
+    "repository": "gbprod/nord.nvim",
+    "revision": "87394d4fc35c901bbe38326a78d31ab1ead826b6",
+    "reviewed": "2026-09-29",
+    "stars": 313,
+    "updated": "2026-04",
+    "license": "WTFPL"
+  },
+  "mini.statusline": {
+    "repository": "nvim-mini/mini.statusline",
+    "revision": "127997ebef7ef632161203b960c5ef9d158f4810",
+    "reviewed": "2026-09-29",
+    "stars": 106,
+    "updated": "2026-07",
+    "license": "MIT",
+    "used_by": [
+      "kickstart"
+    ]
+  },
+  "barbar": {
+    "repository": "romgrk/barbar.nvim",
+    "revision": "337ecfadb8bf005050990bf2f624dc4fc828dabd",
+    "reviewed": "2026-09-29",
+    "stars": 2729,
+    "updated": "2026-06",
+    "license": ""
+  },
+  "mini.tabline": {
+    "repository": "nvim-mini/mini.tabline",
+    "revision": "525b27e98de7cd2a6012d99f45b4fc10676e00e5",
+    "reviewed": "2026-09-29",
+    "stars": 39,
+    "updated": "2026-07",
+    "license": "MIT"
+  },
+  "telescope": {
+    "repository": "nvim-telescope/telescope.nvim",
+    "revision": "40aedd8a68c78a656a10a8d62d80c54af59420fb",
+    "reviewed": "2026-09-29",
+    "stars": 19803,
+    "updated": "2026-08",
+    "license": "MIT",
+    "used_by": [
+      "kickstart",
+      "NvChad",
+      "LazyVim (extra)"
+    ],
+    "requires": [
+      "plenary"
+    ]
+  },
+  "plenary": {
+    "repository": "nvim-lua/plenary.nvim",
+    "revision": "74b06c6c75e4eeb3108ec01852001636d85a932b",
+    "reviewed": "2026-09-29",
+    "stars": 3498,
+    "updated": "2026-04",
+    "license": "MIT",
+    "used_by": [
+      "kickstart",
+      "NvChad"
+    ]
+  },
+  "fzf-lua": {
+    "repository": "ibhagwan/fzf-lua",
+    "revision": "ec1b98d3f5f44a1cff1f2c3832af2f09c3d806ca",
+    "reviewed": "2026-09-29",
+    "stars": 4455,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "LazyVim (extra)"
+    ]
+  },
+  "neo-tree": {
+    "repository": "nvim-neo-tree/neo-tree.nvim",
+    "revision": "020e50ff7fdaa0d76de23cfe5c485504729483b0",
+    "reviewed": "2026-09-29",
+    "stars": 5613,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "AstroNvim",
+      "kickstart (optional)",
+      "LazyVim (extra)"
+    ],
+    "requires": [
+      "plenary",
+      "nui"
+    ]
+  },
+  "nui": {
+    "repository": "MunifTanjim/nui.nvim",
+    "revision": "10fc361835c856ba4233ef5ea135b919bf3dce97",
+    "reviewed": "2026-09-29",
+    "stars": 2127,
+    "updated": "2026-08",
+    "license": "MIT"
+  },
+  "nvim-tree": {
+    "repository": "nvim-tree/nvim-tree.lua",
+    "revision": "478c69c0fe253caea88de9c5e138bfa77395a59a",
+    "reviewed": "2026-09-29",
+    "stars": 8650,
+    "updated": "2026-09",
+    "license": "",
+    "used_by": [
+      "NvChad"
+    ]
+  },
+  "mini.files": {
+    "repository": "nvim-mini/mini.files",
+    "revision": "f1cfece89892274f4f4a59d71f24eb90dcfe1b5a",
+    "reviewed": "2026-09-29",
+    "stars": 639,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "LazyVim (extra)"
+    ]
+  },
+  "blink.cmp": {
+    "repository": "saghen/blink.cmp",
+    "revision": "78336bc89ee5365633bcf754d93df01678b5c08f",
+    "reviewed": "2026-09-29",
+    "release": "v1.10.2",
+    "stars": 6602,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "LazyVim",
+      "kickstart",
+      "AstroNvim"
+    ]
+  },
+  "nvim-cmp": {
+    "repository": "hrsh7th/nvim-cmp",
+    "revision": "2ffe79f1f021def8dd1fcd81deb16f1bb0d989f3",
+    "reviewed": "2026-09-29",
+    "stars": 9486,
+    "updated": "2026-07",
+    "license": "MIT",
+    "used_by": [
+      "NvChad"
+    ],
+    "requires": [
+      "cmp-nvim-lsp",
+      "cmp-buffer",
+      "cmp-path"
+    ]
+  },
+  "cmp-nvim-lsp": {
+    "repository": "hrsh7th/cmp-nvim-lsp",
+    "revision": "cbc7b02bb99fae35cb42f514762b89b5126651ef",
+    "reviewed": "2026-09-29",
+    "stars": 1513,
+    "updated": "2025-11",
+    "license": "MIT",
+    "used_by": [
+      "NvChad"
+    ]
+  },
+  "cmp-buffer": {
+    "repository": "hrsh7th/cmp-buffer",
+    "revision": "b74fab3656eea9de20a9b8116afa3cfc4ec09657",
+    "reviewed": "2026-09-29",
+    "stars": 672,
+    "updated": "2025-04",
+    "license": "MIT",
+    "used_by": [
+      "NvChad"
+    ]
+  },
+  "cmp-path": {
+    "repository": "hrsh7th/cmp-path",
+    "revision": "c642487086dbd9a93160e1679a1327be111cbc25",
+    "reviewed": "2026-09-29",
+    "stars": 694,
+    "updated": "2025-07",
+    "license": "MIT"
+  },
+  "mini.diff": {
+    "repository": "nvim-mini/mini.diff",
+    "revision": "626b8a5b93874c4d05ca25aedec56cfff0b378fb",
+    "reviewed": "2026-09-29",
+    "stars": 232,
+    "updated": "2026-07",
+    "license": "MIT"
+  },
+  "mini.starter": {
+    "repository": "nvim-mini/mini.starter",
+    "revision": "25de4998197d59673f1918968a8f4060195edca0",
+    "reviewed": "2026-09-29",
+    "stars": 98,
+    "updated": "2026-07",
+    "license": "MIT"
+  },
+  "indent-blankline": {
+    "repository": "lukas-reineke/indent-blankline.nvim",
+    "revision": "f1e186e44d3b7f9ae918008e2c28ce37c6023d2d",
+    "reviewed": "2026-09-29",
+    "stars": 4996,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "NvChad",
+      "kickstart (optional)"
+    ]
+  },
+  "fidget": {
+    "repository": "j-hui/fidget.nvim",
+    "revision": "9e0201673e08e997e7cf52afca5565c70bd117f3",
+    "reviewed": "2026-09-29",
+    "stars": 2599,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "kickstart"
+    ]
+  },
+  "guess-indent": {
+    "repository": "NMAC427/guess-indent.nvim",
+    "revision": "84a4987ff36798c2fc1169cbaff67960aed9776f",
+    "reviewed": "2026-09-29",
+    "stars": 666,
+    "updated": "2025-03",
+    "license": "MIT",
+    "used_by": [
+      "kickstart",
+      "AstroNvim"
+    ]
+  },
+  "mini.clue": {
+    "repository": "nvim-mini/mini.clue",
+    "revision": "1c136d62729c8c3b0c2d91379bc37efac15d916e",
+    "reviewed": "2026-09-29",
+    "stars": 106,
+    "updated": "2026-09",
+    "license": "MIT"
+  },
+  "mini.indentscope": {
+    "repository": "nvim-mini/mini.indentscope",
+    "revision": "92fbaf895f83c59575ec599df532b297ebf62b14",
+    "reviewed": "2026-09-29",
+    "stars": 337,
+    "updated": "2026-07",
+    "license": "MIT"
+  },
+  "nvim-treesitter": {
+    "repository": "nvim-treesitter/nvim-treesitter",
+    "revision": "728e031f6b11d03d1f0708b7dc4fb0f1d9c8a137",
+    "reviewed": "2026-09-29",
+    "stars": 14433,
+    "updated": "2026-09",
+    "license": "Apache-2.0",
+    "used_by": [
+      "kickstart",
+      "LazyVim",
+      "NvChad",
+      "AstroNvim"
+    ]
+  },
+  "nvim-autopairs": {
+    "repository": "windwp/nvim-autopairs",
+    "revision": "430522f95fe4fb7c511ec64f8c1a90cc6a66c05c",
+    "reviewed": "2026-09-29",
+    "stars": 4102,
+    "updated": "2026-08",
+    "license": "MIT",
+    "used_by": [
+      "NvChad",
+      "AstroNvim",
+      "kickstart (optional)"
+    ]
+  },
+  "mini.pairs": {
+    "repository": "nvim-mini/mini.pairs",
+    "revision": "b1c5a726921b7a8c9321e9a7a208aa0571de5810",
+    "reviewed": "2026-09-29",
+    "stars": 269,
+    "updated": "2026-07",
+    "license": "MIT",
+    "used_by": [
+      "LazyVim"
+    ]
+  },
+  "mini.surround": {
+    "repository": "nvim-mini/mini.surround",
+    "revision": "33a2ebe5df8eb4751828fcba133e18ed0fbbdfab",
+    "reviewed": "2026-09-29",
+    "stars": 718,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "kickstart",
+      "LazyVim (extra)"
+    ]
+  },
+  "nvim-surround": {
+    "repository": "kylechui/nvim-surround",
+    "revision": "8b47db616ef658b8fc27e61db2896aa2f40134de",
+    "reviewed": "2026-09-29",
+    "stars": 4305,
+    "updated": "2026-06",
+    "license": "MIT"
+  },
+  "mini.ai": {
+    "repository": "nvim-mini/mini.ai",
+    "revision": "6c39ae7b11abe479fbe1bc81bf00ac6bca7afa07",
+    "reviewed": "2026-09-29",
+    "stars": 632,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "kickstart",
+      "LazyVim"
+    ]
+  },
+  "nvim-lint": {
+    "repository": "mfussenegger/nvim-lint",
+    "revision": "3d55c8f67c6ae5c15e1042571e107c7a3d5c5f4e",
+    "reviewed": "2026-09-29",
+    "stars": 2784,
+    "updated": "2026-08",
+    "license": "GPL-3.0",
+    "used_by": [
+      "LazyVim",
+      "kickstart (optional)"
+    ]
+  },
+  "nvim-nio": {
+    "repository": "nvim-neotest/nvim-nio",
+    "revision": "edcc181a875301dd21840189aa2f2f9ad69fc172",
+    "reviewed": "2026-09-29",
+    "stars": 431,
+    "updated": "2026-07",
+    "license": "MIT",
+    "used_by": [
+      "AstroNvim",
+      "kickstart (optional)",
+      "LazyVim (extra)"
+    ]
+  },
+  "nvim-dap": {
+    "repository": "mfussenegger/nvim-dap",
+    "revision": "cfa2d58f4537aca6ca83e2de1a0d9f1491121264",
+    "reviewed": "2026-09-29",
+    "stars": 7263,
+    "updated": "2026-09",
+    "license": "GPL-3.0",
+    "used_by": [
+      "AstroNvim",
+      "kickstart (optional)",
+      "LazyVim (extra)"
+    ]
+  },
+  "nvim-dap-ui": {
+    "repository": "rcarriga/nvim-dap-ui",
+    "revision": "cc9dd33aade7f20bae414d0cba163bc60d4d4b43",
+    "reviewed": "2026-09-29",
+    "stars": 3377,
+    "updated": "2026-07",
+    "license": "MIT",
+    "used_by": [
+      "AstroNvim",
+      "kickstart (optional)",
+      "LazyVim (extra)"
+    ],
+    "requires": [
+      "nvim-dap",
+      "nvim-nio"
+    ]
+  },
+  "nvim-dap-view": {
+    "repository": "igorlfs/nvim-dap-view",
+    "revision": "e766b3d8acef97e7e8b29f7f421aa4977b9978e1",
+    "reviewed": "2026-09-29",
+    "stars": 999,
+    "updated": "2026-08",
+    "license": "GPL-3.0",
+    "requires": [
+      "nvim-dap"
+    ]
+  },
+  "todo-comments": {
+    "repository": "folke/todo-comments.nvim",
+    "revision": "31e3c38ce9b29781e4422fc0322eb0a21f4e8668",
+    "reviewed": "2026-09-29",
+    "stars": 4209,
+    "updated": "2025-11",
+    "license": "Apache-2.0",
+    "used_by": [
+      "kickstart",
+      "LazyVim",
+      "AstroNvim"
+    ],
+    "requires": [
+      "plenary"
+    ]
+  },
+  "mini.hipatterns": {
+    "repository": "nvim-mini/mini.hipatterns",
+    "revision": "7c840c71d6a91f53d734cab2b6fe2290d285ec3b",
+    "reviewed": "2026-09-29",
+    "stars": 164,
+    "updated": "2026-07",
+    "license": "MIT",
+    "used_by": [
+      "LazyVim (extra)"
+    ]
   }
 }

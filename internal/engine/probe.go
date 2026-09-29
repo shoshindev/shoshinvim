@@ -139,13 +139,43 @@ func Dependencies(s State, target string) []Dependency {
 			list = append(list, Dependency{ID: "stylua", Purpose: "Lua formatting"})
 		}
 	}
-	if Value(s, "tools.provider", "system") == "mason" && hasWeb(s) {
+	if Value(s, "tools.provider", "system") == "mason" && (hasWeb(s) || linting(s) || debugging(s)) {
 		list = append(list, Dependency{ID: "node", Purpose: "Mason JavaScript language tools"}, Dependency{ID: "npm", Purpose: "Mason JavaScript packages"})
+	} else if linting(s) || debugging(s) {
+		list = append(list, Dependency{ID: "node", Purpose: "Run linters and the JavaScript debugger"})
 	}
-	if Value(s, "navigation.picker", "native") == "snacks" || Value(s, "experience.layout", "native") == "rich" {
+	for _, name := range linters(s) {
+		list = append(list, Dependency{ID: name, Purpose: map[string]string{"markdownlint": "Markdown linting", "eslint_d": "JavaScript and TypeScript linting"}[name],
+			Instruction: "Install " + name + " with npm, or select tools.provider=mason"})
+	}
+	if debugging(s) {
+		list = append(list, Dependency{ID: "js-debug-adapter", Purpose: "JavaScript and TypeScript debugging", Instruction: "Install js-debug-adapter (vscode-js-debug), or select tools.provider=mason"})
+	}
+	if Value(s, "navigation.picker", "native") != "native" || Value(s, "experience.layout", "native") == "rich" {
 		list = append(list, Dependency{ID: "rg", Purpose: "Project text search", Instruction: "Install ripgrep with your package manager; no runtime installation is automatic."})
 	}
+	if Value(s, "navigation.picker", "native") == "fzf-lua" {
+		list = append(list, Dependency{ID: "fzf", Purpose: "fzf-lua fuzzy matching", Instruction: "Install fzf with your package manager (for example: brew install fzf)."})
+	}
+	if treesitter(s) {
+		list = append(list,
+			Dependency{ID: "tree-sitter", Purpose: "Compile Tree-sitter parsers", Instruction: "Install tree-sitter-cli 0.26.1 or later with your package manager (for example: brew install tree-sitter-cli), not from npm; or select tools.provider=mason"},
+			Dependency{ID: "cc", Purpose: "Compile Tree-sitter parsers", Instruction: "Install a C compiler: Xcode Command Line Tools on macOS, build-essential or gcc on Linux, Visual Studio Build Tools or LLVM on Windows."},
+			Dependency{ID: "curl", Purpose: "Download Tree-sitter parser sources"},
+			Dependency{ID: "tar", Purpose: "Unpack Tree-sitter parser sources"})
+	}
 	for i := range list {
+		if list[i].ID == "cc" {
+			// Any C compiler the tree-sitter CLI can find will do.
+			list[i].Status = "missing"
+			for _, name := range []string{"cc", "gcc", "clang", "cl", "zig"} {
+				if p, err := exec.LookPath(name); err == nil {
+					list[i].Path, list[i].Status = p, "present"
+					break
+				}
+			}
+			continue
+		}
 		p, err := exec.LookPath(toolCommand(s, list[i].ID))
 		if err == nil {
 			list[i].Path = p

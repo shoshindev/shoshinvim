@@ -185,7 +185,15 @@ func (m *Model) hints() string {
 		return "ctrl+c cancel"
 	case m.screen == stepScreen && sections[m.sec].form:
 		return "↑↓ move · ←→ change · r recommended · enter continue · esc back · / commands"
-	case m.screen == stepScreen && sections[m.sec].questions[m.q].multi:
+	case m.inputQuestion():
+		return "type " + sections[m.sec].questions[m.q].input.placeholder + " · enter continue · esc back · paste works"
+	case m.shortcutTyping():
+		return "type in Vim notation · enter set · esc cancel"
+	case m.screen == stepScreen && !sections[m.sec].form && sections[m.sec].questions[m.q].keymaps && m.keyMode == "action":
+		return "↑↓ move · enter choose · esc cancel"
+	case m.screen == stepScreen && !sections[m.sec].form && sections[m.sec].questions[m.q].keymaps:
+		return "↑↓ move · enter change key · d turn off · a add · R restore style · esc back"
+	case m.screen == stepScreen && m.question().multi:
 		return "↑↓ move · space toggle · enter continue · esc back · / commands"
 	case m.screen == stepScreen:
 		return "↑↓ move · enter choose · esc back · / commands · ? help"
@@ -332,13 +340,26 @@ func (m *Model) sectionLine() string {
 }
 
 func (m *Model) questionContent(cw, h int) []string {
-	q := sections[m.sec].questions[m.q]
+	q := m.question()
 	var lines []string
 	if m.width >= sidebarMinWidth {
 		lines = append(lines, m.sectionLine(), "")
 	}
 	lines = append(lines, m.th.Bold(q.title))
 	lines = append(lines, wrap(m.th.Dim(q.help), cw)...)
+	if hint := shortcutHint(m.draft, q.actions); hint != "" {
+		lines = append(lines, wrap(m.th.Dim(hint), cw)...)
+	}
+	if q.keymaps {
+		return append(lines, m.shortcutContent(cw, h-len(lines)-1)...)
+	}
+	if q.input != nil {
+		lines = append(lines, "", m.input.View())
+		if m.busy {
+			lines = append(lines, "", m.spin.View()+" "+m.activity+"…")
+		}
+		return lines
+	}
 	if q.multi {
 		var names []string
 		for _, o := range q.options {
@@ -352,8 +373,13 @@ func (m *Model) questionContent(cw, h int) []string {
 	return append(lines, m.optionLines(q, cw, h-len(lines))...)
 }
 
+// optionLines shows each option with its detail and, for plugins, where it comes from.
+// It compresses in steps when the list does not fit, keeping the cursor visible.
 func (m *Model) optionLines(q question, cw, h int) []string {
-	type block struct{ label, detail string }
+	type block struct {
+		heading, label, detail string
+		plugin                 []string
+	}
 	blocks := make([]block, len(q.options))
 	swatchColumn := 0
 	for _, o := range q.options {
@@ -363,15 +389,17 @@ func (m *Model) optionLines(q question, cw, h int) []string {
 		}
 		swatchColumn = max(swatchColumn, w+2)
 	}
+	digits := len(strconv.Itoa(len(q.options)))
 	for i, o := range q.options {
 		selected := i == m.cursor
-		pointer, num, label := "  ", m.th.Dim(fmt.Sprintf("%d. ", i+1)), o.label
+		number := fmt.Sprintf("%*d. ", digits, i+1)
+		pointer, num, label := "  ", m.th.Dim(number), o.label
 		if selected {
-			pointer, num, label = m.th.Accent("❯ "), m.th.Accent(fmt.Sprintf("%d. ", i+1)), m.th.Accent(o.label)
+			pointer, num, label = m.th.Accent("❯ "), m.th.Accent(number), m.th.Accent(o.label)
 		}
-		box, pad := "", "     "
+		box, pad := "", strings.Repeat(" ", 2+len(number))
 		if q.multi {
-			box, pad = m.th.Dim("[ ] "), "         "
+			box, pad = m.th.Dim("[ ] "), strings.Repeat(" ", 6+len(number))
 			if m.checks[i] {
 				box = m.th.Ok("[✓] ")
 			}
@@ -381,35 +409,194 @@ func (m *Model) optionLines(q question, cw, h int) []string {
 		if len(o.swatch) > 0 && !m.th.plain {
 			label = padRight(label, swatchColumn) + m.th.Swatch(o.swatch)
 		}
-		detail := ""
-		if o.detail != "" {
-			detail = pad + m.th.Dim(ansi.Truncate(o.detail, max(10, cw-len(pad)), "…"))
+		b := block{label: pointer + num + box + label}
+		if i == 0 || o.group != q.options[i-1].group {
+			b.heading = o.group
 		}
-		blocks[i] = block{pointer + num + box + label, detail}
+		if o.detail != "" {
+			b.detail = pad + m.th.Dim(ansi.Truncate(o.detail, max(10, cw-len(pad)), "…"))
+		}
+		line := pluginLine(o.plugin)
+		if line == "" {
+			line = sourceLine(o.source)
+		}
+		if line != "" {
+			// Where an option comes from is never cut off; long lines wrap instead.
+			for _, part := range wrap(line, cw-len(pad)) {
+				b.plugin = append(b.plugin, pad+m.th.Blue(part))
+			}
+		}
+		blocks[i] = b
 	}
 	for mode := 0; mode < 3; mode++ {
 		var lines []string
 		focus := 0
 		for i, b := range blocks {
+			if b.heading != "" {
+				if len(lines) > 0 {
+					lines = append(lines, "")
+				}
+				lines = append(lines, m.th.Dim(strings.ToUpper(b.heading)))
+			}
 			if i == m.cursor {
 				focus = len(lines)
 			}
 			lines = append(lines, b.label)
-			if mode < 2 && b.detail != "" {
-				lines = append(lines, b.detail)
+			if mode < 2 || i == m.cursor {
+				if b.detail != "" {
+					lines = append(lines, b.detail)
+				}
+				lines = append(lines, b.plugin...)
 			}
 			if mode == 0 && i < len(blocks)-1 {
 				lines = append(lines, "")
 			}
-		}
-		if mode == 2 && blocks[m.cursor].detail != "" {
-			lines = append(lines, "", blocks[m.cursor].detail)
 		}
 		if len(lines) <= h || mode == 2 {
 			return window(lines, h, focus)
 		}
 	}
 	return nil
+}
+
+// pluginReasons explains which decision brought each plugin into the draft.
+func (m *Model) pluginReasons() map[string]string {
+	reasons := map[string]string{"lazy": "Plugin manager: installs and loads the other plugins"}
+	add := func(id, reason string) {
+		if reasons[id] == "" {
+			reasons[id] = reason
+		} else if !strings.Contains(reasons[id], reason) {
+			reasons[id] += "; " + reason
+		}
+	}
+	for _, sec := range sections {
+		for _, q := range sec.questions {
+			if q.skipped(m.draft) {
+				continue
+			}
+			for _, o := range q.resolve(m.draft).options {
+				if o.plugin != "" && matches(m.draft, o) {
+					add(o.plugin, sec.title+" → "+q.title+": "+o.label)
+				}
+			}
+		}
+	}
+	for id := range reasons {
+		if p, ok := engine.PluginInfo(id); ok {
+			for _, dep := range p.Requires {
+				add(dep, "Required by "+pluginName(p.Repository))
+			}
+		}
+	}
+	return reasons
+}
+
+func (m *Model) showPlugins() {
+	uses, err := engine.PluginsInUse(m.draft)
+	if err != nil {
+		m.flash(err.Error(), true)
+		return
+	}
+	if len(uses) == 0 {
+		m.openViewer("Plugins used", "No plugins: this configuration uses only what is built into Neovim.")
+		return
+	}
+	reasons := m.pluginReasons()
+	var b strings.Builder
+	fmt.Fprintf(&b, "%d plugins, each downloaded at the exact commit shown into\n%s\n\n", len(uses), shortPath(engine.DataDirFor(m.target)))
+	for _, u := range uses {
+		fmt.Fprintf(&b, "%s  %s\n", m.th.Bold(pluginName(u.Repository)), m.th.Blue("https://github.com/"+u.Repository))
+		status := m.th.Dim("reviewed " + u.Reviewed)
+		if !u.Listed {
+			status = m.th.Warn("not reviewed by ShoshinVim")
+		}
+		fmt.Fprintf(&b, "  pinned %s · %s\n", u.Revision[:7], status)
+		if u.Listed {
+			license := u.License
+			if license == "" {
+				license = "no license declared"
+			}
+			fmt.Fprintf(&b, "  %s\n", m.th.Dim(fmt.Sprintf("★ %s · updated %s · %s", compactNumber(u.Stars), monthYear(u.Updated), license)))
+			if len(u.UsedBy) > 0 {
+				fmt.Fprintf(&b, "  %s\n", m.th.Dim("used by "+strings.Join(u.UsedBy, ", ")))
+			}
+		}
+		why := reasons[u.ID]
+		if u.ID == "custom-theme" {
+			why = "Appearance → Color scheme: your own theme"
+		}
+		fmt.Fprintf(&b, "  why: %s\n\n", why)
+	}
+	if parsers := engine.Parsers(m.draft); len(parsers) > 0 {
+		fmt.Fprintf(&b, "%s\n", m.th.Bold(fmt.Sprintf("%d Tree-sitter parsers", len(parsers))))
+		b.WriteString(m.th.Dim("Source archives at the revisions the pinned nvim-treesitter names, compiled on\nthis computer with tree-sitter-cli and your C compiler.") + "\n")
+		for _, p := range parsers {
+			fmt.Fprintf(&b, "  %s %s\n", padRight(p.Language, 16), m.th.Dim(p.Repository+" @ "+p.Revision[:7]))
+		}
+	}
+	m.openViewer("Plugins used", b.String())
+}
+
+// pluginName is how a plugin is called in lists; repositories named just "nvim" or
+// "neovim" (catppuccin/nvim, rose-pine/neovim) go by their owner.
+func pluginName(repository string) string {
+	owner, name := path.Dir(repository), path.Base(repository)
+	if name == "nvim" || name == "neovim" {
+		return owner
+	}
+	return name
+}
+
+// sourceLine names where a keymap style comes from.
+func sourceLine(id string) string {
+	st, ok := engine.KeymapStyleFor(id)
+	if !ok {
+		return ""
+	}
+	count := len(engine.EffectiveKeymaps(engine.State{Values: map[string]any{"keymaps.style": id, "git.hunks": "gitsigns"}}))
+	return fmt.Sprintf("Copied from %s · %d shortcuts", st.URL, count)
+}
+
+// pluginLine names a plugin's source, popularity, activity, license and users.
+func pluginLine(id string) string {
+	p, ok := engine.PluginInfo(id)
+	if !ok {
+		return ""
+	}
+	repo := p.Repository
+	if len(p.Requires) > 0 {
+		var deps []string
+		for _, dep := range p.Requires {
+			if d, ok := engine.PluginInfo(dep); ok {
+				deps = append(deps, pluginName(d.Repository))
+			}
+		}
+		repo += " (+ " + strings.Join(deps, ", ") + ")"
+	}
+	parts := []string{repo, "★ " + compactNumber(p.Stars), "updated " + monthYear(p.Updated)}
+	if p.License != "" {
+		parts = append(parts, p.License)
+	} else {
+		parts = append(parts, "no license declared")
+	}
+	if len(p.UsedBy) > 0 {
+		parts = append(parts, "used by "+strings.Join(p.UsedBy, ", "))
+	}
+	return strings.Join(parts, " · ")
+}
+
+func compactNumber(n int) string {
+	if n >= 1000 {
+		return fmt.Sprintf("%.1fk", float64(n)/1000)
+	}
+	return strconv.Itoa(n)
+}
+
+func monthYear(s string) string {
+	if t, err := time.Parse("2006-01", s); err == nil {
+		return t.Format("Jan 2006")
+	}
+	return s
 }
 
 func (m *Model) formContent(cw, h int) []string {
@@ -430,7 +617,17 @@ func (m *Model) formContent(cw, h int) []string {
 	labelW += 2
 	valueW += 5
 	var rows []string
+	focus := 0
 	for j, q := range sec.questions {
+		if q.group != "" && (j == 0 || q.group != sec.questions[j-1].group) {
+			if len(rows) > 0 {
+				rows = append(rows, "")
+			}
+			rows = append(rows, m.th.Dim(strings.ToUpper(q.group)))
+		}
+		if j == m.cursor {
+			focus = len(rows)
+		}
 		idx := m.form[j]
 		value := "custom"
 		if idx >= 0 {
@@ -463,8 +660,15 @@ func (m *Model) formContent(cw, h int) []string {
 	}
 	help := append([]string{""}, wrap(m.th.Dim(q.help), cw)...)
 	help = append(help, m.th.Dim("← ")+strings.Join(choices, m.th.Dim(" · "))+m.th.Dim(" →"))
+	if idx := m.form[m.cursor]; idx >= 0 {
+		if line := pluginLine(q.options[idx].plugin); line != "" {
+			for _, part := range wrap(line, cw) {
+				help = append(help, m.th.Blue(part))
+			}
+		}
+	}
 	avail := h - len(lines) - len(help)
-	lines = append(lines, window(rows, avail, m.cursor)...)
+	lines = append(lines, window(rows, avail, focus)...)
 	return append(lines, help...)
 }
 
@@ -512,6 +716,23 @@ func (m *Model) reviewContent(cw, h int) []string {
 		}
 		lines = append(lines, m.th.Dim(padRight("Files", 13))+ansi.Truncate(files, max(10, cw-13), "…"))
 		lines = append(lines, m.th.Dim(padRight("Downloads", 13))+m.downloadSummary())
+		if uses, err := engine.PluginsInUse(m.draft); err == nil && len(uses) > 0 {
+			var names []string
+			for _, u := range uses {
+				name := pluginName(u.Repository)
+				if !u.Listed {
+					name += " (not reviewed)"
+				}
+				names = append(names, name)
+			}
+			for i, part := range wrap(strings.Join(names, ", "), max(10, cw-13)) {
+				label := ""
+				if i == 0 {
+					label = "Plugins"
+				}
+				lines = append(lines, m.th.Dim(padRight(label, 13))+part)
+			}
+		}
 		for i, w := range m.missingTools() {
 			label := ""
 			if i == 0 {
@@ -548,7 +769,7 @@ func (m *Model) dependencies() []engine.Dependency {
 // missingTools lists programs the user must install; Mason downloads language tools itself.
 func (m *Model) missingTools() []string {
 	mason := engine.Value(m.draft, "tools.provider", "system") == "mason"
-	runtimes := map[string]bool{"nvim": true, "git": true, "rg": true, "node": true, "npm": true}
+	runtimes := map[string]bool{"nvim": true, "git": true, "rg": true, "fzf": true, "node": true, "npm": true, "cc": true, "curl": true, "tar": true}
 	var out []string
 	for _, d := range m.dependencies() {
 		if d.Status != "missing" {
@@ -678,9 +899,10 @@ func (m *Model) doneContent(cw, h int) []string {
 		for _, part := range strings.Split(ansi.Wrap(launchCommand(m.target), max(10, cw-2), "/"), "\n") {
 			lines = append(lines, "  "+m.th.Accent(part))
 		}
-		if engine.Value(m.draft, "experience.layout", "native") == "rich" {
+		if len(engine.EffectiveKeymaps(m.draft)) > 0 {
+			leader := map[string]string{"space": "Space", "comma": "Comma", "backslash": "Backslash"}[fmt.Sprint(engine.Value(m.draft, "keymaps.leader", "space"))]
 			lines = append(lines, "")
-			lines = append(lines, wrap(m.th.Dim("Inside Neovim, press Space and pause to discover shortcuts; Space ? opens the guide."), cw)...)
+			lines = append(lines, wrap(m.th.Dim("Inside Neovim, press "+leader+" and pause to discover shortcuts; "+leader+" ? opens the guide."), cw)...)
 		}
 	}
 	if len(m.log) > 0 {
@@ -845,18 +1067,21 @@ func (m *Model) downloadSummary() string {
 	return text
 }
 
-func actionCounts(actions []engine.Action) (plugins, tools int) {
+func actionCounts(actions []engine.Action) (plugins, tools, parsers int) {
 	for _, a := range actions {
-		if a.Kind == "git" {
+		switch a.Kind {
+		case "git":
 			plugins++
-		} else {
+		case "parsers":
+			parsers += len(a.Parsers)
+		default:
 			tools++
 		}
 	}
 	return
 }
 
-func downloadText(plugins, tools int) string {
+func downloadText(plugins, tools, parsers int) string {
 	var parts []string
 	if plugins > 0 {
 		parts = append(parts, fmt.Sprintf("%d %s", plugins, plural(plugins, "plugin", "plugins")))
@@ -864,7 +1089,16 @@ func downloadText(plugins, tools int) string {
 	if tools > 0 {
 		parts = append(parts, fmt.Sprintf("%d language %s", tools, plural(tools, "tool", "tools")))
 	}
-	return strings.Join(parts, " and ")
+	if parsers > 0 {
+		parts = append(parts, fmt.Sprintf("%d syntax %s", parsers, plural(parsers, "parser", "parsers")))
+	}
+	switch len(parts) {
+	case 0:
+		return ""
+	case 1:
+		return parts[0]
+	}
+	return strings.Join(parts[:len(parts)-1], ", ") + " and " + parts[len(parts)-1]
 }
 
 // actionName turns an engine action description into a short display name.
@@ -876,6 +1110,9 @@ func actionName(description string) string {
 	if rest, ok := strings.CutPrefix(description, "Mason registry/download/build for "); ok {
 		name, _, _ := strings.Cut(rest, " ")
 		return name
+	}
+	if strings.HasPrefix(description, "Tree-sitter parsers ") {
+		return "Tree-sitter parsers"
 	}
 	return description
 }

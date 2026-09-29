@@ -48,6 +48,11 @@ func LoadCatalog() Catalog {
 	if err := json.Unmarshal(optionData, &c.Options); err != nil {
 		panic(err)
 	}
+	for i := range c.Settings {
+		if c.Settings[i].ID == "appearance.colorscheme" {
+			c.Settings[i].Choices = themeChoices()
+		}
+	}
 	return c
 }
 
@@ -230,22 +235,11 @@ func (c Catalog) Validate(s State) error {
 			}
 		}
 	}
-	seen := map[string]bool{}
-	for _, m := range s.Keymaps {
-		if m.Mode != "n" && m.Mode != "i" && m.Mode != "v" && m.Mode != "t" {
-			return fmt.Errorf("unsupported keymap mode")
-		}
-		if m.Key == "" || len(m.Key) > 100 {
-			return fmt.Errorf("invalid mapping key")
-		}
-		if _, ok := keyActions[m.Action]; !ok {
-			return fmt.Errorf("unsupported mapping action %q", m.Action)
-		}
-		id := m.Mode + ":" + m.Key
-		if seen[id] {
-			return fmt.Errorf("conflicting mapping %s", id)
-		}
-		seen[id] = true
+	if err := validateKeymaps(s); err != nil {
+		return err
+	}
+	if err := validateCustomTheme(s); err != nil {
+		return err
 	}
 	if Value(s, "plugins.manager", "none") == "none" && len(Plugins(s)) > 0 {
 		return fmt.Errorf("selected plugins require plugins.manager=lazy; review manager selection")

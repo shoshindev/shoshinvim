@@ -2,6 +2,7 @@ package ui
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -106,8 +107,16 @@ func TestWelcomeOffersNoPresets(t *testing.T) {
 
 func TestEverySectionAndQuestionHasARecommendation(t *testing.T) {
 	c := engine.LoadCatalog()
+	s, err := recommendedState(c)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, sec := range sections {
 		for _, q := range sec.questions {
+			if q.input != nil || q.keymaps || q.skipped(s) {
+				continue
+			}
+			q = q.resolve(s)
 			count := 0
 			for _, o := range q.options {
 				if o.recommended {
@@ -125,7 +134,8 @@ func TestEverySectionAndQuestionHasARecommendation(t *testing.T) {
 	}
 }
 
-func TestRecommendedChoicesMatchTheFormerRichIDE(t *testing.T) {
+// The recommendations follow what today's leading starter configurations ship.
+func TestRecommendedChoicesInstallTheExpectedPlugins(t *testing.T) {
 	c := engine.LoadCatalog()
 	s, err := recommendedState(c)
 	if err != nil {
@@ -134,19 +144,57 @@ func TestRecommendedChoicesMatchTheFormerRichIDE(t *testing.T) {
 	if err = c.Validate(s); err != nil {
 		t.Fatal(err)
 	}
-	rich, _ := c.Profile(engine.NewState(), "rich-ide")
-	if !reflect.DeepEqual(engine.Plugins(s), engine.Plugins(rich)) {
-		t.Fatalf("plugins %v, want %v", engine.Plugins(s), engine.Plugins(rich))
-	}
-	target := filepath.Join(t.TempDir(), "nvim")
-	a, _ := engine.Actions(s, target)
-	b, _ := engine.Actions(rich, target)
-	if !reflect.DeepEqual(a, b) {
-		t.Fatalf("downloads differ:\n%v\n%v", a, b)
+	want := []string{"blink.cmp", "bufferline", "conform", "gitsigns", "guess-indent", "indent-blankline", "lualine", "mason", "mini.ai", "mini.surround", "neo-tree", "nui", "nvim-autopairs", "nvim-treesitter", "plenary", "snacks", "telescope", "todo-comments", "tokyonight", "which-key"}
+	if got := engine.Plugins(s); !reflect.DeepEqual(got, want) {
+		t.Fatalf("plugins %v, want %v", got, want)
 	}
 	if s.Profile != "custom" {
 		t.Fatalf("guided state must not claim a preset: %s", s.Profile)
 	}
+}
+
+// Transparency: every plugin a choice installs is explained by the choice that caused it.
+func TestEveryPluginIsExplained(t *testing.T) {
+	c := engine.LoadCatalog()
+	base, err := recommendedState(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, sec := range sections {
+		for _, q := range sec.questions {
+			if q.input != nil || q.multi || q.keymaps {
+				continue
+			}
+			for _, o := range q.resolve(base).options {
+				if o.values["appearance.colorscheme"] == engine.CustomTheme {
+					continue // Explained by its own screen; needs a looked-up repository.
+				}
+				s, err := choose(c, base, o)
+				if err != nil {
+					t.Fatalf("%s/%s: %v", q.id, o.label, err)
+				}
+				m := &Model{draft: s}
+				reasons := m.pluginReasons()
+				for _, id := range engine.Plugins(s) {
+					if reasons[id] == "" {
+						t.Fatalf("choosing %s/%s installs %s without saying why", q.id, o.label, id)
+					}
+				}
+				if o.plugin != "" && !slicesContains(engine.Plugins(s), o.plugin) {
+					t.Fatalf("%s/%s names %s but does not install it", q.id, o.label, o.plugin)
+				}
+			}
+		}
+	}
+}
+
+func slicesContains(list []string, v string) bool {
+	for _, x := range list {
+		if x == v {
+			return true
+		}
+	}
+	return false
 }
 
 func TestEnterThroughEverySectionReachesReview(t *testing.T) {
@@ -208,6 +256,18 @@ func TestNoLanguagesSkipsLanguageDecisions(t *testing.T) {
 		press(m, "enter")
 	}
 	press(m, "1", "2", "3", "4", "5", "enter") // Untick every language.
+	// Syntax highlighting still helps without language servers (Markdown, shell scripts).
+	if id := sections[m.sec].questions[m.q].id; id != "syntax.engine" {
+		t.Fatalf("expected the syntax step, at %s", id)
+	}
+	press(m, "enter")
+	// Coding helpers stay; the debugger, which is for JavaScript and TypeScript, is skipped.
+	for _, id := range []string{"coding.pairs", "coding.surround", "coding.textobjects", "coding.todo", "coding.lint"} {
+		if got := sections[m.sec].questions[m.q].id; got != id {
+			t.Fatalf("expected %s, at %s", id, got)
+		}
+		press(m, "enter")
+	}
 	if sections[m.sec].id != "tools" || sections[m.sec].questions[m.q].id != "git.hunks" {
 		t.Fatalf("expected to skip to Git changes, at %s", sections[m.sec].questions[m.q].id)
 	}
@@ -294,13 +354,13 @@ func TestPlainModeAsksTheSameQuestions(t *testing.T) {
 	needNeovim(t)
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
 	var out bytes.Buffer
-	answers := strings.Repeat("\n", 40) // Accept every recommendation, then quit at the review.
+	answers := strings.Repeat("\n", 90) // Accept every recommendation, then quit at the review.
 	err := RunPlain(filepath.Join(t.TempDir(), "nvim"), "", strings.NewReader(answers+"q\n"), &out)
 	if err != nil {
 		t.Fatal(err, out.String())
 	}
 	text := out.String()
-	for _, want := range []string{"── 1/7 Editor", "Color scheme", "(recommended)", "── Review ──", "Quit without saving"} {
+	for _, want := range []string{"── 1/8 Editor", "Color scheme", "(recommended)", "── Review ──", "Quit without saving"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("plain output missing %q:\n%s", want, text)
 		}
@@ -342,8 +402,19 @@ func TestReviewKnowsWhatIsAlreadyInstalled(t *testing.T) {
 	acceptAll(t, m)
 	for _, a := range m.plan.Actions {
 		marker := filepath.Join(a.Destination, ".git")
-		if a.Kind == "mason" {
+		switch a.Kind {
+		case "mason":
 			marker = filepath.Join(a.Destination, "packages", a.Package)
+		case "parsers":
+			for _, lang := range a.Parsers {
+				if err := os.MkdirAll(filepath.Join(a.Destination, "parser"), 0700); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(a.Destination, "parser", lang+".so"), nil, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			continue
 		}
 		if err := os.MkdirAll(marker, 0700); err != nil {
 			t.Fatal(err)
@@ -386,5 +457,185 @@ func TestAppNameCommandUsesThePlatformShell(t *testing.T) {
 	}
 	if got := withAppName("windows", "it's", "nvim"); got != "$env:NVIM_APPNAME='it''s'; nvim" {
 		t.Fatal(got)
+	}
+}
+
+func TestCustomThemeFromGitHub(t *testing.T) {
+	rev := strings.Repeat("a", 40)
+	lookupTheme = func(_ context.Context, repo string) (engine.ThemeLookup, error) {
+		return engine.ThemeLookup{Repository: repo, Revision: rev, Colorschemes: []string{"dusk", "dusk-light"}, Stars: 42}, nil
+	}
+	defer func() { lookupTheme = engine.LookupTheme }()
+	m := newModel(t)
+	press(m, "enter", "enter") // Start, accept the Editor form.
+	m.cursor = len(m.question().options) - 1
+	if m.question().options[m.cursor].short != "custom theme" {
+		t.Fatal("last color scheme option is not the custom theme")
+	}
+	press(m, "enter")
+	if !m.inputQuestion() {
+		t.Fatalf("expected the repository input, at %s", m.question().id)
+	}
+	for _, r := range "someone/dusk.nvim" {
+		m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	press(m, "enter")
+	if q := m.question(); q.id != "custom-theme-colorscheme" || len(q.options) != 2 {
+		t.Fatalf("expected the colorscheme choice, at %s", q.id)
+	}
+	press(m, "2")
+	for id, want := range map[string]any{"appearance.colorscheme": engine.CustomTheme, "appearance.custom_theme.repository": "someone/dusk.nvim",
+		"appearance.custom_theme.revision": rev, "appearance.custom_theme.colorscheme": "dusk-light"} {
+		if m.draft.Values[id] != want {
+			t.Fatalf("%s = %v, want %v", id, m.draft.Values[id], want)
+		}
+	}
+	if err := m.catalog.Validate(m.draft); err != nil {
+		t.Fatal(err)
+	}
+	uses, _ := engine.PluginsInUse(m.draft)
+	found := false
+	for _, u := range uses {
+		if u.Repository == "someone/dusk.nvim" {
+			found = !u.Listed
+		}
+	}
+	if !found {
+		t.Fatal("custom theme is not listed as an unreviewed plugin")
+	}
+	// Choosing a listed theme afterwards removes the custom details.
+	next, err := choose(m.catalog, m.draft, themeOptions(m.draft)[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := next.Values["appearance.custom_theme.repository"]; ok || m.catalog.Validate(next) != nil {
+		t.Fatal("custom theme details kept after choosing a listed theme")
+	}
+}
+
+func keyFor(keys []engine.EffectiveKeymap, action string) (engine.EffectiveKeymap, bool) {
+	for _, k := range keys {
+		if k.Action == action {
+			return k, true
+		}
+	}
+	return engine.EffectiveKeymap{}, false
+}
+
+func TestShortcutEditor(t *testing.T) {
+	m := newModel(t)
+	press(m, "enter", "enter") // Start, accept the Editor form.
+	for m.question().id != "keymaps-editor" {
+		press(m, "enter")
+	}
+	if !strings.Contains(screenText(m), "kickstart.nvim") || !strings.Contains(screenText(m), "Keep these shortcuts") {
+		t.Fatalf("shortcut list missing its source:\n%s", screenText(m))
+	}
+	files, ok := keyFor(engine.EffectiveKeymaps(m.draft), "find.files")
+	if !ok || files.Key != "<leader>sf" || files.Source != "kickstart.nvim" {
+		t.Fatalf("kickstart find files: %+v", files)
+	}
+	// Move Find files to <leader>ff.
+	rows := m.shortcutRows()
+	for i, r := range rows {
+		if r.kind == "key" && r.key.Action == "find.files" {
+			m.cursor = i
+		}
+	}
+	press(m, "enter")
+	for _, r := range "<leader>ff" {
+		m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	press(m, "enter")
+	if k, _ := keyFor(engine.EffectiveKeymaps(m.draft), "find.files"); k.Key != "<leader>ff" || k.Source != "yours" {
+		t.Fatalf("rebind failed: %+v", k)
+	}
+	// Add a command shortcut.
+	press(m, "a")
+	m.cursor = len(actionOptions()) - 1
+	press(m, "enter")
+	for _, r := range "Lazy" {
+		m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	press(m, "enter")
+	for _, r := range "<leader>L" {
+		m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	press(m, "enter")
+	if k, ok := keyFor(engine.EffectiveKeymaps(m.draft), "command:Lazy"); !ok || k.Key != "<leader>L" {
+		t.Fatalf("command shortcut not added: %+v", m.draft.Keymaps)
+	}
+	if err := m.catalog.Validate(m.draft); err != nil {
+		t.Fatal(err)
+	}
+	files2, _ := engine.Generate(m.draft)
+	lua := files2["lua/user_config/keymaps.lua"]
+	for _, want := range []string{`map("n", "<leader>sf"`, `"<leader>ff", "<cmd>ShoshinFiles<CR>"`, `"<leader>L", "<cmd>Lazy<CR>"`, "-- Your shortcuts", "-- From kickstart.nvim"} {
+		if want == `map("n", "<leader>sf"` {
+			if strings.Contains(lua, want) {
+				t.Fatal("moved shortcut still generated on its old key")
+			}
+			continue
+		}
+		if !strings.Contains(lua, want) {
+			t.Fatalf("keymaps.lua missing %q:\n%s", want, lua)
+		}
+	}
+	press(m, "R")
+	if len(m.draft.Keymaps) != 0 {
+		t.Fatal("restore did not remove changes")
+	}
+}
+
+func TestShortcutStylesAreCredited(t *testing.T) {
+	for _, style := range []string{"kickstart", "lazyvim"} {
+		s := engine.NewState()
+		s.Values["keymaps.style"], s.Values["git.hunks"] = style, "gitsigns"
+		keys := engine.EffectiveKeymaps(s)
+		if len(keys) < 30 {
+			t.Fatalf("%s: only %d shortcuts", style, len(keys))
+		}
+		for _, k := range keys {
+			if k.Source == "" || k.Label == "" {
+				t.Fatalf("%s: uncredited shortcut %+v", style, k)
+			}
+		}
+	}
+	// Git shortcuts disappear when Git changes are off.
+	s := engine.NewState()
+	s.Values["keymaps.style"], s.Values["git.hunks"] = "kickstart", "native"
+	if _, ok := keyFor(engine.EffectiveKeymaps(s), "git.next_hunk"); ok {
+		t.Fatal("git shortcut kept without a Git plugin")
+	}
+	// LazyVim's gr is nowait, so it is not reported as a conflict; a user "gr" would be.
+	s.Values["keymaps.style"] = "lazyvim"
+	if c := engine.KeymapConflicts(s); len(c) != 0 {
+		t.Fatalf("unexpected conflicts: %v", c)
+	}
+	s.Values["keymaps.style"] = "kickstart"
+	s.Keymaps = []engine.Keymap{{Mode: "n", Key: "gr", Action: "code.references"}}
+	if c := engine.KeymapConflicts(s); len(c) == 0 {
+		t.Fatal("gr before grd was not reported")
+	}
+}
+
+// Steps name the keys the chosen style really has, spelled with the chosen leader.
+func TestStepsNameConfiguredKeys(t *testing.T) {
+	s := engine.NewState()
+	for style, want := range map[string]string{"kickstart": `Your shortcuts: \ file explorer`, "lazyvim": "Your shortcuts: Space e file explorer", "none": ""} {
+		s.Values["keymaps.style"] = style
+		if got := shortcutHint(s, []string{"explorer.toggle"}); got != want {
+			t.Fatalf("%s: got %q, want %q", style, got, want)
+		}
+	}
+	s.Values["keymaps.style"], s.Values["keymaps.leader"] = "kickstart", "comma"
+	if got := shortcutHint(s, []string{"find.files", "code.format"}); got != "Your shortcuts: Comma sf find files · Comma f format file" {
+		t.Fatalf("got %q", got)
+	}
+	if got := engine.KeyLabel(s, "<Esc><Esc>"); got != "Esc Esc" {
+		t.Fatalf("got %q", got)
+	}
+	if got := engine.KeyLabel(s, "<C-S-x>"); got != "Ctrl+Shift+x" {
+		t.Fatalf("got %q", got)
 	}
 }

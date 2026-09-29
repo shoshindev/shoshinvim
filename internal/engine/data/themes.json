@@ -1,0 +1,131 @@
+{
+  "themes": [
+    {"id": "tokyonight", "label": "Tokyo Night", "plugin": "tokyonight", "detail": "Deep blues and purples with vivid, readable syntax", "variants": [
+      {"id": "tokyonight", "label": "Night", "colorscheme": "tokyonight-night", "background": "dark", "before": "require('tokyonight').setup({ style = 'night', styles = { sidebars = 'dark', floats = 'dark' } })"},
+      {"id": "tokyonight/storm", "label": "Storm", "colorscheme": "tokyonight-storm", "background": "dark"},
+      {"id": "tokyonight/moon", "label": "Moon", "colorscheme": "tokyonight-moon", "background": "dark"},
+      {"id": "tokyonight/day", "label": "Day", "colorscheme": "tokyonight-day", "background": "light"}]},
+    {"id": "catppuccin", "label": "Catppuccin", "plugin": "catppuccin", "detail": "Soothing pastels in four flavors, from dark Mocha to light Latte", "variants": [
+      {"id": "catppuccin/mocha", "label": "Mocha", "colorscheme": "catppuccin-mocha", "background": "dark"},
+      {"id": "catppuccin/macchiato", "label": "Macchiato", "colorscheme": "catppuccin-macchiato", "background": "dark"},
+      {"id": "catppuccin/frappe", "label": "Frappé", "colorscheme": "catppuccin-frappe", "background": "dark"},
+      {"id": "catppuccin/latte", "label": "Latte", "colorscheme": "catppuccin-latte", "background": "light"}]},
+    {"id": "kanagawa", "label": "Kanagawa", "plugin": "kanagawa", "detail": "Muted ink and paper tones inspired by Hokusai's Great Wave", "variants": [
+      {"id": "kanagawa/wave", "label": "Wave", "colorscheme": "kanagawa-wave", "background": "dark"},
+      {"id": "kanagawa/dragon", "label": "Dragon", "colorscheme": "kanagawa-dragon", "background": "dark"},
+      {"id": "kanagawa/lotus", "label": "Lotus", "colorscheme": "kanagawa-lotus", "background": "light"}]},
+    {"id": "everforest", "label": "Everforest", "plugin": "everforest", "detail": "Warm, low-contrast greens designed to be easy on the eyes", "variants": [
+      {"id": "everforest/dark", "label": "Dark", "colorscheme": "everforest", "background": "dark", "set_background": true, "before": "vim.g.everforest_background = 'medium'"},
+      {"id": "everforest/dark-hard", "label": "Dark, high contrast", "colorscheme": "everforest", "background": "dark", "set_background": true, "before": "vim.g.everforest_background = 'hard'"},
+      {"id": "everforest/dark-soft", "label": "Dark, soft", "colorscheme": "everforest", "background": "dark", "set_background": true, "before": "vim.g.everforest_background = 'soft'"},
+      {"id": "everforest/light", "label": "Light", "colorscheme": "everforest", "background": "light", "set_background": true, "before": "vim.g.everforest_background = 'medium'"}]},
+    {"id": "nightfox", "label": "Nightfox", "plugin": "nightfox", "detail": "A family of seven themes with shared, carefully tuned syntax", "variants": [
+      {"id": "nightfox/nightfox", "label": "Nightfox", "colorscheme": "nightfox", "background": "dark"},
+      {"id": "nightfox/duskfox", "label": "Duskfox", "colorscheme": "duskfox", "background": "dark"},
+      {"id": "nightfox/nordfox", "label": "Nordfox", "colorscheme": "nordfox", "background": "dark"},
+      {"id": "nightfox/terafox", "label": "Terafox", "colorscheme": "terafox", "background": "dark"},
+      {"id": "nightfox/carbonfox", "label": "Carbonfox", "colorscheme": "carbonfox", "background": "dark"},
+      {"id": "nightfox/dayfox", "label": "Dayfox", "colorscheme": "dayfox", "background": "light"},
+      {"id": "nightfox/dawnfox", "label": "Dawnfox", "colorscheme": "dawnfox", "background": "light"}]},
+    {"id": "rose-pine", "label": "Rosé Pine", "plugin": "rose-pine", "detail": "Soho vibes: muted roses, pines and golds", "variants": [
+      {"id": "rose-pine/main", "label": "Main", "colorscheme": "rose-pine-main", "background": "dark"},
+      {"id": "rose-pine/moon", "label": "Moon", "colorscheme": "rose-pine-moon", "background": "dark"},
+      {"id": "rose-pine/dawn", "label": "Dawn", "colorscheme": "rose-pine-dawn", "background": "light"}]},
+    {"id": "gruvbox-material", "label": "Gruvbox Material", "plugin": "gruvbox-material", "detail": "Gruvbox with softer contrast and Material-style foregrounds", "variants": [
+      {"id": "gruvbox-material/dark", "label": "Dark", "colorscheme": "gruvbox-material", "background": "dark", "set_background": true, "before": "vim.g.gruvbox_material_background = 'medium'"},
+      {"id": "gruvbox-material/dark-hard", "label": "Dark, high contrast", "colorscheme": "gruvbox-material", "background": "dark", "set_background": true, "before": "vim.g.gruvbox_material_background = 'hard'"},
+      {"id": "gruvbox-material/light", "label": "Light", "colorscheme": "gruvbox-material", "background": "light", "set_background": true, "before": "vim.g.gruvbox_material_background = 'medium'"}]},
+    {"id": "gruvbox", "label": "Gruvbox", "plugin": "gruvbox", "detail": "The classic retro-groove palette, ported to Lua", "variants": [
+      {"id": "gruvbox/dark", "label": "Dark", "colorscheme": "gruvbox", "background": "dark", "set_background": true},
+      {"id": "gruvbox/light", "label": "Light", "colorscheme": "gruvbox", "background": "light", "set_background": true}]},
+    {"id": "github-theme", "label": "GitHub", "plugin": "github-theme", "detail": "The colors of github.com, including high-contrast versions", "variants": [
+      {"id": "github-theme/dark", "label": "Dark", "colorscheme": "github_dark_default", "background": "dark"},
+      {"id": "github-theme/dark-dimmed", "label": "Dark dimmed", "colorscheme": "github_dark_dimmed", "background": "dark"},
+      {"id": "github-theme/dark-high-contrast", "label": "Dark high contrast", "colorscheme": "github_dark_high_contrast", "background": "dark"},
+      {"id": "github-theme/light", "label": "Light", "colorscheme": "github_light_default", "background": "light"},
+      {"id": "github-theme/light-high-contrast", "label": "Light high contrast", "colorscheme": "github_light_high_contrast", "background": "light"}]},
+    {"id": "onedark", "label": "OneDark", "plugin": "onedark", "detail": "Atom's One Dark palette with seven styles", "variants": [
+      {"id": "onedark/dark", "label": "Dark", "colorscheme": "onedark", "background": "dark", "before": "require('onedark').setup({ style = 'dark' })"},
+      {"id": "onedark/darker", "label": "Darker", "colorscheme": "onedark", "background": "dark", "before": "require('onedark').setup({ style = 'darker' })"},
+      {"id": "onedark/cool", "label": "Cool", "colorscheme": "onedark", "background": "dark", "before": "require('onedark').setup({ style = 'cool' })"},
+      {"id": "onedark/deep", "label": "Deep", "colorscheme": "onedark", "background": "dark", "before": "require('onedark').setup({ style = 'deep' })"},
+      {"id": "onedark/warm", "label": "Warm", "colorscheme": "onedark", "background": "dark", "before": "require('onedark').setup({ style = 'warm' })"},
+      {"id": "onedark/light", "label": "Light", "colorscheme": "onedark", "background": "light", "before": "require('onedark').setup({ style = 'light' })"}]},
+    {"id": "sonokai", "label": "Sonokai", "plugin": "sonokai", "detail": "High-contrast Monokai-style theme in six styles", "variants": [
+      {"id": "sonokai/default", "label": "Default", "colorscheme": "sonokai", "background": "dark", "before": "vim.g.sonokai_style = 'default'"},
+      {"id": "sonokai/atlantis", "label": "Atlantis", "colorscheme": "sonokai", "background": "dark", "before": "vim.g.sonokai_style = 'atlantis'"},
+      {"id": "sonokai/andromeda", "label": "Andromeda", "colorscheme": "sonokai", "background": "dark", "before": "vim.g.sonokai_style = 'andromeda'"},
+      {"id": "sonokai/shusia", "label": "Shusia", "colorscheme": "sonokai", "background": "dark", "before": "vim.g.sonokai_style = 'shusia'"},
+      {"id": "sonokai/maia", "label": "Maia", "colorscheme": "sonokai", "background": "dark", "before": "vim.g.sonokai_style = 'maia'"},
+      {"id": "sonokai/espresso", "label": "Espresso", "colorscheme": "sonokai", "background": "dark", "before": "vim.g.sonokai_style = 'espresso'"}]},
+    {"id": "oxocarbon", "label": "Oxocarbon", "plugin": "oxocarbon", "detail": "IBM Carbon-inspired pinks and blues on near-black", "variants": [
+      {"id": "oxocarbon/dark", "label": "Dark", "colorscheme": "oxocarbon", "background": "dark", "set_background": true},
+      {"id": "oxocarbon/light", "label": "Light", "colorscheme": "oxocarbon", "background": "light", "set_background": true}]},
+    {"id": "cyberdream", "label": "Cyberdream", "plugin": "cyberdream", "detail": "Bright neon accents for a futuristic look", "variants": [
+      {"id": "cyberdream/dark", "label": "Dark", "colorscheme": "cyberdream", "background": "dark"},
+      {"id": "cyberdream/muted", "label": "Muted", "colorscheme": "cyberdream-muted", "background": "dark"},
+      {"id": "cyberdream/light", "label": "Light", "colorscheme": "cyberdream-light", "background": "light"}]},
+    {"id": "moonfly", "label": "Moonfly", "plugin": "moonfly", "detail": "Dark charcoal theme with crisp, saturated colors", "variants": [
+      {"id": "moonfly", "label": "Moonfly", "colorscheme": "moonfly", "background": "dark"}]},
+    {"id": "vague", "label": "Vague", "plugin": "vague", "detail": "Quiet, desaturated colors that stay out of the way", "variants": [
+      {"id": "vague", "label": "Vague", "colorscheme": "vague", "background": "dark"}]},
+    {"id": "onedarkpro", "label": "OneDark Pro", "plugin": "onedarkpro", "detail": "VS Code's One Dark Pro, with vivid and light versions", "variants": [
+      {"id": "onedarkpro/onedark", "label": "One Dark", "colorscheme": "onedark", "background": "dark"},
+      {"id": "onedarkpro/vivid", "label": "Vivid", "colorscheme": "onedark_vivid", "background": "dark"},
+      {"id": "onedarkpro/dark", "label": "Darker background", "colorscheme": "onedark_dark", "background": "dark"},
+      {"id": "onedarkpro/light", "label": "One Light", "colorscheme": "onelight", "background": "light"}]},
+    {"id": "material", "label": "Material", "plugin": "material", "detail": "Google Material colors in five styles", "variants": [
+      {"id": "material/darker", "label": "Darker", "colorscheme": "material-darker", "background": "dark"},
+      {"id": "material/deep-ocean", "label": "Deep ocean", "colorscheme": "material-deep-ocean", "background": "dark"},
+      {"id": "material/oceanic", "label": "Oceanic", "colorscheme": "material-oceanic", "background": "dark"},
+      {"id": "material/palenight", "label": "Palenight", "colorscheme": "material-palenight", "background": "dark"},
+      {"id": "material/lighter", "label": "Lighter", "colorscheme": "material-lighter", "background": "light"}]},
+    {"id": "nordic", "label": "Nordic", "plugin": "nordic", "detail": "A warmer, darker take on the Nord palette", "variants": [
+      {"id": "nordic", "label": "Nordic", "colorscheme": "nordic", "background": "dark"}]},
+    {"id": "edge", "label": "Edge", "plugin": "edge", "detail": "Clean, balanced colors based on Atom One", "variants": [
+      {"id": "edge/default", "label": "Default", "colorscheme": "edge", "background": "dark", "set_background": true, "before": "vim.g.edge_style = 'default'"},
+      {"id": "edge/aura", "label": "Aura", "colorscheme": "edge", "background": "dark", "set_background": true, "before": "vim.g.edge_style = 'aura'"},
+      {"id": "edge/neon", "label": "Neon", "colorscheme": "edge", "background": "dark", "set_background": true, "before": "vim.g.edge_style = 'neon'"},
+      {"id": "edge/light", "label": "Light", "colorscheme": "edge", "background": "light", "set_background": true, "before": "vim.g.edge_style = 'default'"}]},
+    {"id": "solarized-osaka", "label": "Solarized Osaka", "plugin": "solarized-osaka", "detail": "A darker, modern Solarized", "variants": [
+      {"id": "solarized-osaka/dark", "label": "Dark", "colorscheme": "solarized-osaka", "background": "dark"},
+      {"id": "solarized-osaka/vivid", "label": "Vivid", "colorscheme": "solarized-osaka-vivid", "background": "dark"},
+      {"id": "solarized-osaka/light", "label": "Light", "colorscheme": "solarized-osaka-light", "background": "light"}]},
+    {"id": "vscode", "label": "VS Code", "plugin": "vscode", "detail": "The default Visual Studio Code Dark+ and Light+ colors", "variants": [
+      {"id": "vscode/dark", "label": "Dark+", "colorscheme": "vscode", "background": "dark", "set_background": true},
+      {"id": "vscode/light", "label": "Light+", "colorscheme": "vscode", "background": "light", "set_background": true}]},
+    {"id": "melange", "label": "Melange", "plugin": "melange", "detail": "Warm, cozy browns and muted accents", "variants": [
+      {"id": "melange/dark", "label": "Dark", "colorscheme": "melange", "background": "dark", "set_background": true},
+      {"id": "melange/light", "label": "Light", "colorscheme": "melange", "background": "light", "set_background": true}]},
+    {"id": "nightfly", "label": "Nightfly", "plugin": "nightfly", "detail": "Deep navy blue theme with bright accents", "variants": [
+      {"id": "nightfly", "label": "Nightfly", "colorscheme": "nightfly", "background": "dark"}]},
+    {"id": "dracula", "label": "Dracula", "plugin": "dracula", "detail": "The popular dark purple theme, ported to Lua for Neovim", "variants": [
+      {"id": "dracula/classic", "label": "Classic", "colorscheme": "dracula", "background": "dark"},
+      {"id": "dracula/soft", "label": "Soft", "colorscheme": "dracula-soft", "background": "dark"}]},
+    {"id": "monokai-pro", "label": "Monokai Pro", "plugin": "monokai-pro", "detail": "The Monokai Pro palette with its six filters", "variants": [
+      {"id": "monokai-pro/pro", "label": "Pro", "colorscheme": "monokai-pro", "background": "dark"},
+      {"id": "monokai-pro/classic", "label": "Classic", "colorscheme": "monokai-pro-classic", "background": "dark"},
+      {"id": "monokai-pro/machine", "label": "Machine", "colorscheme": "monokai-pro-machine", "background": "dark"},
+      {"id": "monokai-pro/octagon", "label": "Octagon", "colorscheme": "monokai-pro-octagon", "background": "dark"},
+      {"id": "monokai-pro/ristretto", "label": "Ristretto", "colorscheme": "monokai-pro-ristretto", "background": "dark"},
+      {"id": "monokai-pro/spectrum", "label": "Spectrum", "colorscheme": "monokai-pro-spectrum", "background": "dark"},
+      {"id": "monokai-pro/light", "label": "Light", "colorscheme": "monokai-pro-light", "background": "light"}]},
+    {"id": "nord", "label": "Nord", "plugin": "nord", "detail": "The arctic, north-bluish Nord palette (maintained Lua port)", "variants": [
+      {"id": "nord", "label": "Nord", "colorscheme": "nord", "background": "dark"}]},
+    {"id": "default", "label": "Neovim default", "detail": "Neovim's own colors; follows your terminal's light or dark background", "variants": [{"id": "default", "label": "Default", "colorscheme": "default"}]},
+    {"id": "habamax", "label": "Habamax", "detail": "Muted dark theme", "variants": [{"id": "habamax", "label": "Habamax", "colorscheme": "habamax", "background": "dark"}]},
+    {"id": "sorbet", "label": "Sorbet", "detail": "Soft purple dark theme", "variants": [{"id": "sorbet", "label": "Sorbet", "colorscheme": "sorbet", "background": "dark"}]},
+    {"id": "retrobox", "label": "Retrobox", "detail": "Warm retro theme in the spirit of Gruvbox", "variants": [{"id": "retrobox", "label": "Retrobox", "colorscheme": "retrobox"}]},
+    {"id": "unokai", "label": "Unokai", "detail": "Monokai-like dark theme", "variants": [{"id": "unokai", "label": "Unokai", "colorscheme": "unokai", "background": "dark"}]},
+    {"id": "catppuccin-builtin", "label": "Catppuccin (built in)", "detail": "Neovim's bundled Catppuccin; no download, fewer options than the plugin", "variants": [{"id": "catppuccin", "label": "Catppuccin", "colorscheme": "catppuccin"}]},
+    {"id": "wildcharm", "label": "Wildcharm", "detail": "Vivid colors on a dark background", "variants": [{"id": "wildcharm", "label": "Wildcharm", "colorscheme": "wildcharm"}]},
+    {"id": "zaibatsu", "label": "Zaibatsu", "detail": "Dark theme with strong contrast", "variants": [{"id": "zaibatsu", "label": "Zaibatsu", "colorscheme": "zaibatsu", "background": "dark"}]},
+    {"id": "lunaperche", "label": "Lunaperche", "detail": "Balanced dark theme", "variants": [{"id": "lunaperche", "label": "Lunaperche", "colorscheme": "lunaperche"}]},
+    {"id": "quiet", "label": "Quiet", "detail": "Minimal grayscale theme", "variants": [{"id": "quiet", "label": "Quiet", "colorscheme": "quiet"}]},
+    {"id": "slate", "label": "Slate", "detail": "Classic dark slate theme", "variants": [{"id": "slate", "label": "Slate", "colorscheme": "slate", "background": "dark"}]},
+    {"id": "desert", "label": "Desert", "hidden": true, "variants": [{"id": "desert", "label": "Desert", "colorscheme": "desert"}]},
+    {"id": "elflord", "label": "Elflord", "hidden": true, "variants": [{"id": "elflord", "label": "Elflord", "colorscheme": "elflord"}]},
+    {"id": "industry", "label": "Industry", "hidden": true, "variants": [{"id": "industry", "label": "Industry", "colorscheme": "industry"}]},
+    {"id": "evening", "label": "Evening", "hidden": true, "variants": [{"id": "evening", "label": "Evening", "colorscheme": "evening"}]}
+  ]
+}

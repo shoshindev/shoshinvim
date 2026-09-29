@@ -139,17 +139,19 @@ func (m *Model) onProgress(text string) {
 	}
 }
 
-func (m *Model) finishJob(msg jobMsg) {
+func (m *Model) finishJob(msg jobMsg) tea.Cmd {
 	m.busy, m.writing, m.activity = false, false, ""
 	if m.cancel != nil {
 		m.cancel()
 		m.cancel = nil
 	}
 	switch msg.kind {
+	case "lookup":
+		return m.finishLookup(msg.lookup, msg.err)
 	case "review":
 		m.plan, m.planErr = msg.plan, msg.err
 		m.menu, m.cursor = m.reviewMenu(), 0
-		return
+		return nil
 	case "save":
 		m.result, m.resultErr = msg.result, msg.err
 		if msg.err == nil && msg.result != nil && msg.result.LocalCommitted {
@@ -185,6 +187,7 @@ func (m *Model) finishJob(msg jobMsg) {
 	default:
 		m.menu = []menuItem{{"Quit", "Then start Neovim with the command above", "quit", true}, {"Keep editing", "Return to the review", "review", false}}
 	}
+	return nil
 }
 
 func (m *Model) failedDownloads() int {
