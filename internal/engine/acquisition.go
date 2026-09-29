@@ -35,6 +35,15 @@ func Actions(s State, target string) ([]Action, error) {
 				pkgs[l.Package] = true
 			}
 		}
+		if treesitter(s) {
+			pkgs["tree-sitter-cli"] = true
+		}
+		for _, name := range linters(s) {
+			pkgs[name] = true // Mason's package names match the programs: markdownlint, eslint_d.
+		}
+		if debugging(s) {
+			pkgs["js-debug-adapter"] = true
+		}
 		if Value(s, "formatting.provider", "native") == "conform" {
 			if toolCommand(s, "prettier") == "prettier" && hasWeb(s) {
 				pkgs["prettier"] = true
@@ -46,6 +55,11 @@ func Actions(s State, target string) ([]Action, error) {
 		for _, pkg := range sorted(pkgs) {
 			out = append(out, Action{ID: "mason:" + pkg, Kind: "mason", Package: pkg, Destination: filepath.Join(base, "mason"), Description: "Mason registry/download/build for " + pkg + " (registry-selected version; may invoke npm or download binaries)"})
 		}
+	}
+	// Parsers come last: they need nvim-treesitter and, with Mason, its tree-sitter CLI.
+	if parsers := parserNames(Parsers(s)); len(parsers) > 0 {
+		out = append(out, Action{ID: "treesitter:parsers", Kind: "parsers", Parsers: parsers, Destination: filepath.Join(base, "parsers"),
+			Description: "Tree-sitter parsers " + strings.Join(parsers, ", ") + " (source archives at the revisions nvim-treesitter pins, compiled with tree-sitter-cli and your C compiler)"})
 	}
 	return out, nil
 }
@@ -59,6 +73,13 @@ func Installed(a Action) bool {
 		marker = filepath.Join(a.Destination, ".git")
 	case "mason":
 		marker = filepath.Join(a.Destination, "packages", a.Package)
+	case "parsers":
+		for _, lang := range a.Parsers {
+			if _, err := os.Stat(filepath.Join(a.Destination, "parser", lang+".so")); err != nil {
+				return false
+			}
+		}
+		return len(a.Parsers) > 0
 	default:
 		return false
 	}
@@ -125,6 +146,9 @@ func acquire(ctx context.Context, base, nvim string, a Action) error {
 		}
 		return os.Rename(staging, dest)
 	}
+	if a.Kind == "parsers" {
+		return compileParsers(ctx, base, nvim, dest, a.Parsers)
+	}
 	if a.Kind != "mason" {
 		return fmt.Errorf("unsupported external action")
 	}
@@ -178,6 +202,68 @@ vim.cmd('qa!')
 	}
 	return nil
 }
+
+// compileParsers installs Tree-sitter parsers with the pinned nvim-treesitter inside the
+// user's chosen Neovim. A tree-sitter CLI that Mason downloaded comes first on PATH.
+func compileParsers(ctx context.Context, base, nvim, dest string, parsers []string) error {
+	if nvim == "" {
+		return fmt.Errorf("parsers need a verified Neovim")
+	}
+	plugin := filepath.Join(base, "plugins", "nvim-treesitter")
+	if _, err := os.Stat(filepath.Join(plugin, "lua", "nvim-treesitter", "install.lua")); err != nil {
+		return fmt.Errorf("nvim-treesitter is not downloaded; retry once it is")
+	}
+	tmp, err := os.MkdirTemp("", "shoshinvim-parsers-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmp)
+	var langs []string
+	for _, p := range parsers {
+		langs = append(langs, LuaString(p))
+	}
+	script := fmt.Sprintf(`vim.fn.mkdir(vim.fn.stdpath('cache'), 'p')
+vim.opt.rtp:prepend(%s)
+if vim.fn.executable('tree-sitter') ~= 1 then
+  io.stderr:write('tree-sitter CLI not found: install tree-sitter-cli 0.26.1 or later (not from npm), or choose Mason for language tools')
+  vim.cmd('cquit 1')
+end
+local ts = require('nvim-treesitter')
+ts.setup({ install_dir = %s })
+local langs = { %s }
+local ok, err = pcall(function() return ts.install(langs, { max_jobs = 4 }):wait(840000) end)
+local missing = {}
+for _, lang in ipairs(langs) do
+  if not vim.uv.fs_stat(%s .. '/parser/' .. lang .. '.so') then missing[#missing + 1] = lang end
+end
+if not ok or #missing > 0 then
+  io.stderr:write((ok and '' or tostring(err) .. '\n') .. 'Parsers not installed: ' .. table.concat(missing, ', '))
+  vim.cmd('cquit 1')
+end
+vim.cmd('qa!')
+`, LuaString(plugin), LuaString(dest), strings.Join(langs, ", "), LuaString(dest))
+	p := filepath.Join(tmp, "parsers.lua")
+	if err = os.WriteFile(p, []byte(script), 0600); err != nil {
+		return err
+	}
+	cmd := exec.CommandContext(ctx, nvim, "--clean", "--headless", "-i", "NONE", "-n", "-l", p)
+	boundProcess(cmd)
+	cmd.Dir = tmp
+	cmd.Env = isolatedEnv(tmp)
+	for i, kv := range cmd.Env {
+		if key, value, _ := strings.Cut(kv, "="); strings.EqualFold(key, "PATH") {
+			cmd.Env[i] = key + "=" + filepath.Join(base, "mason", "bin") + string(os.PathListSeparator) + value
+		}
+	}
+	if out, err := cmd.CombinedOutput(); err != nil {
+		if len(out) > 8000 {
+			out = out[len(out)-8000:]
+		}
+		return fmt.Errorf("Tree-sitter: %w: %s", err, out)
+	}
+	return nil
+}
+
 func RunActions(ctx context.Context, target, nvim string, actions []Action, progress func(string)) []ActionResult {
 	results := make([]ActionResult, len(actions))
 	for i, a := range actions {
@@ -202,7 +288,11 @@ func RunActions(ctx context.Context, target, nvim string, actions []Action, prog
 			if progress != nil {
 				progress(a.Description)
 			}
-			child, cancel := context.WithTimeout(ctx, 5*time.Minute)
+			limit := 5 * time.Minute
+			if a.Kind == "parsers" {
+				limit = 15 * time.Minute // Large grammars such as TypeScript take a while to compile.
+			}
+			child, cancel := context.WithTimeout(ctx, limit)
 			err := baseErr
 			if err == nil {
 				err = acquire(child, base, nvim, a)

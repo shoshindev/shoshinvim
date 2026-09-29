@@ -89,6 +89,7 @@ func Generate(s State) (map[string]string, error) {
 	autocmds.WriteString(editorAutocmds(s))
 	add("autocmds", autocmds.String())
 	add("plugins", pluginLua(s))
+	add("syntax", syntaxLua(s))
 	add("appearance", appearanceLua(s))
 	add("navigation", navigationLua(s))
 	add("git", gitLua(s))
@@ -141,6 +142,8 @@ end })
 		}
 		add("formatting", body)
 	}
+	add("lint", lintLua(s))
+	add("debug", debugLua(s))
 	add("interface", interfaceLua(s))
 	add("keymaps", keymapsLua(s))
 	var init strings.Builder
@@ -178,7 +181,8 @@ func Plugins(s State) []string {
 	s = withLegacyWorkspace(s)
 	set := map[string]bool{}
 	for _, pair := range [][2]string{{"navigation.picker", "native"}, {"navigation.explorer", "native"}, {"git.hunks", "native"}, {"formatting.provider", "native"}, {"lsp.provider", "native"}, {"tools.provider", "system"}, {"appearance.statusline", "native"}, {"appearance.buffers", "native"}, {"navigation.shortcuts", "native"}, {"completion.engine", "native"},
-		{"workspace.start_screen", "none"}, {"appearance.indent", "none"}, {"appearance.notifications", "none"}, {"editor.detect_indent", "none"}} {
+		{"workspace.start_screen", "none"}, {"appearance.indent", "none"}, {"appearance.notifications", "none"}, {"editor.detect_indent", "none"}, {"syntax.engine", "native"},
+		{"coding.pairs", "none"}, {"coding.surround", "none"}, {"coding.textobjects", "none"}, {"coding.todo", "none"}, {"coding.lint", "none"}, {"coding.debug", "none"}} {
 		if v, _ := Value(s, pair[0], pair[1]).(string); v != pair[1] && v != "" {
 			set[v] = true
 		}
@@ -226,6 +230,24 @@ end
 			config = ", main = 'mini.diff', opts = { view = { style = 'sign', signs = { add = '+', change = '~', delete = '_' } } }"
 		case id == "oil", id == "gitsigns":
 			config = ", opts = {}"
+		case id == "nvim-autopairs", id == "mini.pairs", id == "nvim-surround":
+			config = fmt.Sprintf(", main = %s, opts = {}", LuaString(id))
+		case id == "mini.surround":
+			if Value(s, "keymaps.style", "none") == "lazyvim" {
+				// LazyVim's mini-surround extra moves the keys under gs, keeping s for substitute.
+				config = ", main = 'mini.surround', opts = { mappings = { add = 'gsa', delete = 'gsd', find = 'gsf', find_left = 'gsF', highlight = 'gsh', replace = 'gsr', update_n_lines = 'gsn' } }"
+			} else {
+				config = ", main = 'mini.surround', opts = {}"
+			}
+		case id == "todo-comments":
+			config = ", main = 'todo-comments', opts = { signs = false }" // kickstart's setting: no sign column icons.
+		case id == "mini.hipatterns":
+			config = ", main = 'mini.hipatterns', opts = { highlighters = { " +
+				"fixme = { pattern = '%f[%w]()FIXME()%f[%W]', group = 'MiniHipatternsFixme' }, hack = { pattern = '%f[%w]()HACK()%f[%W]', group = 'MiniHipatternsHack' }, " +
+				"todo = { pattern = '%f[%w]()TODO()%f[%W]', group = 'MiniHipatternsTodo' }, note = { pattern = '%f[%w]()NOTE()%f[%W]', group = 'MiniHipatternsNote' } } }"
+		case id == "mini.ai":
+			// kickstart's settings; aa and ii avoid Neovim 0.12's an/in selection keys.
+			config = ", main = 'mini.ai', opts = { n_lines = 500, mappings = { around_next = 'aa', inside_next = 'ii' } }"
 		case id == "mason":
 			config = ", opts = { PATH = 'prepend', install_root_dir = base .. '/mason' }"
 		}

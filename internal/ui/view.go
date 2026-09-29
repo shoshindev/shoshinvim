@@ -527,6 +527,13 @@ func (m *Model) showPlugins() {
 		}
 		fmt.Fprintf(&b, "  why: %s\n\n", why)
 	}
+	if parsers := engine.Parsers(m.draft); len(parsers) > 0 {
+		fmt.Fprintf(&b, "%s\n", m.th.Bold(fmt.Sprintf("%d Tree-sitter parsers", len(parsers))))
+		b.WriteString(m.th.Dim("Source archives at the revisions the pinned nvim-treesitter names, compiled on\nthis computer with tree-sitter-cli and your C compiler.") + "\n")
+		for _, p := range parsers {
+			fmt.Fprintf(&b, "  %s %s\n", padRight(p.Language, 16), m.th.Dim(p.Repository+" @ "+p.Revision[:7]))
+		}
+	}
 	m.openViewer("Plugins used", b.String())
 }
 
@@ -762,7 +769,7 @@ func (m *Model) dependencies() []engine.Dependency {
 // missingTools lists programs the user must install; Mason downloads language tools itself.
 func (m *Model) missingTools() []string {
 	mason := engine.Value(m.draft, "tools.provider", "system") == "mason"
-	runtimes := map[string]bool{"nvim": true, "git": true, "rg": true, "fzf": true, "node": true, "npm": true}
+	runtimes := map[string]bool{"nvim": true, "git": true, "rg": true, "fzf": true, "node": true, "npm": true, "cc": true, "curl": true, "tar": true}
 	var out []string
 	for _, d := range m.dependencies() {
 		if d.Status != "missing" {
@@ -1060,18 +1067,21 @@ func (m *Model) downloadSummary() string {
 	return text
 }
 
-func actionCounts(actions []engine.Action) (plugins, tools int) {
+func actionCounts(actions []engine.Action) (plugins, tools, parsers int) {
 	for _, a := range actions {
-		if a.Kind == "git" {
+		switch a.Kind {
+		case "git":
 			plugins++
-		} else {
+		case "parsers":
+			parsers += len(a.Parsers)
+		default:
 			tools++
 		}
 	}
 	return
 }
 
-func downloadText(plugins, tools int) string {
+func downloadText(plugins, tools, parsers int) string {
 	var parts []string
 	if plugins > 0 {
 		parts = append(parts, fmt.Sprintf("%d %s", plugins, plural(plugins, "plugin", "plugins")))
@@ -1079,7 +1089,16 @@ func downloadText(plugins, tools int) string {
 	if tools > 0 {
 		parts = append(parts, fmt.Sprintf("%d language %s", tools, plural(tools, "tool", "tools")))
 	}
-	return strings.Join(parts, " and ")
+	if parsers > 0 {
+		parts = append(parts, fmt.Sprintf("%d syntax %s", parsers, plural(parsers, "parser", "parsers")))
+	}
+	switch len(parts) {
+	case 0:
+		return ""
+	case 1:
+		return parts[0]
+	}
+	return strings.Join(parts[:len(parts)-1], ", ") + " and " + parts[len(parts)-1]
 }
 
 // actionName turns an engine action description into a short display name.
@@ -1091,6 +1110,9 @@ func actionName(description string) string {
 	if rest, ok := strings.CutPrefix(description, "Mason registry/download/build for "); ok {
 		name, _, _ := strings.Cut(rest, " ")
 		return name
+	}
+	if strings.HasPrefix(description, "Tree-sitter parsers ") {
+		return "Tree-sitter parsers"
 	}
 	return description
 }

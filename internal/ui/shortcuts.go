@@ -14,7 +14,7 @@ type keyRow struct {
 	key     engine.EffectiveKeymap
 }
 
-var shortcutGroupOrder = []string{"Find", "Files", "Code", "Git", "Buffers", "Windows", "Editor", "Yours"}
+var shortcutGroupOrder = []string{"Find", "Files", "Code", "Git", "Debug", "Buffers", "Windows", "Editor", "Yours"}
 
 func (m *Model) shortcutRows() []keyRow {
 	rows := []keyRow{{kind: "continue"}, {kind: "add"}}

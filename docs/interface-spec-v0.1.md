@@ -18,7 +18,7 @@ This document specifies behavior and presentation, not production code. ShoshinV
 Running `shoshinvim` opens a fullscreen guided setup:
 
 1. A welcome panel states what will happen and that nothing is written before review.
-2. Seven sections — **Editor, Appearance, Workspace, Navigation, Languages, Formatting, Git & tools** — each ask a short series of decisions.
+2. Eight sections — **Editor, Appearance, Workspace, Navigation, Languages, Formatting, Coding, Git & tools** — each ask a short series of decisions.
 3. Every decision offers curated options and marks exactly one as **recommended**; the cursor starts there, so Enter accepts it.
 4. A review summarizes each section, validates the draft in an isolated Neovim, and lists files and downloads before any write.
 5. Saving shows live progress; a final screen says how to start Neovim.
@@ -147,15 +147,16 @@ Every option sets explicit catalog values, so the saved state records each decis
 | **Appearance** | Color scheme: Tokyo Night, 25 more theme plugins, 11 themes built into Neovim, or another theme from GitHub (§3.8) · Variant, when the theme has several (light variants marked) · Status line: lualine.nvim / mini.statusline / built in · Open files: bufferline.nvim / barbar.nvim / mini.tabline / no tabs · Indent guides: indent-blankline.nvim / Snacks indent / mini.indentscope / none · Notifications: Snacks notifier / fidget.nvim / built in · Popup borders: rounded / square / none |
 | **Workspace** | Shortcut style: kickstart.nvim / LazyVim / Neovim defaults only · Leader key: Space / Comma / Backslash · Your shortcuts (§3.9) · Shortcut hints: which-key.nvim / mini.clue / none · Start screen: Snacks dashboard / mini.starter / none |
 | **Navigation** | Find files and text: Telescope / Snacks picker / fzf-lua / mini.pick / built in · File explorer: neo-tree.nvim / nvim-tree.lua / Snacks explorer / oil.nvim / mini.files / netrw |
-| **Languages** | Which languages: TypeScript & JavaScript, HTML, CSS, JSON, Lua (all recommended) · Completion: blink.cmp / nvim-cmp / built in / off · Errors and warnings: inline / signs only · Server settings: written by ShoshinVim / nvim-lspconfig |
+| **Languages** | Which languages: TypeScript & JavaScript, HTML, CSS, JSON, Lua (all recommended) · Syntax highlighting: nvim-treesitter / built in (§3.10) · Completion: blink.cmp / nvim-cmp / built in / off · Errors and warnings: inline / signs only · Server settings: written by ShoshinVim / nvim-lspconfig |
 | **Formatting** | Formatter: conform.nvim (Prettier & StyLua) / language server · When to format: when I ask / every save |
+| **Coding** | Brackets and quotes: nvim-autopairs / mini.pairs / off · Surround: mini.surround / nvim-surround / off · Text objects: mini.ai / built in · TODO comments: todo-comments.nvim / mini.hipatterns / off · Linting: off / nvim-lint (markdownlint; ESLint in projects configured for it) · Debugger (with TypeScript): off / nvim-dap + nvim-dap-ui / nvim-dap + nvim-dap-view |
 | **Git & tools** | Git changes: gitsigns.nvim / mini.diff / off · Language tools: mason.nvim / I'll install them |
 
 Plugin options are labeled with the plugin's own name. Each carries a detail line describing what it does and a plugin line (§3.7). Theme options show a color swatch recorded from the real theme.
 
 ### 3.4 Skipped decisions
 
-When the user has decided on languages and selected none, completion, diagnostics, server settings, both Formatting decisions and the language-tools decision are skipped, and their values are removed from the draft. The Variant step is skipped for themes with a single variant; the custom-theme steps appear only after choosing "Another theme from GitHub…". Skipped sections are omitted from navigation and summarized as "skipped".
+When the user has decided on languages and selected none, completion, diagnostics, server settings and both Formatting decisions are skipped, and their values are removed from the draft. The language-tools decision is skipped only when nothing needs a separate program (no languages, no Tree-sitter parsers, no linters), and the debugger only when TypeScript is not chosen, since its adapter is for JavaScript and TypeScript. The Variant step is skipped for themes with a single variant; the custom-theme steps appear only after choosing "Another theme from GitHub…". Skipped sections are omitted from navigation and summarized as "skipped".
 
 ### 3.5 Derived settings
 
@@ -201,17 +202,26 @@ Shortcuts are credited, visible and editable before anything is written.
 
 - **Styles are copied from their source.** kickstart.nvim's keys come from its `init.lua`; LazyVim's from its published keymap list. Each style option names its source link and how many shortcuts it has. "Neovim defaults only" adds none; Neovim's built-in keys (`grn`, `gra`, `grr`, `gri`, `gO`, `K`, `[d`, `]d`) work in every style and are listed under the shortcut list as a reminder.
 - **Only what works is listed.** A shortcut whose feature is not chosen is dropped, for example Git-change keys when Git changes is off; finder and explorer shortcuts call whichever finder or explorer was chosen.
-- **Your shortcuts** lists every key grouped as Find, Files, Code, Git, Buffers, Windows, Editor and Yours, with its source (`kickstart.nvim`, `LazyVim`, `ShoshinVim` or `yours`). Keys are spelled in words with the chosen leader, for example `Space sf`, `Ctrl+h`, `Shift+h`; modes other than normal are named after the description (`· normal & visual`).
+- **Your shortcuts** lists every key grouped as Find, Files, Code, Git, Debug, Buffers, Windows, Editor and Yours, with its source (`kickstart.nvim`, `LazyVim`, `ShoshinVim` or `yours`). Keys are spelled in words with the chosen leader, for example `Space sf`, `Ctrl+h`, `Shift+h`; modes other than normal are named after the description (`· normal & visual`).
 - Later steps that shortcuts reach name the keys actually configured, for example `Your shortcuts: Space sf find files · Space sg search text in the project` on Find files and text; nothing is named when no style is chosen.
 - **Changing** a key asks for Vim notation (`<leader>ff`, `<C-s>`, `]q`). Turning one off records it as off, so a later style update does not bring it back. **Adding** one picks from the same actions, or "Run a command…" for any Ex command such as `Lazy`. `R` restores the style and removes every change.
 - **Conflicts** are shown under the list: a key that is also the start of a longer key in the same mode, which Neovim runs only after a pause. LazyVim's `gr` is exempt because LazyVim maps it with `nowait`. A key cannot be used twice: changing or adding a key replaces whatever was on it.
 - The generated `keymaps.lua` names the style and its source, then lists shortcuts under `-- From kickstart.nvim`, `-- ShoshinVim additions` and `-- Your shortcuts` headings. ShoshinVim adds only `<leader>?`, the shortcut guide (`:ShoshinHelp`), which lists the keys actually configured. which-key.nvim and mini.clue show the style's group names (for example `Search` for kickstart's `Space s`).
 
+### 3.10 Syntax parsers and coding helpers
+
+- **Tree-sitter parsers are compiled once, during the approved download**, never when Neovim starts (kickstart.nvim installs them on first use of a file type; ShoshinVim does not, because nothing downloads without review). The set is kickstart's base list — bash, c, diff, html, lua, luadoc, markdown, markdown_inline, query, vim, vimdoc — plus javascript, jsdoc, tsx, typescript for TypeScript, css and scss for CSS, and json for JSON.
+- Parser sources are the archives at the revisions the pinned nvim-treesitter commit names; Plugins used lists each parser with its repository and revision. Compiling needs tree-sitter-cli 0.26.1 or later (Mason downloads it when Mason installs tools), a C compiler, curl and tar; missing programs are listed in the review.
+- The generated `syntax.lua` starts Tree-sitter for every file type that has a parser and uses nvim-treesitter's indentation where it has indent rules.
+- mini.surround follows the shortcut style: kickstart's `sa`/`sd`/`sr`, or LazyVim's `gsa`/`gsd`/`gsr`. mini.ai uses kickstart's settings (`aa`/`ii` for the next object, keeping Neovim 0.12's own `an`/`in`).
+- Linting runs each linter only where it applies and only when it is installed: markdownlint for Markdown, and eslint_d for JavaScript and TypeScript only inside a project with an ESLint configuration. `:ShoshinLint` lints the current file.
+- The debugger uses js-debug-adapter (the VS Code JavaScript debugger) with "Launch this file with Node.js" and "Attach to a running Node.js process". Debugger shortcuts come from the style: kickstart's F5/F1/F2/F3, Space b, Space B and F7; LazyVim's Space d… keys. Both debugger views use icons that need no Nerd Font.
+
 ## 4. Core flows
 
 ### 4.1 First launch
 
-The welcome panel shows the logo, the tagline, the seven section names, the recommendation convention and "Nothing is written or downloaded until you review and save." Below it: the target and status tag, then **Start setup** (recommended) and Quit.
+The welcome panel shows the logo, the tagline, the eight section names, the recommendation convention and "Nothing is written or downloaded until you review and save." Below it: the target and status tag, then **Start setup** (recommended) and Quit.
 
 ### 4.2 Walking the sections
 

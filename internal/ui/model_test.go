@@ -144,7 +144,7 @@ func TestRecommendedChoicesInstallTheExpectedPlugins(t *testing.T) {
 	if err = c.Validate(s); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"blink.cmp", "bufferline", "conform", "gitsigns", "guess-indent", "indent-blankline", "lualine", "mason", "neo-tree", "nui", "plenary", "snacks", "telescope", "tokyonight", "which-key"}
+	want := []string{"blink.cmp", "bufferline", "conform", "gitsigns", "guess-indent", "indent-blankline", "lualine", "mason", "mini.ai", "mini.surround", "neo-tree", "nui", "nvim-autopairs", "nvim-treesitter", "plenary", "snacks", "telescope", "todo-comments", "tokyonight", "which-key"}
 	if got := engine.Plugins(s); !reflect.DeepEqual(got, want) {
 		t.Fatalf("plugins %v, want %v", got, want)
 	}
@@ -256,6 +256,18 @@ func TestNoLanguagesSkipsLanguageDecisions(t *testing.T) {
 		press(m, "enter")
 	}
 	press(m, "1", "2", "3", "4", "5", "enter") // Untick every language.
+	// Syntax highlighting still helps without language servers (Markdown, shell scripts).
+	if id := sections[m.sec].questions[m.q].id; id != "syntax.engine" {
+		t.Fatalf("expected the syntax step, at %s", id)
+	}
+	press(m, "enter")
+	// Coding helpers stay; the debugger, which is for JavaScript and TypeScript, is skipped.
+	for _, id := range []string{"coding.pairs", "coding.surround", "coding.textobjects", "coding.todo", "coding.lint"} {
+		if got := sections[m.sec].questions[m.q].id; got != id {
+			t.Fatalf("expected %s, at %s", id, got)
+		}
+		press(m, "enter")
+	}
 	if sections[m.sec].id != "tools" || sections[m.sec].questions[m.q].id != "git.hunks" {
 		t.Fatalf("expected to skip to Git changes, at %s", sections[m.sec].questions[m.q].id)
 	}
@@ -348,7 +360,7 @@ func TestPlainModeAsksTheSameQuestions(t *testing.T) {
 		t.Fatal(err, out.String())
 	}
 	text := out.String()
-	for _, want := range []string{"── 1/7 Editor", "Color scheme", "(recommended)", "── Review ──", "Quit without saving"} {
+	for _, want := range []string{"── 1/8 Editor", "Color scheme", "(recommended)", "── Review ──", "Quit without saving"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("plain output missing %q:\n%s", want, text)
 		}
@@ -390,8 +402,19 @@ func TestReviewKnowsWhatIsAlreadyInstalled(t *testing.T) {
 	acceptAll(t, m)
 	for _, a := range m.plan.Actions {
 		marker := filepath.Join(a.Destination, ".git")
-		if a.Kind == "mason" {
+		switch a.Kind {
+		case "mason":
 			marker = filepath.Join(a.Destination, "packages", a.Package)
+		case "parsers":
+			for _, lang := range a.Parsers {
+				if err := os.MkdirAll(filepath.Join(a.Destination, "parser"), 0700); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(a.Destination, "parser", lang+".so"), nil, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			continue
 		}
 		if err := os.MkdirAll(marker, 0700); err != nil {
 			t.Fatal(err)

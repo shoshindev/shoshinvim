@@ -97,11 +97,20 @@ end
 
 type groupLists struct{ whichKey, miniClue []string }
 
-// shortcutGroups names the leader groups of the chosen style (for example Search).
+// shortcutGroups names the leader groups of the chosen style (for example Search) that
+// hold at least one configured shortcut.
 func shortcutGroups(s State) groupLists {
 	var out groupLists
 	st, _ := keymapStyle(Value(withLegacyWorkspace(s), "keymaps.style", "none").(string))
+	keys := EffectiveKeymaps(s)
 	for _, g := range st.Groups {
+		used := false
+		for _, k := range keys {
+			used = used || (len(k.Key) > len(g[0]) && strings.HasPrefix(k.Key, g[0]))
+		}
+		if !used {
+			continue
+		}
 		out.whichKey = append(out.whichKey, fmt.Sprintf("{ %s, group = %s }", LuaString(g[0]), LuaString(g[1])))
 		out.miniClue = append(out.miniClue, fmt.Sprintf("{ mode = 'n', keys = %s, desc = %s }", LuaString(strings.ReplaceAll(g[0], "<leader>", "<Leader>")), LuaString("+"+g[1])))
 	}

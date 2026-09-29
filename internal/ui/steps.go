@@ -48,6 +48,17 @@ type inputSpec struct {
 	lookup               bool // Submitting looks the repository up on GitHub.
 }
 
+// syntaxOptions counts the parsers Tree-sitter would compile for the chosen languages.
+func syntaxOptions(s engine.State) []option {
+	next := engine.Clone(s)
+	next.Values["syntax.engine"] = "nvim-treesitter"
+	n := len(engine.Parsers(next))
+	return []option{
+		{label: "nvim-treesitter", short: "Tree-sitter", plugin: "nvim-treesitter", detail: fmt.Sprintf("Precise colors and indentation from real parsers; compiles %d parsers when you download", n), values: is("syntax.engine", "nvim-treesitter"), recommended: true},
+		{label: "Built in", short: "built-in syntax", detail: "Neovim's syntax files; Lua, Markdown and help files already use its bundled parsers", values: is("syntax.engine", "native")},
+	}
+}
+
 // resolve fills options that depend on earlier answers.
 func (q question) resolve(s engine.State) question {
 	if q.dynamic != nil {
@@ -92,6 +103,28 @@ func noLanguages(s engine.State) bool {
 		decided = decided || ok
 	}
 	return decided
+}
+
+// noTools is true when nothing chosen needs a separate program: no languages, no
+// Tree-sitter parsers to compile and no linters.
+func noTools(s engine.State) bool {
+	return noLanguages(s) && engine.Value(s, "syntax.engine", "native") != "nvim-treesitter" && engine.Value(s, "coding.lint", "none") == "none"
+}
+
+// noTypeScript skips the debugger, whose adapter is for JavaScript and TypeScript.
+func noTypeScript(s engine.State) bool { return !engine.Enabled(s, "language.typescript.lsp") }
+
+// surroundOptions names each plugin's keys; LazyVim's style moves mini.surround under gs.
+func surroundOptions(s engine.State) []option {
+	prefix, source := "s", "kickstart's choice"
+	if engine.Value(s, "keymaps.style", "none") == "lazyvim" {
+		prefix, source = "gs", "LazyVim's keys"
+	}
+	return []option{
+		{label: "mini.surround", short: "mini.surround", plugin: "mini.surround", detail: fmt.Sprintf("%[1]sa adds, %[1]sd deletes, %[1]sr replaces: %[1]saiw\" quotes a word; %[2]s", prefix, source), values: is("coding.surround", "mini.surround"), recommended: true},
+		{label: "nvim-surround", short: "nvim-surround", plugin: "nvim-surround", detail: "ys adds, ds deletes, cs changes: ysiw\" quotes a word; the keys of vim-surround", values: is("coding.surround", "nvim-surround")},
+		{label: "Off", short: "no surround", detail: "Edit the brackets and quotes yourself", values: is("coding.surround", "none")},
+	}
 }
 
 var sections = []section{
@@ -281,6 +314,7 @@ var sections = []section{
 			{label: "JSON", short: "JSON", detail: "vscode-json-language-server", values: on("language.json.lsp"), recommended: true},
 			{label: "Lua & Neovim config", short: "Lua", detail: "lua-language-server", values: on("language.lua.lsp"), recommended: true},
 		}},
+		{id: "syntax.engine", title: "Syntax highlighting", help: "How Neovim reads code to color and indent it.", dynamic: syntaxOptions},
 		{id: "completion", title: "Completion", help: "Suggestions while you type.", skip: noLanguages, options: []option{
 			{label: "blink.cmp", short: "blink.cmp", plugin: "blink.cmp", detail: "Fast completion with docs, snippets and signature help; kickstart's and LazyVim's choice", values: map[string]any{"completion.engine": "blink.cmp", "completion.native": false}, recommended: true},
 			{label: "nvim-cmp", short: "nvim-cmp", plugin: "nvim-cmp", detail: "The long-standing completion engine; NvChad's choice", values: map[string]any{"completion.engine": "nvim-cmp", "completion.native": false}},
@@ -306,14 +340,40 @@ var sections = []section{
 			{label: "Every save", short: "format on save", detail: "Format automatically before writing the file", values: on("formatting.on_save")},
 		}},
 	}},
+	{id: "coding", title: "Coding", intro: "Helpers for writing, checking and debugging code.", questions: []question{
+		{id: "coding.pairs", title: "Brackets and quotes", help: "Typing an opening bracket or quote inserts the closing one.", options: []option{
+			{label: "nvim-autopairs", short: "nvim-autopairs", plugin: "nvim-autopairs", detail: "Closes pairs as you type, with rules for each language; NvChad's and AstroNvim's choice", values: is("coding.pairs", "nvim-autopairs"), recommended: true},
+			{label: "mini.pairs", short: "mini.pairs", plugin: "mini.pairs", detail: "A minimal pair closer from mini.nvim; LazyVim's choice", values: is("coding.pairs", "mini.pairs")},
+			{label: "Off", short: "no auto-pairs", detail: "Type both yourself; kickstart's default", values: is("coding.pairs", "none")},
+		}},
+		{id: "coding.surround", title: "Surround", help: "Add, change or delete the brackets, quotes and tags around text.", dynamic: surroundOptions},
+		{id: "coding.textobjects", title: "Text objects", help: "Select around or inside things with a and i, such as va) or ci'.", options: []option{
+			{label: "mini.ai", short: "mini.ai", plugin: "mini.ai", detail: "Adds arguments (a), function calls (f), quotes (q) and more, as in cia or vaf", values: is("coding.textobjects", "mini.ai"), recommended: true},
+			{label: "Built in", short: "built-in text objects", detail: "Neovim's own: words, sentences, paragraphs, brackets, quotes and tags", values: is("coding.textobjects", "none")},
+		}},
+		{id: "coding.todo", title: "TODO comments", help: "Highlight TODO, FIXME, HACK and NOTE in comments so they stand out.", options: []option{
+			{label: "todo-comments.nvim", short: "todo-comments", plugin: "todo-comments", detail: "Colors each keyword and can list them all; kickstart's, LazyVim's and AstroNvim's choice", values: is("coding.todo", "todo-comments"), recommended: true},
+			{label: "mini.hipatterns", short: "mini.hipatterns", plugin: "mini.hipatterns", detail: "Highlights the same keywords with a small pattern plugin from mini.nvim", values: is("coding.todo", "mini.hipatterns")},
+			{label: "Off", short: "plain comments", detail: "Comments keep the color scheme's comment color", values: is("coding.todo", "none")},
+		}},
+		{id: "coding.lint", title: "Linting", help: "Checks beyond what language servers report, such as style rules.", options: []option{
+			{label: "Off", short: "no linters", detail: "Language servers already report errors; kickstart's and LazyVim's default for these languages", values: is("coding.lint", "none"), recommended: true},
+			{label: "nvim-lint", short: "nvim-lint", plugin: "nvim-lint", detail: "markdownlint for Markdown, and ESLint for JavaScript and TypeScript in projects set up for it", values: is("coding.lint", "nvim-lint")},
+		}},
+		{id: "coding.debug", title: "Debugger", help: "Breakpoints and stepping through JavaScript and TypeScript run with Node.js.", skip: noTypeScript, options: []option{
+			{label: "Off", short: "no debugger", detail: "kickstart and LazyVim leave debugging off until you add it", values: is("coding.debug", "none"), recommended: true},
+			{label: "nvim-dap + nvim-dap-ui", short: "nvim-dap-ui", plugin: "nvim-dap-ui", detail: "Panels for variables, breakpoints, call stack and console; kickstart's example", values: is("coding.debug", "nvim-dap-ui")},
+			{label: "nvim-dap + nvim-dap-view", short: "nvim-dap-view", plugin: "nvim-dap-view", detail: "One lighter window with a tab for each view", values: is("coding.debug", "nvim-dap-view")},
+		}},
+	}},
 	{id: "tools", title: "Git & tools", intro: "Version control and installing language tools.", questions: []question{
 		{id: "git.hunks", title: "Git changes", help: "See what changed since the last commit.", options: []option{
 			{label: "gitsigns.nvim", short: "gitsigns", plugin: "gitsigns", detail: "Markers for added, changed and deleted lines; preview, stage and blame", values: is("git.hunks", "gitsigns"), recommended: true},
 			{label: "mini.diff", short: "mini.diff", plugin: "mini.diff", detail: "Lightweight change markers with an inline diff overlay, from mini.nvim", values: is("git.hunks", "mini.diff")},
 			{label: "Off", short: "no Git markers", detail: "Use Git from the terminal", values: is("git.hunks", "native")},
 		}},
-		{id: "tools.provider", title: "Language tools", help: "Language servers and formatters are separate programs.", skip: noLanguages, options: []option{
-			{label: "mason.nvim", short: "Mason installs tools", plugin: "mason", detail: "After you review, downloads the selected servers and formatters (web tools need Node.js)", values: is("tools.provider", "mason"), recommended: true},
+		{id: "tools.provider", title: "Language tools", help: "Language servers, formatters, linters and the Tree-sitter compiler are separate programs.", skip: noTools, options: []option{
+			{label: "mason.nvim", short: "Mason installs tools", plugin: "mason", detail: "After you review, downloads the tools your choices need (web tools need Node.js)", values: is("tools.provider", "mason"), recommended: true},
 			{label: "I'll install them", short: "tools from PATH", detail: "Use what is already on your PATH", values: is("tools.provider", "system")},
 		}},
 	}},
@@ -537,9 +597,15 @@ func derive(c engine.Catalog, s *engine.State) error {
 		s.Values = map[string]any{}
 	}
 	if noLanguages(*s) {
-		for _, id := range []string{"completion.native", "completion.engine", "diagnostics.virtual_text", "lsp.provider", "formatting.provider", "formatting.on_save", "tools.provider"} {
+		for _, id := range []string{"completion.native", "completion.engine", "diagnostics.virtual_text", "lsp.provider", "formatting.provider", "formatting.on_save"} {
 			unset(s, id)
 		}
+	}
+	if noTools(*s) {
+		unset(s, "tools.provider")
+	}
+	if noTypeScript(*s) {
+		unset(s, "coding.debug")
 	}
 	if _, chosen := s.Values["keymaps.style"]; chosen {
 		unset(s, "experience.layout") // Replaced by the separate workspace choices.

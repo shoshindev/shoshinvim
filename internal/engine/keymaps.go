@@ -55,6 +55,14 @@ var KeyActions = []KeyAction{
 	{ID: "git.blame_line", Label: "Blame this line", Group: "Git", RHS: "<cmd>ShoshinBlameLine<CR>", Needs: "git.hunks"},
 	{ID: "git.diff", Label: "Diff this file", Group: "Git", RHS: "<cmd>ShoshinGitDiff<CR>", Needs: "git.hunks"},
 	{ID: "git.status", Label: "Changed files", Group: "Git", RHS: "<cmd>ShoshinGitStatus<CR>"},
+	{ID: "debug.continue", Label: "Start or continue debugging", Group: "Debug", RHS: "function() require('dap').continue() end", Lua: true, Needs: "coding.debug"},
+	{ID: "debug.step_into", Label: "Step into", Group: "Debug", RHS: "function() require('dap').step_into() end", Lua: true, Needs: "coding.debug"},
+	{ID: "debug.step_over", Label: "Step over", Group: "Debug", RHS: "function() require('dap').step_over() end", Lua: true, Needs: "coding.debug"},
+	{ID: "debug.step_out", Label: "Step out", Group: "Debug", RHS: "function() require('dap').step_out() end", Lua: true, Needs: "coding.debug"},
+	{ID: "debug.breakpoint", Label: "Toggle breakpoint", Group: "Debug", RHS: "function() require('dap').toggle_breakpoint() end", Lua: true, Needs: "coding.debug"},
+	{ID: "debug.condition", Label: "Conditional breakpoint", Group: "Debug", RHS: "function() require('dap').set_breakpoint(vim.fn.input('Breakpoint condition: ')) end", Lua: true, Needs: "coding.debug"},
+	{ID: "debug.terminate", Label: "Stop debugging", Group: "Debug", RHS: "function() require('dap').terminate() end", Lua: true, Needs: "coding.debug"},
+	{ID: "debug.view", Label: "Toggle the debugger view", Group: "Debug", RHS: "<cmd>ShoshinDebugView<CR>", Needs: "coding.debug"},
 	{ID: "buffer.next", Label: "Next buffer", Group: "Buffers", RHS: "<cmd>bnext<CR>"},
 	{ID: "buffer.prev", Label: "Previous buffer", Group: "Buffers", RHS: "<cmd>bprevious<CR>"},
 	{ID: "buffer.other", Label: "Switch to the other buffer", Group: "Buffers", RHS: "<cmd>e #<CR>"},
@@ -127,9 +135,12 @@ var KeymapStyles = []KeymapStyle{
 			{"n", "<leader>sc", "find.commands"}, {"n", "<leader><leader>", "find.buffers"}, {"n", "<leader>/", "find.buffer_lines"}, {"n", "<leader>sn", "find.config"},
 			{"n", "grd", "code.definition"}, {"n", "grD", "code.declaration"}, {"n", "grt", "code.type_definition"}, {"n", "<leader>th", "code.inlay_hints"},
 			{"nv", "<leader>f", "code.format"}, {"n", "\\", "explorer.toggle"},
+			// lua/kickstart/plugins/debug.lua
+			{"n", "<F5>", "debug.continue"}, {"n", "<F1>", "debug.step_into"}, {"n", "<F2>", "debug.step_over"}, {"n", "<F3>", "debug.step_out"},
+			{"n", "<leader>b", "debug.breakpoint"}, {"n", "<leader>B", "debug.condition"}, {"n", "<F7>", "debug.view"},
 		}},
 	{ID: "lazyvim", Label: "LazyVim", Source: "LazyVim", URL: "https://www.lazyvim.org/keymaps",
-		Groups: [][2]string{{"<leader>b", "Buffer"}, {"<leader>c", "Code"}, {"<leader>f", "File/find"}, {"<leader>g", "Git"}, {"<leader>gh", "Hunks"}, {"<leader>q", "Quit"}, {"<leader>s", "Search"}, {"<leader>u", "UI"}, {"<leader>w", "Windows"}},
+		Groups: [][2]string{{"<leader>b", "Buffer"}, {"<leader>c", "Code"}, {"<leader>f", "File/find"}, {"<leader>g", "Git"}, {"<leader>gh", "Hunks"}, {"<leader>q", "Quit"}, {"<leader>s", "Search"}, {"<leader>u", "UI"}, {"<leader>w", "Windows"}, {"<leader>d", "Debug"}},
 		keys: []presetKey{
 			{"n", "<C-h>", "window.left"}, {"n", "<C-j>", "window.down"}, {"n", "<C-k>", "window.up"}, {"n", "<C-l>", "window.right"},
 			{"n", "<S-h>", "buffer.prev"}, {"n", "<S-l>", "buffer.next"}, {"n", "[b", "buffer.prev"}, {"n", "]b", "buffer.next"},
@@ -147,6 +158,9 @@ var KeymapStyles = []KeymapStyle{
 			{"nx", "<leader>ca", "code.action"}, {"n", "<leader>cr", "code.rename"}, {"nx", "<leader>cf", "code.format"},
 			{"n", "]h", "git.next_hunk"}, {"n", "[h", "git.prev_hunk"}, {"n", "<leader>ghs", "git.stage_hunk"}, {"n", "<leader>ghr", "git.reset_hunk"},
 			{"n", "<leader>ghp", "git.preview_hunk"}, {"n", "<leader>ghb", "git.blame_line"}, {"n", "<leader>ghd", "git.diff"},
+			// lazyvim.plugins.extras.dap.core
+			{"n", "<leader>dB", "debug.condition"}, {"n", "<leader>db", "debug.breakpoint"}, {"n", "<leader>dc", "debug.continue"}, {"n", "<leader>di", "debug.step_into"},
+			{"n", "<leader>do", "debug.step_out"}, {"n", "<leader>dO", "debug.step_over"}, {"n", "<leader>dt", "debug.terminate"}, {"n", "<leader>du", "debug.view"},
 		}},
 }
 

@@ -200,7 +200,7 @@ func (m *Model) openWelcome() {
 		}
 	default:
 		m.menu = []menuItem{
-			{"Start setup", "Seven short sections, one decision at a time", "walk", true},
+			{"Start setup", "Eight short sections, one decision at a time", "walk", true},
 			{"Quit", "", "quit", false},
 		}
 	}

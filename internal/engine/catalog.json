@@ -307,6 +307,80 @@
       "description": "Which engine shows completion suggestions."
     },
     {
+      "id": "coding.pairs",
+      "label": "Auto-close pairs",
+      "type": "enum",
+      "choices": [
+        "none",
+        "nvim-autopairs",
+        "mini.pairs"
+      ],
+      "description": "Insert the closing bracket or quote when you type the opening one."
+    },
+    {
+      "id": "coding.surround",
+      "label": "Surround",
+      "type": "enum",
+      "choices": [
+        "none",
+        "mini.surround",
+        "nvim-surround"
+      ],
+      "description": "Add, change and delete brackets, quotes and tags around text."
+    },
+    {
+      "id": "coding.textobjects",
+      "label": "Text objects",
+      "type": "enum",
+      "choices": [
+        "none",
+        "mini.ai"
+      ],
+      "description": "Extra around/inside selections such as function arguments and calls."
+    },
+    {
+      "id": "coding.todo",
+      "label": "TODO comments",
+      "type": "enum",
+      "choices": [
+        "none",
+        "todo-comments",
+        "mini.hipatterns"
+      ],
+      "description": "Highlight TODO, FIXME, HACK and NOTE in comments."
+    },
+    {
+      "id": "coding.lint",
+      "label": "Linting",
+      "type": "enum",
+      "choices": [
+        "none",
+        "nvim-lint"
+      ],
+      "description": "Run linters on save: markdownlint for Markdown and ESLint in projects configured for it."
+    },
+    {
+      "id": "coding.debug",
+      "label": "Debugger",
+      "type": "enum",
+      "choices": [
+        "none",
+        "nvim-dap-ui",
+        "nvim-dap-view"
+      ],
+      "description": "Step through JavaScript and TypeScript with nvim-dap and a debugger view."
+    },
+    {
+      "id": "syntax.engine",
+      "label": "Syntax engine",
+      "type": "enum",
+      "choices": [
+        "native",
+        "nvim-treesitter"
+      ],
+      "description": "How code is parsed for colors and indentation: Neovim's syntax files, or Tree-sitter parsers installed through nvim-treesitter."
+    },
+    {
       "id": "keymaps.style",
       "label": "Shortcut style",
       "type": "enum",

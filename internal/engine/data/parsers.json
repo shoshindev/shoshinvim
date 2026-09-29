@@ -1,0 +1,74 @@
+{
+  "bash": {
+    "repository": "tree-sitter/tree-sitter-bash",
+    "revision": "a06c2e4415e9bc0346c6b86d401879ffb44058f7"
+  },
+  "c": {
+    "repository": "tree-sitter/tree-sitter-c",
+    "revision": "b780e47fc780ddc8da13afa35a3f4ed5c157823d"
+  },
+  "css": {
+    "repository": "tree-sitter/tree-sitter-css",
+    "revision": "dda5cfc5722c429eaba1c910ca32c2c0c5bb1a3f"
+  },
+  "diff": {
+    "repository": "tree-sitter-grammars/tree-sitter-diff",
+    "revision": "ada384ac7bfc1307f32de474620120add29998fb"
+  },
+  "html": {
+    "repository": "tree-sitter/tree-sitter-html",
+    "revision": "73a3947324f6efddf9e17c0ea58d454843590cc0"
+  },
+  "javascript": {
+    "repository": "tree-sitter/tree-sitter-javascript",
+    "revision": "58404d8cf191d69f2674a8fd507bd5776f46cb11"
+  },
+  "jsdoc": {
+    "repository": "tree-sitter/tree-sitter-jsdoc",
+    "revision": "658d18dcdddb75c760363faa4963427a7c6b52db"
+  },
+  "json": {
+    "repository": "tree-sitter/tree-sitter-json",
+    "revision": "254c42a6476413b776221e03982ac8ae159eeb72"
+  },
+  "lua": {
+    "repository": "tree-sitter-grammars/tree-sitter-lua",
+    "revision": "10fe0054734eec83049514ea2e718b2a56acd0c9"
+  },
+  "luadoc": {
+    "repository": "tree-sitter-grammars/tree-sitter-luadoc",
+    "revision": "4d04632a3a398b78af52e83be074883e722f40be"
+  },
+  "markdown": {
+    "repository": "tree-sitter-grammars/tree-sitter-markdown",
+    "revision": "a0a00f817d02412bd92c54d316f164d827b57b5c"
+  },
+  "markdown_inline": {
+    "repository": "tree-sitter-grammars/tree-sitter-markdown",
+    "revision": "a0a00f817d02412bd92c54d316f164d827b57b5c"
+  },
+  "query": {
+    "repository": "tree-sitter-grammars/tree-sitter-query",
+    "revision": "8e9e223812ff30854fbc912adbec696ba5f0e023"
+  },
+  "scss": {
+    "repository": "serenadeai/tree-sitter-scss",
+    "revision": "c478c6868648eff49eb04a4df90d703dc45b312a"
+  },
+  "tsx": {
+    "repository": "tree-sitter/tree-sitter-typescript",
+    "revision": "75b3874edb2dc714fb1fd77a32013d0f8699989f"
+  },
+  "typescript": {
+    "repository": "tree-sitter/tree-sitter-typescript",
+    "revision": "75b3874edb2dc714fb1fd77a32013d0f8699989f"
+  },
+  "vim": {
+    "repository": "tree-sitter-grammars/tree-sitter-vim",
+    "revision": "039c8d0aa1deae00ddeb0374dd70bcc0ec56938d"
+  },
+  "vimdoc": {
+    "repository": "neovim/tree-sitter-vimdoc",
+    "revision": "23daa416c1ff5d15f59a1aa648f031d6e3ee15c5"
+  }
+}

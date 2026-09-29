@@ -162,6 +162,96 @@ for _, g in ipairs({ 'Normal', 'Keyword', 'Function', 'String', 'Type', 'Constan
   if c then out[#out + 1] = string.format('#%06x', c) end
 end
 io.stdout:write('SWATCH ' .. vim.json.encode(out) .. '\n')`
+	// Tree-sitter: every parser compiles with Mason's tree-sitter CLI, starts on its file
+	// type, and matches the source the pinned nvim-treesitter names.
+	syntax := map[string]any{"syntax.engine": "nvim-treesitter", "tools.provider": "mason",
+		"language.typescript.lsp": true, "language.css.lsp": true, "language.json.lsp": true}
+	var parserChecks []string
+	for _, p := range Parsers(State{Values: syntax}) {
+		parserChecks = append(parserChecks, fmt.Sprintf("{ %s, %s }", LuaString(p.Language), LuaString(p.Revision)))
+	}
+	cases = append(cases, choice{"syntax treesitter", syntax, `local pinned = require('nvim-treesitter.parsers')
+for _, p in ipairs({ ` + strings.Join(parserChecks, ", ") + ` }) do
+  local lang, revision = p[1], p[2]
+  assert(pinned[lang].install_info.revision == revision, lang .. ' source differs from nvim-treesitter')
+  local file = vim.api.nvim_get_runtime_file('parser/' .. lang .. '.so', false)[1]
+  assert(file and file:find('shoshinvim/parsers', 1, true), lang .. ' parser not installed: ' .. tostring(file))
+end
+for ft, lang in pairs({ typescriptreact = 'tsx', typescript = 'typescript', markdown = 'markdown', sh = 'bash', scss = 'scss' }) do
+  local buf = vim.api.nvim_create_buf(true, false)
+  vim.api.nvim_set_current_buf(buf)
+  vim.bo[buf].filetype = ft
+  assert(vim.treesitter.highlighter.active[buf], ft .. ': Tree-sitter did not start')
+  assert(vim.treesitter.get_parser(buf):lang() == lang, ft .. ': wrong parser')
+end
+vim.bo.filetype = 'typescript'
+assert(vim.bo.indentexpr:find('nvim%-treesitter'), 'indentexpr ' .. vim.bo.indentexpr)`})
+	// Coding helpers are checked by what they do to text, not only by loading.
+	edit := func(lines, cursor, keys, want string) string {
+		return fmt.Sprintf(`local buf = vim.api.nvim_create_buf(true, false)
+vim.api.nvim_set_current_buf(buf)
+vim.bo[buf].filetype = 'lua'
+vim.api.nvim_buf_set_lines(buf, 0, -1, false, { %s })
+vim.api.nvim_win_set_cursor(0, { 1, %s })
+vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(%s, true, false, true), 'mx', false)
+local got = vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1]
+assert(got == %s, 'got ' .. vim.inspect(got))`, LuaString(lines), cursor, LuaString(keys), LuaString(want))
+	}
+	todoCheck := func(namespace string) string {
+		return `local file = vim.fn.tempname() .. '.lua'
+vim.fn.writefile({ '-- TODO: tidy this up', 'local x = 1' }, file)
+vim.cmd.edit(file)
+local buf = vim.api.nvim_get_current_buf()
+-- A headless Neovim never redraws, so parse as a screen update would.
+pcall(function() vim.treesitter.get_parser(buf):parse(true) end)
+local function marks()
+  local n = 0
+  for name, id in pairs(vim.api.nvim_get_namespaces()) do
+    if name:find(` + LuaString(namespace) + `, 1, true) then n = n + #vim.api.nvim_buf_get_extmarks(buf, id, 0, -1, {}) end
+  end
+  return n
+end
+assert(vim.wait(5000, function() return marks() > 0 end, 50), 'TODO is not highlighted')`
+	}
+	debugSession := `local dap = require('dap')
+local file = vim.fn.tempname() .. '.js'
+vim.fn.writefile({ 'let total = 0', 'for (let i = 0; i < 3; i++) {', '  total += i', '}', 'console.log(total)' }, file)
+vim.cmd.edit(file)
+vim.api.nvim_win_set_cursor(0, { 3, 0 })
+dap.toggle_breakpoint()
+local stopped
+dap.listeners.after.event_stopped.test = function(_, body) stopped = body end
+dap.run(dap.configurations.javascript[1])
+assert(vim.wait(60000, function() return stopped ~= nil end, 100), 'the debugger did not stop at the breakpoint')
+assert(stopped.reason == 'breakpoint', 'stopped for ' .. tostring(stopped.reason))
+assert(vim.fn.exists(':ShoshinDebugView') == 2, 'no debugger view command')
+dap.terminate()
+vim.wait(5000, function() return dap.session() == nil end, 100)`
+	cases = append(cases,
+		choice{"pairs nvim-autopairs", map[string]any{"coding.pairs": "nvim-autopairs"}, "vim.cmd('doautocmd BufEnter')\n" + edit("", "0", "a(<Esc>", "()")},
+		choice{"pairs mini.pairs", map[string]any{"coding.pairs": "mini.pairs"}, edit("", "0", "a(<Esc>", "()")},
+		choice{"surround mini.surround", map[string]any{"coding.surround": "mini.surround"}, edit("word", "0", "saiw)", "(word)")},
+		choice{"surround mini.surround lazyvim", map[string]any{"coding.surround": "mini.surround", "keymaps.style": "lazyvim"}, edit("word", "0", "gsaiw)", "(word)")},
+		choice{"surround nvim-surround", map[string]any{"coding.surround": "nvim-surround"}, edit("word", "0", "ysiw)", "(word)")},
+		choice{"todo todo-comments", map[string]any{"coding.todo": "todo-comments"}, todoCheck("todo-comments")},
+		choice{"todo mini.hipatterns", map[string]any{"coding.todo": "mini.hipatterns"}, todoCheck("MiniHipatterns")},
+		choice{"textobjects mini.ai", map[string]any{"coding.textobjects": "mini.ai"}, edit("f(a, b)", "2", "ciaX<Esc>", "f(X, b)")},
+		choice{"lint nvim-lint", map[string]any{"coding.lint": "nvim-lint", "tools.provider": "mason", "language.typescript.lsp": true}, `local dir = vim.fn.tempname()
+vim.fn.mkdir(dir, 'p')
+vim.fn.writefile({ '# Title', '## Skipped a blank line' }, dir .. '/notes.md')
+vim.cmd.edit(dir .. '/notes.md')
+assert(vim.wait(20000, function() return #vim.diagnostic.get(0) > 0 end, 100), 'markdownlint reported nothing')
+-- Without an ESLint configuration, ESLint must not run (and so cannot complain).
+vim.fn.writefile({ 'const x = 1' }, dir .. '/a.ts')
+vim.cmd.edit(dir .. '/a.ts')
+vim.cmd('ShoshinLint')
+vim.wait(1000)
+assert(#require('lint').get_running() == 0 and #vim.diagnostic.get(0) == 0, 'ESLint ran without a project configuration')`},
+		choice{"debug nvim-dap-ui", map[string]any{"coding.debug": "nvim-dap-ui", "tools.provider": "mason", "language.typescript.lsp": true, "keymaps.style": "kickstart"},
+			debugSession + "\nassert(vim.fn.maparg('<F5>', 'n') ~= '', 'F5 is not mapped')"},
+		choice{"debug nvim-dap-view", map[string]any{"coding.debug": "nvim-dap-view", "tools.provider": "mason", "language.typescript.lsp": true, "keymaps.style": "lazyvim"},
+			debugSession + "\nassert(vim.fn.maparg('<leader>db', 'n') ~= '', 'Space db is not mapped')"},
+	)
 	cat := LoadCatalog()
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -200,6 +290,9 @@ io.stdout:write('SWATCH ' .. vim.json.encode(out) .. '\n')`
 			}
 			base, _ := Canonical(DataDirFor(target))
 			for _, a := range actions {
+				if a.Kind == "mason" && a.Package != "tree-sitter-cli" && a.Package != "markdownlint" && a.Package != "js-debug-adapter" {
+					continue // Language servers are exercised by the separate Lua integration script.
+				}
 				if !Installed(a) {
 					if err := acquire(context.Background(), base, nvim, a); err != nil {
 						t.Fatalf("download %s: %v", a.ID, err)

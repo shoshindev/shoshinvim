@@ -585,5 +585,168 @@
     "stars": 337,
     "updated": "2026-07",
     "license": "MIT"
+  },
+  "nvim-treesitter": {
+    "repository": "nvim-treesitter/nvim-treesitter",
+    "revision": "728e031f6b11d03d1f0708b7dc4fb0f1d9c8a137",
+    "reviewed": "2026-09-29",
+    "stars": 14433,
+    "updated": "2026-09",
+    "license": "Apache-2.0",
+    "used_by": [
+      "kickstart",
+      "LazyVim",
+      "NvChad",
+      "AstroNvim"
+    ]
+  },
+  "nvim-autopairs": {
+    "repository": "windwp/nvim-autopairs",
+    "revision": "430522f95fe4fb7c511ec64f8c1a90cc6a66c05c",
+    "reviewed": "2026-09-29",
+    "stars": 4102,
+    "updated": "2026-08",
+    "license": "MIT",
+    "used_by": [
+      "NvChad",
+      "AstroNvim",
+      "kickstart (optional)"
+    ]
+  },
+  "mini.pairs": {
+    "repository": "nvim-mini/mini.pairs",
+    "revision": "b1c5a726921b7a8c9321e9a7a208aa0571de5810",
+    "reviewed": "2026-09-29",
+    "stars": 269,
+    "updated": "2026-07",
+    "license": "MIT",
+    "used_by": [
+      "LazyVim"
+    ]
+  },
+  "mini.surround": {
+    "repository": "nvim-mini/mini.surround",
+    "revision": "33a2ebe5df8eb4751828fcba133e18ed0fbbdfab",
+    "reviewed": "2026-09-29",
+    "stars": 718,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "kickstart",
+      "LazyVim (extra)"
+    ]
+  },
+  "nvim-surround": {
+    "repository": "kylechui/nvim-surround",
+    "revision": "8b47db616ef658b8fc27e61db2896aa2f40134de",
+    "reviewed": "2026-09-29",
+    "stars": 4305,
+    "updated": "2026-06",
+    "license": "MIT"
+  },
+  "mini.ai": {
+    "repository": "nvim-mini/mini.ai",
+    "revision": "6c39ae7b11abe479fbe1bc81bf00ac6bca7afa07",
+    "reviewed": "2026-09-29",
+    "stars": 632,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "kickstart",
+      "LazyVim"
+    ]
+  },
+  "nvim-lint": {
+    "repository": "mfussenegger/nvim-lint",
+    "revision": "3d55c8f67c6ae5c15e1042571e107c7a3d5c5f4e",
+    "reviewed": "2026-09-29",
+    "stars": 2784,
+    "updated": "2026-08",
+    "license": "GPL-3.0",
+    "used_by": [
+      "LazyVim",
+      "kickstart (optional)"
+    ]
+  },
+  "nvim-nio": {
+    "repository": "nvim-neotest/nvim-nio",
+    "revision": "edcc181a875301dd21840189aa2f2f9ad69fc172",
+    "reviewed": "2026-09-29",
+    "stars": 431,
+    "updated": "2026-07",
+    "license": "MIT",
+    "used_by": [
+      "AstroNvim",
+      "kickstart (optional)",
+      "LazyVim (extra)"
+    ]
+  },
+  "nvim-dap": {
+    "repository": "mfussenegger/nvim-dap",
+    "revision": "cfa2d58f4537aca6ca83e2de1a0d9f1491121264",
+    "reviewed": "2026-09-29",
+    "stars": 7263,
+    "updated": "2026-09",
+    "license": "GPL-3.0",
+    "used_by": [
+      "AstroNvim",
+      "kickstart (optional)",
+      "LazyVim (extra)"
+    ]
+  },
+  "nvim-dap-ui": {
+    "repository": "rcarriga/nvim-dap-ui",
+    "revision": "cc9dd33aade7f20bae414d0cba163bc60d4d4b43",
+    "reviewed": "2026-09-29",
+    "stars": 3377,
+    "updated": "2026-07",
+    "license": "MIT",
+    "used_by": [
+      "AstroNvim",
+      "kickstart (optional)",
+      "LazyVim (extra)"
+    ],
+    "requires": [
+      "nvim-dap",
+      "nvim-nio"
+    ]
+  },
+  "nvim-dap-view": {
+    "repository": "igorlfs/nvim-dap-view",
+    "revision": "e766b3d8acef97e7e8b29f7f421aa4977b9978e1",
+    "reviewed": "2026-09-29",
+    "stars": 999,
+    "updated": "2026-08",
+    "license": "GPL-3.0",
+    "requires": [
+      "nvim-dap"
+    ]
+  },
+  "todo-comments": {
+    "repository": "folke/todo-comments.nvim",
+    "revision": "31e3c38ce9b29781e4422fc0322eb0a21f4e8668",
+    "reviewed": "2026-09-29",
+    "stars": 4209,
+    "updated": "2025-11",
+    "license": "Apache-2.0",
+    "used_by": [
+      "kickstart",
+      "LazyVim",
+      "AstroNvim"
+    ],
+    "requires": [
+      "plenary"
+    ]
+  },
+  "mini.hipatterns": {
+    "repository": "nvim-mini/mini.hipatterns",
+    "revision": "7c840c71d6a91f53d734cab2b6fe2290d285ec3b",
+    "reviewed": "2026-09-29",
+    "stars": 164,
+    "updated": "2026-07",
+    "license": "MIT",
+    "used_by": [
+      "LazyVim (extra)"
+    ]
   }
 }
