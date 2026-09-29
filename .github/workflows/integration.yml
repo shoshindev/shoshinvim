@@ -1,0 +1,75 @@
+name: Real Neovim
+# Downloads every offered plugin, theme, parser and language tool and checks each
+# choice in real Neovim. It takes a while, so it runs nightly, on demand, and on pull
+# requests labeled "integration" rather than on every push.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+  pull_request:
+    types: [labeled, opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  integration:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'integration')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: rhysd/action-setup-vim@febef33995d6649302e9d88dda81e071b68f16a7 # v1
+        with:
+          neovim: true
+          version: v0.12.5
+      # Runtimes the language tools need; ShoshinVim itself never installs these.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
+        with:
+          ruby-version: "3.4"
+      - uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1.24.1
+        with:
+          otp-version: "28"
+          elixir-version: "1.19"
+      - uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        with:
+          version: latest
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false
+      - uses: swift-actions/setup-swift@7ca6abe6b3b0e8b5421b88be48feee39cbf52c6a # v2.4.0
+        with:
+          swift-version: "6.1"
+      - name: Rust, ripgrep and fzf
+        run: |
+          rustup component add rustfmt
+          sudo apt-get update
+          sudo apt-get install -y ripgrep fzf
+      - name: Tool versions
+        run: |
+          nvim --version | head -1
+          for tool in node python3 java dotnet ruby elixir zig terraform swift sourcekit-lsp cargo rustfmt rg fzf cc curl tar; do
+            printf '%-14s %s\n' "$tool" "$(command -v "$tool" || echo MISSING)"
+          done
+      - name: Every choice in real Neovim
+        env:
+          SHOSHINVIM_INTEGRATION: "1"
+          SHOSHINVIM_ALL_LANGUAGES: "1"
+        run: go test -count=1 -timeout 110m -v ./internal/engine/

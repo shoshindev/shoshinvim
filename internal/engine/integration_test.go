@@ -363,18 +363,24 @@ assert(vim.lsp.config.lua_ls.settings.Lua.workspace.library[1] == vim.env.VIMRUN
 				}
 			}
 			if lang, ok := strings.CutPrefix(c.name, "language "); ok {
+				// CI installs every runtime and sets SHOSHINVIM_ALL_LANGUAGES=1, so a missing
+				// one fails there instead of silently leaving a language untested.
+				missing := t.Skipf
+				if os.Getenv("SHOSHINVIM_ALL_LANGUAGES") == "1" {
+					missing = t.Fatalf
+				}
 				for _, l := range Languages() {
 					if l.ID != lang {
 						continue
 					}
 					for _, r := range l.Server.Needs {
 						if p, err := exec.LookPath(r); err != nil || !runtimeWorks(r, p) {
-							t.Skipf("needs %s, which is not installed here", r)
+							missing("needs %s, which is not installed here", r)
 						}
 					}
 					if l.Server.Package == "" {
 						if _, err := exec.LookPath(l.Server.Command); err != nil {
-							t.Skipf("%s is not installed here", l.Server.Command)
+							missing("%s is not installed here", l.Server.Command)
 						}
 					}
 				}
