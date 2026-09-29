@@ -19,7 +19,7 @@ The product acceptance goal is a short, intuitive setup that creates a cohesive 
 
 ## Release gates still open
 
-- Watch the nightly Linux **Real Neovim** workflow, which checks all 24 languages with every runtime installed (only 17 could be checked on the development Mac), and consider macOS and Windows runs of it; parser compilation has been exercised only on macOS so far.
+- Watch the weekly Linux **Real Neovim** workflow, which checks all 24 languages with every runtime installed (only 17 could be checked on the development Mac), and consider macOS and Windows runs of it; parser compilation has been exercised only on macOS so far.
 - Run and inspect the five-platform CI matrix and clean-machine end-to-end installation, upgrade, uninstall, rollback and crash-recovery scenarios. Cross compilation does not prove platform runtime behavior.
 - Test PowerShell installer and executable replacement behavior on Windows. The updater reports a replacement failure without discarding the previous binary; a running-executable handoff needs Windows verification.
 - Configure the protected GitHub `release` environment; publish a first verified draft release, attestations and a separately reviewed Homebrew tap. No production installation channel has been published.
