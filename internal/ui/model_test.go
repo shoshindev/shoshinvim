@@ -2,6 +2,7 @@ package ui
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -106,8 +107,16 @@ func TestWelcomeOffersNoPresets(t *testing.T) {
 
 func TestEverySectionAndQuestionHasARecommendation(t *testing.T) {
 	c := engine.LoadCatalog()
+	s, err := recommendedState(c)
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, sec := range sections {
 		for _, q := range sec.questions {
+			if q.input != nil || q.skipped(s) {
+				continue
+			}
+			q = q.resolve(s)
 			count := 0
 			for _, o := range q.options {
 				if o.recommended {
@@ -125,7 +134,8 @@ func TestEverySectionAndQuestionHasARecommendation(t *testing.T) {
 	}
 }
 
-func TestRecommendedChoicesMatchTheFormerRichIDE(t *testing.T) {
+// The recommendations follow what today's leading starter configurations ship.
+func TestRecommendedChoicesInstallTheExpectedPlugins(t *testing.T) {
 	c := engine.LoadCatalog()
 	s, err := recommendedState(c)
 	if err != nil {
@@ -134,19 +144,57 @@ func TestRecommendedChoicesMatchTheFormerRichIDE(t *testing.T) {
 	if err = c.Validate(s); err != nil {
 		t.Fatal(err)
 	}
-	rich, _ := c.Profile(engine.NewState(), "rich-ide")
-	if !reflect.DeepEqual(engine.Plugins(s), engine.Plugins(rich)) {
-		t.Fatalf("plugins %v, want %v", engine.Plugins(s), engine.Plugins(rich))
-	}
-	target := filepath.Join(t.TempDir(), "nvim")
-	a, _ := engine.Actions(s, target)
-	b, _ := engine.Actions(rich, target)
-	if !reflect.DeepEqual(a, b) {
-		t.Fatalf("downloads differ:\n%v\n%v", a, b)
+	want := []string{"blink.cmp", "bufferline", "conform", "gitsigns", "lualine", "mason", "neo-tree", "nui", "plenary", "snacks", "telescope", "tokyonight", "which-key"}
+	if got := engine.Plugins(s); !reflect.DeepEqual(got, want) {
+		t.Fatalf("plugins %v, want %v", got, want)
 	}
 	if s.Profile != "custom" {
 		t.Fatalf("guided state must not claim a preset: %s", s.Profile)
 	}
+}
+
+// Transparency: every plugin a choice installs is explained by the choice that caused it.
+func TestEveryPluginIsExplained(t *testing.T) {
+	c := engine.LoadCatalog()
+	base, err := recommendedState(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, sec := range sections {
+		for _, q := range sec.questions {
+			if q.input != nil || q.multi {
+				continue
+			}
+			for _, o := range q.resolve(base).options {
+				if o.values["appearance.colorscheme"] == engine.CustomTheme {
+					continue // Explained by its own screen; needs a looked-up repository.
+				}
+				s, err := choose(c, base, o)
+				if err != nil {
+					t.Fatalf("%s/%s: %v", q.id, o.label, err)
+				}
+				m := &Model{draft: s}
+				reasons := m.pluginReasons()
+				for _, id := range engine.Plugins(s) {
+					if reasons[id] == "" {
+						t.Fatalf("choosing %s/%s installs %s without saying why", q.id, o.label, id)
+					}
+				}
+				if o.plugin != "" && !slicesContains(engine.Plugins(s), o.plugin) {
+					t.Fatalf("%s/%s names %s but does not install it", q.id, o.label, o.plugin)
+				}
+			}
+		}
+	}
+}
+
+func slicesContains(list []string, v string) bool {
+	for _, x := range list {
+		if x == v {
+			return true
+		}
+	}
+	return false
 }
 
 func TestEnterThroughEverySectionReachesReview(t *testing.T) {
@@ -386,5 +434,58 @@ func TestAppNameCommandUsesThePlatformShell(t *testing.T) {
 	}
 	if got := withAppName("windows", "it's", "nvim"); got != "$env:NVIM_APPNAME='it''s'; nvim" {
 		t.Fatal(got)
+	}
+}
+
+func TestCustomThemeFromGitHub(t *testing.T) {
+	rev := strings.Repeat("a", 40)
+	lookupTheme = func(_ context.Context, repo string) (engine.ThemeLookup, error) {
+		return engine.ThemeLookup{Repository: repo, Revision: rev, Colorschemes: []string{"dusk", "dusk-light"}, Stars: 42}, nil
+	}
+	defer func() { lookupTheme = engine.LookupTheme }()
+	m := newModel(t)
+	press(m, "enter", "enter") // Start, accept the Editor form.
+	m.cursor = len(m.question().options) - 1
+	if m.question().options[m.cursor].short != "custom theme" {
+		t.Fatal("last color scheme option is not the custom theme")
+	}
+	press(m, "enter")
+	if !m.inputQuestion() {
+		t.Fatalf("expected the repository input, at %s", m.question().id)
+	}
+	for _, r := range "someone/dusk.nvim" {
+		m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+	}
+	press(m, "enter")
+	if q := m.question(); q.id != "custom-theme-colorscheme" || len(q.options) != 2 {
+		t.Fatalf("expected the colorscheme choice, at %s", q.id)
+	}
+	press(m, "2")
+	for id, want := range map[string]any{"appearance.colorscheme": engine.CustomTheme, "appearance.custom_theme.repository": "someone/dusk.nvim",
+		"appearance.custom_theme.revision": rev, "appearance.custom_theme.colorscheme": "dusk-light"} {
+		if m.draft.Values[id] != want {
+			t.Fatalf("%s = %v, want %v", id, m.draft.Values[id], want)
+		}
+	}
+	if err := m.catalog.Validate(m.draft); err != nil {
+		t.Fatal(err)
+	}
+	uses, _ := engine.PluginsInUse(m.draft)
+	found := false
+	for _, u := range uses {
+		if u.Repository == "someone/dusk.nvim" {
+			found = !u.Listed
+		}
+	}
+	if !found {
+		t.Fatal("custom theme is not listed as an unreviewed plugin")
+	}
+	// Choosing a listed theme afterwards removes the custom details.
+	next, err := choose(m.catalog, m.draft, themeOptions(m.draft)[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := next.Values["appearance.custom_theme.repository"]; ok || m.catalog.Validate(next) != nil {
+		t.Fatal("custom theme details kept after choosing a listed theme")
 	}
 }

@@ -53,6 +53,7 @@ type jobMsg struct {
 	plan   *engine.Plan
 	result *engine.ApplyResult
 	retry  []engine.ActionResult
+	lookup *engine.ThemeLookup
 	err    error
 }
 
@@ -61,6 +62,7 @@ type command struct{ label, action string }
 var paletteCommands = []command{
 	{"Preview generated Lua", "lua"},
 	{"See file changes", "diff"},
+	{"Plugins used", "plugins"},
 	{"Check dependencies", "health"},
 	{"Show all settings as JSON", "json"},
 	{"Set any setting…", "set"},
@@ -248,8 +250,25 @@ func (m *Model) moveQuestion(dir int) tea.Cmd {
 	return m.enterSection(m.sec-1, true)
 }
 
+// question is the current question with options resolved against the draft.
+func (m *Model) question() question { return sections[m.sec].questions[m.q].resolve(m.draft) }
+
+// inputQuestion reports whether the current step asks for typed text.
+func (m *Model) inputQuestion() bool {
+	return m.screen == stepScreen && !sections[m.sec].form && sections[m.sec].questions[m.q].input != nil
+}
+
 func (m *Model) loadQuestion() {
-	q := sections[m.sec].questions[m.q]
+	q := m.question()
+	if q.input != nil {
+		value, _ := m.draft.Values[q.input.setting].(string)
+		m.input.SetValue(value)
+		m.input.Placeholder = q.input.placeholder
+		m.input.CursorEnd()
+		m.input.Focus()
+		return
+	}
+	m.input.Blur()
 	if q.multi {
 		m.checks = checked(m.draft, q)
 		m.cursor = 0
@@ -269,7 +288,10 @@ func (m *Model) finishSection() tea.Cmd {
 }
 
 func (m *Model) answer() tea.Cmd {
-	q := sections[m.sec].questions[m.q]
+	q := m.question()
+	if q.input != nil {
+		return m.submitInput(q)
+	}
 	var next engine.State
 	var err error
 	if q.multi {
@@ -280,6 +302,50 @@ func (m *Model) answer() tea.Cmd {
 	if err != nil {
 		m.flash(err.Error(), true)
 		return nil
+	}
+	m.change(next)
+	return m.moveQuestion(1)
+}
+
+// submitInput stores typed text; a theme repository is first looked up on GitHub.
+func (m *Model) submitInput(q question) tea.Cmd {
+	value := strings.TrimSpace(m.input.Value())
+	if value == "" {
+		m.flash("Type "+q.input.placeholder+" first, or press Esc to go back.", true)
+		return nil
+	}
+	if !q.input.lookup {
+		next := engine.Clone(m.draft)
+		if err := m.catalog.Set(&next, q.input.setting, value, true); err != nil {
+			m.flash(err.Error(), true)
+			return nil
+		}
+		m.change(next)
+		return m.moveQuestion(1)
+	}
+	m.activity = "Looking up " + value + " on GitHub"
+	return m.work("lookup", false, func(ctx context.Context, _ func(string)) jobMsg {
+		l, err := lookupTheme(ctx, value)
+		return jobMsg{lookup: &l, err: err}
+	})
+}
+
+// finishLookup pins the repository and continues to choosing its colorscheme.
+func (m *Model) finishLookup(l *engine.ThemeLookup, err error) tea.Cmd {
+	if err != nil {
+		m.flash(err.Error(), true)
+		return nil
+	}
+	themeLookups[l.Repository+"@"+l.Revision] = *l
+	next := engine.Clone(m.draft)
+	if repo, _ := next.Values["appearance.custom_theme.repository"].(string); repo != l.Repository {
+		unset(&next, "appearance.custom_theme.colorscheme")
+	}
+	for id, v := range map[string]any{"appearance.custom_theme.repository": l.Repository, "appearance.custom_theme.revision": l.Revision} {
+		if err := m.catalog.Set(&next, id, v, true); err != nil {
+			m.flash(err.Error(), true)
+			return nil
+		}
 	}
 	m.change(next)
 	return m.moveQuestion(1)
@@ -360,6 +426,7 @@ func (m *Model) reviewMenu() []menuItem {
 		}
 	}
 	items = append(items, menuItem{"Preview the generated Lua", "Every file ShoshinVim would write", "lua", false})
+	items = append(items, menuItem{"See the plugins", "Each plugin, why it is included, and the exact commit", "plugins", false})
 	if changes > 0 {
 		items = append(items, menuItem{"See file changes", "A diff against what is on disk", "diff", false})
 	}
@@ -428,6 +495,8 @@ func (m *Model) activate(action string) tea.Cmd {
 		m.showLua()
 	case action == "diff":
 		m.showDiff()
+	case action == "plugins":
+		m.showPlugins()
 	case action == "sections":
 		m.openPick()
 	case action == "retry":
@@ -481,7 +550,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, func() tea.Msg { return <-msg.next }
 	case jobMsg:
 		if msg.id == m.jobID {
-			m.finishJob(msg)
+			return m, m.finishJob(msg)
 		}
 		return m, nil
 	case tea.KeyPressMsg:
@@ -518,11 +587,17 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 	case m.paletteOpen:
 		return m.paletteKey(msg)
 	case m.busy:
+		if (key == "esc") && m.inputQuestion() {
+			m.cancelLookup()
+			return nil
+		}
 		if key == "esc" && !m.writing && m.screen == reviewScreen {
 			m.cancelReview()
 			return m.enterSection(len(sections)-1, true)
 		}
 		return nil
+	case m.inputQuestion():
+		return m.inputKey(msg) // Typed text may contain / and ?.
 	}
 	switch key {
 	case "/":
@@ -553,6 +628,10 @@ func (m *Model) ctrlC() tea.Cmd {
 			m.cancelReview()
 			return nil
 		}
+		if m.inputQuestion() {
+			m.cancelLookup()
+			return nil
+		}
 		if m.cancel != nil {
 			m.cancel()
 		}
@@ -575,6 +654,17 @@ func (m *Model) ctrlC() tea.Cmd {
 	return nil
 }
 
+// cancelLookup abandons a GitHub lookup; its late result is ignored.
+func (m *Model) cancelLookup() {
+	if m.cancel != nil {
+		m.cancel()
+		m.cancel = nil
+	}
+	m.jobID++
+	m.busy, m.activity = false, ""
+	m.flash("Lookup cancelled. Edit the repository or press Esc to go back.", false)
+}
+
 func (m *Model) cancelReview() {
 	if m.cancel != nil {
 		m.cancel()
@@ -593,8 +683,21 @@ func digit(key string) int {
 	return 0
 }
 
+func (m *Model) inputKey(msg tea.KeyPressMsg) tea.Cmd {
+	switch msg.String() {
+	case "enter":
+		return m.answer()
+	case "esc":
+		m.input.Blur()
+		return m.moveQuestion(-1)
+	}
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+	return cmd
+}
+
 func (m *Model) questionKey(key string) tea.Cmd {
-	q := sections[m.sec].questions[m.q]
+	q := m.question()
 	n := len(q.options)
 	switch key {
 	case "up", "k", "shift+tab":
@@ -732,6 +835,8 @@ func (m *Model) runCommand(action string) tea.Cmd {
 		m.showLua()
 	case "diff":
 		m.showDiff()
+	case "plugins":
+		m.showPlugins()
 	case "health":
 		m.showHealth()
 	case "json":

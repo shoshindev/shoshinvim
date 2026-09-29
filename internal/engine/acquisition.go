@@ -2,8 +2,6 @@ package engine
 
 import (
 	"context"
-	_ "embed"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,21 +10,8 @@ import (
 	"time"
 )
 
-//go:embed data/plugins.json
-var pluginData []byte
-
-type Plugin struct {
-	Repository string `json:"repository"`
-	Revision   string `json:"revision"`
-	Reviewed   string `json:"reviewed"`
-}
-
 // Actions lists the downloads a state needs, placed in the data directory Neovim uses for target.
 func Actions(s State, target string) ([]Action, error) {
-	var pins map[string]Plugin
-	if err := json.Unmarshal(pluginData, &pins); err != nil {
-		return nil, err
-	}
 	var out []Action
 	ids := Plugins(s)
 	if Value(s, "plugins.manager", "none") == "lazy" {
@@ -37,11 +22,11 @@ func Actions(s State, target string) ([]Action, error) {
 		return nil, err
 	}
 	for _, id := range ids {
-		p, ok := pins[id]
-		if !ok {
-			return nil, fmt.Errorf("missing adapter %s", id)
+		repo, rev, dir, err := source(s, id)
+		if err != nil {
+			return nil, err
 		}
-		out = append(out, Action{ID: id, Kind: "git", Source: "https://github.com/" + p.Repository + ".git", Revision: p.Revision, Destination: filepath.Join(base, "plugins", id), Description: "Git clone " + p.Repository + " at " + p.Revision})
+		out = append(out, Action{ID: id, Kind: "git", Source: "https://github.com/" + repo + ".git", Revision: rev, Destination: filepath.Join(base, "plugins", dir), Description: "Git clone " + repo + " at " + rev})
 	}
 	if Value(s, "tools.provider", "system") == "mason" {
 		pkgs := map[string]bool{}

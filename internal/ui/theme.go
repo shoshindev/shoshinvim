@@ -72,12 +72,19 @@ func (t theme) Gradient(s string) string {
 	return b.String()
 }
 
-// Swatch previews a color scheme as a row of dots.
+// Swatch previews a color scheme: its syntax colors as dots on its own background
+// (the first color), like a tiny editor window.
 func (t theme) Swatch(colors []string) string {
-	var b strings.Builder
-	for _, c := range colors {
-		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(c)).Render("●"))
+	if len(colors) < 2 {
+		return ""
 	}
+	bg := lipgloss.Color(colors[0])
+	var b strings.Builder
+	b.WriteString(lipgloss.NewStyle().Background(bg).Render(" "))
+	for _, c := range colors[1:] {
+		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color(c)).Background(bg).Render("●"))
+	}
+	b.WriteString(lipgloss.NewStyle().Background(bg).Render(" "))
 	return b.String()
 }
 

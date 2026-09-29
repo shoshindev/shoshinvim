@@ -94,8 +94,10 @@ func Generate(s State) (map[string]string, error) {
 	if _, ok := s.Values["diagnostics.virtual_text"]; ok {
 		add("diagnostics", "vim.diagnostic.config({ virtual_text = "+Lua(s.Values["diagnostics.virtual_text"])+", severity_sort = true })\n")
 	}
-	add("lsp", lspLua(s))
-	if Enabled(s, "completion.native") {
+	add("lsp", completionCapabilities(s)+lspLua(s))
+	if engine := completionEngineLua(s); engine != "" {
+		add("completion", engine)
+	} else if Enabled(s, "completion.native") {
 		add("completion", `vim.api.nvim_create_autocmd('LspAttach', {
   group = vim.api.nvim_create_augroup('ShoshinCompletion', { clear = true }),
   callback = function(event)
@@ -168,21 +170,22 @@ end
 	return files, nil
 }
 
+// Plugins lists the plugins a state needs, including their requirements. Each choice
+// setting names its plugin directly; "native" (or "system") means no plugin.
 func Plugins(s State) []string {
 	set := map[string]bool{}
-	for _, pair := range [][2]string{{"navigation.picker", "native"}, {"navigation.explorer", "native"}, {"git.hunks", "native"}, {"formatting.provider", "native"}, {"lsp.provider", "native"}, {"tools.provider", "system"}, {"appearance.statusline", "native"}, {"appearance.buffers", "native"}, {"navigation.shortcuts", "native"}} {
-		v := Value(s, pair[0], pair[1]).(string)
-		if v != pair[1] {
+	for _, pair := range [][2]string{{"navigation.picker", "native"}, {"navigation.explorer", "native"}, {"git.hunks", "native"}, {"formatting.provider", "native"}, {"lsp.provider", "native"}, {"tools.provider", "system"}, {"appearance.statusline", "native"}, {"appearance.buffers", "native"}, {"navigation.shortcuts", "native"}, {"completion.engine", "native"}} {
+		if v, _ := Value(s, pair[0], pair[1]).(string); v != pair[1] && v != "" {
 			set[v] = true
 		}
 	}
-	if Value(s, "appearance.colorscheme", "default") == "tokyonight" {
-		set["tokyonight"] = true
+	if p := themePlugin(s); p != "" {
+		set[p] = true
 	}
 	if Value(s, "experience.layout", "native") == "rich" {
 		set["snacks"] = true
 	}
-	return sorted(set)
+	return withRequirements(sorted(set))
 }
 func pluginLua(s State) string {
 	if Value(s, "plugins.manager", "none") != "lazy" {
@@ -200,27 +203,41 @@ local function installed(name, spec)
   if vim.uv.fs_stat(spec.dir) then specs[#specs + 1] = spec end
 end
 `)
+	if Value(s, "appearance.buffers", "native") == "barbar" {
+		b.WriteString("vim.g.barbar_auto_setup = false -- configured in appearance.lua\n")
+	}
 	for _, id := range Plugins(s) {
+		_, _, dir, err := source(s, id)
+		if err != nil {
+			continue // Validation reports an incomplete custom theme.
+		}
 		config := ""
-		switch id {
-		case "snacks":
+		switch {
+		case id == "snacks":
 			config = ", priority = 900, opts = " + snacksOptions(s)
-		case "tokyonight":
+		case id == themePlugin(s):
 			config = ", priority = 1000"
-		case "mini.pick":
-			config = ", main = 'mini.pick', opts = {}"
-		case "oil", "gitsigns":
+		case id == "mini.pick", id == "mini.files":
+			config = fmt.Sprintf(", main = %s, opts = {}", LuaString(id))
+		case id == "mini.diff":
+			config = ", main = 'mini.diff', opts = { view = { style = 'sign', signs = { add = '+', change = '~', delete = '_' } } }"
+		case id == "oil", id == "gitsigns":
 			config = ", opts = {}"
-		case "mason":
+		case id == "mason":
 			config = ", opts = { PATH = 'prepend', install_root_dir = base .. '/mason' }"
 		}
-		fmt.Fprintf(&b, "installed(%s, { name = %s, lazy = false%s })\n", LuaString(id), LuaString(id), config)
+		// lazy.nvim expects a plugin inside its root to live at root/<name>.
+		fmt.Fprintf(&b, "installed(%s, { name = %s, lazy = false%s })\n", LuaString(dir), LuaString(dir), config)
 	}
-	b.WriteString(`require('lazy').setup(specs, {
+	// lazy.nvim resets the runtime path to Neovim's own config folder; keep this one too,
+	// so `nvim -u <target>/init.lua` still finds the modules loaded after plugins.
+	b.WriteString(`local config_root = vim.fn.fnamemodify(debug.getinfo(1, 'S').source:sub(2), ':p:h:h:h')
+require('lazy').setup(specs, {
   root = base .. '/plugins', lockfile = base .. '/lazy-lock.json',
   install = { missing = false }, checker = { enabled = false },
   change_detection = { enabled = false }, rocks = { enabled = false },
   pkg = { enabled = false }, local_spec = false,
+  performance = { rtp = { paths = { config_root } } },
 })
 `)
 	return b.String()
@@ -250,33 +267,6 @@ func lspLua(s State) string {
 			fmt.Fprintf(&b, "vim.lsp.config(%s, { cmd = { %s%s }, filetypes = { %s }, root_markers = { %s }, %s })\n", LuaString(l.Server), LuaString(toolCommand(s, l.Executable)), args, l.Filetypes, l.Roots, l.Extra)
 			fmt.Fprintf(&b, "if not vim.g.shoshinvim_probe and vim.fn.executable(%s) == 1 then vim.lsp.enable(%s) end\n", LuaString(toolCommand(s, l.Executable)), LuaString(l.Server))
 		}
-	}
-	return b.String()
-}
-
-func navigationLua(s State) string {
-	var b strings.Builder
-	switch Value(s, "navigation.picker", "native") {
-	case "snacks":
-		b.WriteString(`vim.api.nvim_create_user_command('ShoshinFiles', function() local ok, snacks = pcall(require, 'snacks'); if ok then snacks.picker.files() else vim.notify('Snacks is pending installation') end end, {})
-vim.api.nvim_create_user_command('ShoshinGrep', function() local ok, snacks = pcall(require, 'snacks'); if ok then snacks.picker.grep() end end, {})
-`)
-	case "mini.pick":
-		b.WriteString(`vim.api.nvim_create_user_command('ShoshinFiles', function() local ok, pick = pcall(require, 'mini.pick'); if ok then pick.builtin.files() else vim.notify('mini.pick is pending installation') end end, {})
-vim.api.nvim_create_user_command('ShoshinGrep', function() local ok, pick = pcall(require, 'mini.pick'); if ok then pick.builtin.grep_live() end end, {})
-`)
-	default:
-		b.WriteString(`vim.api.nvim_create_user_command('ShoshinFiles', function() vim.ui.input({ prompt = 'Find file: ', completion = 'file' }, function(path) if path and path ~= '' then vim.cmd.edit(vim.fn.fnameescape(path)) end end) end, {})
-`)
-	}
-	if Value(s, "navigation.explorer", "native") == "snacks" {
-		b.WriteString(`vim.api.nvim_create_user_command('ShoshinExplore', function() local ok, snacks = pcall(require, 'snacks'); if ok then snacks.explorer() else vim.cmd.Explore() end end, {})
-`)
-	} else if Value(s, "navigation.explorer", "native") == "oil" {
-		b.WriteString(`vim.api.nvim_create_user_command('ShoshinExplore', function() local ok, oil = pcall(require, 'oil'); if ok then oil.open() else vim.notify('Oil is pending installation') end end, {})
-`)
-	} else {
-		b.WriteString("vim.api.nvim_create_user_command('ShoshinExplore', function() vim.cmd.Explore() end, {})\n")
 	}
 	return b.String()
 }

@@ -110,7 +110,7 @@ The notice line carries transient messages — quit confirmation, errors, "Set o
 
 Overlays replace the content area and keep the draft and screen underneath:
 
-- **Command palette** (`/`): a panel with a filter input and the command list.
+- **Command palette** (`/`): a panel with a filter input and the command list (Preview generated Lua, See file changes, Plugins used, Check dependencies, Show all settings as JSON, Set any setting, Go to review, Retry failed downloads, Recovery & history, Keys & help, Quit).
 - **Set any setting**: an input accepting `setting value`, with up to six ID suggestions and Tab completion.
 
 Full-screen viewers show long content with a title, scroll percentage and `esc` to close: generated Lua, file diff (colored), dependencies, all settings as JSON, and keys & help.
@@ -121,9 +121,10 @@ Full-screen viewers show long content with a title, scroll percentage and `esc` 
 
 | Kind | Used for | Interaction |
 | --- | --- | --- |
-| Single choice | Most decisions | `↑↓` or a number selects; Enter or the number confirms. |
+| Single choice | Most decisions | `↑↓` or a number selects; Enter or the number confirms. Long lists are grouped under headings (for example plugin themes and built-in themes). |
 | Multiple choice | Languages | `space` or a number toggles `[✓]`; Enter continues. |
 | Form row | Editor settings | All rows on one screen; `←→` cycles a row's value; Enter continues. |
+| Text input | Theme repository and colorscheme name (§3.8) | Type and paste freely (`/` and `?` are text here); Enter continues; Esc goes back. |
 
 Every option sets explicit catalog values, so the saved state records each decision even when it matches Neovim's default.
 
@@ -133,37 +134,61 @@ Every option sets explicit catalog values, so the saved state records each decis
 - On a new target the cursor (or form value) starts at the recommendation. On a saved target it starts at the saved choice; a value set outside the curated options displays as `custom`.
 - Options show `◆ recommended` (or `(recommended)` without color). In the Editor form, a row that differs shows `changed · recommended: <value>`, and `r` restores the recommendation.
 - Recommendations never lock alternatives and never overwrite a saved choice.
+- **What gets recommended:** the option today's leading starter configurations ship (kickstart.nvim, LazyVim, NvChad, AstroNvim), with GitHub stars breaking ties. Each option's plugin line shows the evidence (stars and which of those projects use it), so the reasoning is checkable.
+- **Every section offers real alternatives**, including a built-in or "none" choice wherever Neovim can do without a plugin.
 
 ### 3.3 Sections and recommended choices
 
 | Section | Decisions (recommended first) |
 | --- | --- |
 | **Editor** (form, 19 rows) | Line numbers on · Relative numbers off · Wrap off · Indent with spaces · Tab width 2 · Indent width 2 · Search case smart · Replace preview split · Context lines 8 · Context columns 8 · Persistent undo on · Unsaved changes ask · New splits right & below · Mouse all modes · Clipboard shared · Cursor line highlight · Invisible characters trailing spaces · Sign column always · Key timing fast (400 ms / 250 ms) |
-| **Appearance** | Color scheme: Tokyo Night / Habamax / Sorbet / Retrobox / Quiet / Default (with color swatches) · Status line: Lualine / built in · Open files: tabs across the top / no tabs · Popup borders: rounded / square / none |
-| **Workspace** | Keyboard shortcuts: Space shortcuts with start screen and guide / Neovim defaults · Shortcut hints: show / none |
-| **Navigation** | Find files and text: Snacks picker / mini.pick / built in · File explorer: project sidebar / Oil / netrw |
-| **Languages** | Which languages: TypeScript & JavaScript, HTML, CSS, JSON, Lua (all recommended) · Completion: as you type / off · Errors and warnings: inline / signs only · Server settings: written by ShoshinVim / add nvim-lspconfig |
-| **Formatting** | Formatter: Prettier & StyLua / language server · When to format: when I ask / every save |
-| **Git & tools** | Git changes: markers in the gutter / off · Language tools: install them for me (Mason) / I'll install them |
+| **Appearance** | Color scheme: Tokyo Night, 25 more theme plugins, 11 themes built into Neovim, or another theme from GitHub (§3.8) · Variant, when the theme has several (light variants marked) · Status line: lualine.nvim / mini.statusline / built in · Open files: bufferline.nvim / barbar.nvim / mini.tabline / no tabs · Popup borders: rounded / square / none |
+| **Workspace** | Keyboard shortcuts: ShoshinVim Space shortcuts (start screen and guide) / Neovim defaults · Shortcut hints: which-key.nvim / none |
+| **Navigation** | Find files and text: Telescope / Snacks picker / fzf-lua / mini.pick / built in · File explorer: neo-tree.nvim / nvim-tree.lua / Snacks explorer / oil.nvim / mini.files / netrw |
+| **Languages** | Which languages: TypeScript & JavaScript, HTML, CSS, JSON, Lua (all recommended) · Completion: blink.cmp / nvim-cmp / built in / off · Errors and warnings: inline / signs only · Server settings: written by ShoshinVim / nvim-lspconfig |
+| **Formatting** | Formatter: conform.nvim (Prettier & StyLua) / language server · When to format: when I ask / every save |
+| **Git & tools** | Git changes: gitsigns.nvim / mini.diff / off · Language tools: mason.nvim / I'll install them |
 
-Each option carries a short detail line naming its effect and any download (for example "downloads lualine.nvim" or "built in").
+Plugin options are labeled with the plugin's own name. Each carries a detail line describing what it does and a plugin line (§3.7). Theme options show a color swatch recorded from the real theme.
 
 ### 3.4 Skipped decisions
 
-When the user has decided on languages and selected none, completion, diagnostics, server settings, both Formatting decisions and the language-tools decision are skipped, and their values are removed from the draft. Skipped sections are omitted from navigation and summarized as "skipped".
+When the user has decided on languages and selected none, completion, diagnostics, server settings, both Formatting decisions and the language-tools decision are skipped, and their values are removed from the draft. The Variant step is skipped for themes with a single variant; the custom-theme steps appear only after choosing "Another theme from GitHub…". Skipped sections are omitted from navigation and summarized as "skipped".
 
 ### 3.5 Derived settings
 
 Implementation details follow from decisions and are never asked:
 
 - `plugins.manager` is lazy.nvim exactly when a chosen option needs a plugin, otherwise none.
-- Lualine sets `showmode` off and a global status line (`laststatus` 3); the built-in status line keeps Neovim's defaults.
-- Completion as you type sets `completeopt` and `pumheight`.
+- lualine.nvim sets `showmode` off and a global status line (`laststatus` 3); mini.statusline sets `showmode` off; the built-in status line keeps Neovim's defaults.
+- Built-in completion sets `completeopt` and `pumheight`; blink.cmp and nvim-cmp manage their own menus and tell language servers which completion features they support.
+- Choosing a listed theme removes custom-theme settings; with no languages, the completion engine is removed too.
+- Each plugin's setup runs after lazy.nvim has loaded every plugin, and lazy.nvim keeps the configuration folder on the runtime path, so configurations started with `nvim -u` load completely.
 - `termguicolors` is left to Neovim's own terminal detection.
 
 ### 3.6 Summaries
 
 The review and "Change a section" list summarize each section on one line using short option names, for example `Tokyo Night · Lualine · Buffer tabs · Rounded borders`. The Editor summary reports `19 settings · all recommended` or the number changed.
+
+### 3.7 Transparency
+
+Every plugin ShoshinVim can install is described in its registry (`internal/engine/data/plugins.json`): repository, pinned commit, review date, stars and last update on that date, license, which of kickstart.nvim, LazyVim, NvChad and AstroNvim use it (verified in their source), and the plugins it requires.
+
+- Each plugin option shows `owner/repo (+ requirements) · ★ stars · updated Month Year · license · used by …`. A missing license is shown as "no license declared", never hidden.
+- The review lists every plugin that will be installed; plugins not in the registry are marked "not reviewed".
+- **Plugins used** (review action and `/` command) shows, for each plugin, its link, pinned commit, review status, stars, update date, license, users, and **why** it is included: the decision that chose it, or the plugin that requires it.
+- Choosing a plugin never silently adds a feature from another plugin; for example Snacks' own finder and explorer stay off unless chosen, so two plugins never compete for the same job.
+
+### 3.8 A theme from GitHub
+
+The last color-scheme option, "Another theme from GitHub…", accepts any repository:
+
+1. The user types `owner/name` (a full GitHub URL also works).
+2. On Enter, ShoshinVim reads metadata only — the current commit (`git ls-remote`) and, through the GitHub API, the repository's stars, last update, license and the colorschemes in its `colors` folder at that commit. Nothing is downloaded or executed. Esc cancels the lookup.
+3. The user picks one of the colorschemes found, or types a name when GitHub cannot list them.
+4. The theme is pinned to that commit and stored in a folder named after the repository and commit, so a later commit never collides with it.
+
+The review and Plugins used mark it "not reviewed by ShoshinVim". If it fails to load, Neovim keeps a built-in theme and shows a message. Choosing a listed theme later removes the custom theme settings.
 
 ## 4. Core flows
 
@@ -182,7 +207,8 @@ Opening the review builds a fresh, non-mutating plan in the background ("Checkin
 - one summary line per section;
 - **Files**: new, updated and removed counts and the target;
 - **Downloads**: plugin and language-tool counts;
-- **Install first**: programs the user must provide (for example ripgrep or Node.js). Tools that Mason will download are not listed.
+- **Install first**: programs the user must provide (for example ripgrep, fzf for fzf-lua, or Node.js). Tools that Mason will download are not listed.
+- **Plugins**: every plugin that will be installed, by name (§3.7).
 
 Then the actions, in order and as applicable:
 
@@ -193,6 +219,7 @@ Then the actions, in order and as applicable:
 | **Save** (recommended) | Files change and nothing needs downloading. |
 | **Download plugins and tools** (recommended) | Nothing to save, but downloads exist. |
 | Preview the generated Lua | Always. |
+| See the plugins | Always; opens Plugins used (§3.7). |
 | See file changes | Files change. |
 | Change a section | Always; after finishing that section the user returns to the review. |
 | Quit | Always. |

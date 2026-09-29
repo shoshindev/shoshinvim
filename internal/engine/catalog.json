@@ -103,21 +103,9 @@
       "label": "Colorscheme",
       "type": "enum",
       "choices": [
-        "tokyonight",
-        "default",
-        "habamax",
-        "slate",
-        "desert",
-        "elflord",
-        "industry",
-        "evening",
-        "quiet",
-        "retrobox",
-        "sorbet",
-        "wildcharm",
-        "zaibatsu"
+        "(filled from themes.json)"
       ],
-      "description": "Tokyo Night gives Rich IDE a cohesive dark palette; built-in themes need no downloads."
+      "description": "Color theme; plugin themes are downloaded and pinned, built-in themes need no download."
     },
     {
       "id": "plugins.manager",
@@ -136,6 +124,8 @@
       "choices": [
         "native",
         "snacks",
+        "telescope",
+        "fzf-lua",
         "mini.pick"
       ],
       "description": "Native commands have no dependencies; Snacks offers broad sources; mini.pick is compact."
@@ -146,8 +136,11 @@
       "type": "enum",
       "choices": [
         "native",
+        "snacks",
+        "neo-tree",
+        "nvim-tree",
         "oil",
-        "snacks"
+        "mini.files"
       ],
       "description": "Native directories, Oil editable directories, or a Snacks sidebar with search and file operations."
     },
@@ -157,7 +150,8 @@
       "type": "enum",
       "choices": [
         "native",
-        "gitsigns"
+        "gitsigns",
+        "mini.diff"
       ],
       "description": "Native diff or inline Git changes with Gitsigns."
     },
@@ -245,7 +239,8 @@
       "type": "enum",
       "choices": [
         "native",
-        "lualine"
+        "lualine",
+        "mini.statusline"
       ],
       "description": "Mode, Git branch, diagnostics, active language servers and cursor position."
     },
@@ -255,7 +250,9 @@
       "type": "enum",
       "choices": [
         "native",
-        "bufferline"
+        "bufferline",
+        "barbar",
+        "mini.tabline"
       ],
       "description": "Visible open buffers with diagnostic counts; Shift-H / Shift-L switch files."
     },
@@ -278,6 +275,35 @@
         "rich"
       ],
       "description": "Rich adds a welcome screen, sidebar, floating input and terminal, indentation guides and consistent shortcuts."
+    },
+    {
+      "id": "appearance.custom_theme.repository",
+      "label": "Custom theme repository",
+      "type": "string",
+      "description": "GitHub repository of a theme ShoshinVim does not list, as owner/name."
+    },
+    {
+      "id": "appearance.custom_theme.revision",
+      "label": "Custom theme revision",
+      "type": "string",
+      "description": "The exact commit of the custom theme that was reviewed and will be downloaded."
+    },
+    {
+      "id": "appearance.custom_theme.colorscheme",
+      "label": "Custom theme colorscheme",
+      "type": "string",
+      "description": "The :colorscheme name the custom theme provides."
+    },
+    {
+      "id": "completion.engine",
+      "label": "Completion engine",
+      "type": "enum",
+      "choices": [
+        "native",
+        "blink.cmp",
+        "nvim-cmp"
+      ],
+      "description": "Which engine shows completion suggestions."
     }
   ],
   "profiles": {

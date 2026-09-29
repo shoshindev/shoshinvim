@@ -48,6 +48,11 @@ func LoadCatalog() Catalog {
 	if err := json.Unmarshal(optionData, &c.Options); err != nil {
 		panic(err)
 	}
+	for i := range c.Settings {
+		if c.Settings[i].ID == "appearance.colorscheme" {
+			c.Settings[i].Choices = themeChoices()
+		}
+	}
 	return c
 }
 
@@ -246,6 +251,9 @@ func (c Catalog) Validate(s State) error {
 			return fmt.Errorf("conflicting mapping %s", id)
 		}
 		seen[id] = true
+	}
+	if err := validateCustomTheme(s); err != nil {
+		return err
 	}
 	if Value(s, "plugins.manager", "none") == "none" && len(Plugins(s)) > 0 {
 		return fmt.Errorf("selected plugins require plugins.manager=lazy; review manager selection")

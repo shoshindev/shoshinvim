@@ -4,18 +4,7 @@ import "strings"
 
 func appearanceLua(s State) string {
 	var b strings.Builder
-	if theme, ok := s.Values["appearance.colorscheme"]; ok {
-		if theme == "tokyonight" {
-			b.WriteString(`vim.cmd.colorscheme('habamax')
-if not vim.g.shoshinvim_probe then
-  local ok, theme = pcall(require, 'tokyonight')
-  if ok then theme.setup({ style = 'night', styles = { sidebars = 'dark', floats = 'dark' } }); vim.cmd.colorscheme('tokyonight') end
-end
-`)
-		} else {
-			b.WriteString("vim.cmd.colorscheme(" + Lua(theme) + ")\n")
-		}
-	}
+	b.WriteString(colorschemeLua(s))
 	if Value(s, "appearance.statusline", "native") == "lualine" {
 		b.WriteString(`if not vim.g.shoshinvim_probe then
   local ok, line = pcall(require, 'lualine')
@@ -28,8 +17,15 @@ end
       lualine_x = { function() return vim.lsp.status() end, 'filetype' },
       lualine_y = { 'progress' }, lualine_z = { 'location' },
     },
-    extensions = { 'quickfix', 'oil' },
+    extensions = { 'quickfix', 'oil', 'neo-tree', 'nvim-tree' },
   }) end
+end
+`)
+	}
+	if Value(s, "appearance.statusline", "native") == "mini.statusline" {
+		b.WriteString(`if not vim.g.shoshinvim_probe then
+  local ok, line = pcall(require, 'mini.statusline')
+  if ok then line.setup({ use_icons = false }) end
 end
 `)
 	}
@@ -39,8 +35,29 @@ end
   if ok then line.setup({ options = {
     diagnostics = 'nvim_lsp', separator_style = 'thin', show_buffer_icons = false,
     show_buffer_close_icons = false, show_close_icon = false,
-    offsets = { { filetype = 'snacks_layout_box', text = 'PROJECT', text_align = 'left' } },
+    offsets = {
+      { filetype = 'snacks_layout_box', text = 'PROJECT', text_align = 'left' },
+      { filetype = 'neo-tree', text = 'PROJECT', text_align = 'left' },
+      { filetype = 'NvimTree', text = 'PROJECT', text_align = 'left' },
+    },
   } }) end
+end
+`)
+	}
+	if Value(s, "appearance.buffers", "native") == "barbar" {
+		b.WriteString(`if not vim.g.shoshinvim_probe then
+  local ok, bar = pcall(require, 'barbar')
+  if ok then bar.setup({
+    icons = { filetype = { enabled = false }, button = '', separator = { left = '▎', right = '' } },
+    sidebar_filetypes = { NvimTree = true, ['neo-tree'] = true, snacks_layout_box = true },
+  }) end
+end
+`)
+	}
+	if Value(s, "appearance.buffers", "native") == "mini.tabline" {
+		b.WriteString(`if not vim.g.shoshinvim_probe then
+  local ok, line = pcall(require, 'mini.tabline')
+  if ok then line.setup({ show_icons = false }) end
 end
 `)
 	}
@@ -60,18 +77,22 @@ end
 }
 
 func snacksOptions(s State) string {
+	// Snacks' picker and explorer are only switched on when chosen, so they never
+	// compete with another finder or explorer (for example to open folders).
+	picker := Lua(Value(s, "navigation.picker", "native") == "snacks")
+	explorer := Lua(Value(s, "navigation.explorer", "native") == "snacks")
 	if Value(s, "experience.layout", "native") != "rich" {
-		return "{ picker = { enabled = true }, explorer = { enabled = " + Lua(Value(s, "navigation.explorer", "native") == "snacks") + " } }"
+		return "{ picker = { enabled = " + picker + " }, explorer = { enabled = " + explorer + " } }"
 	}
-	return `{ picker = { enabled = true, prompt = '> ', icons = { files = { enabled = false } } },
- explorer = { enabled = true }, input = { enabled = true }, indent = { enabled = true },
+	return `{ picker = { enabled = ` + picker + `, prompt = '> ', icons = { files = { enabled = false } } },
+ explorer = { enabled = ` + explorer + ` }, input = { enabled = true }, indent = { enabled = true },
  notifier = { enabled = true, timeout = 3000 },
  dashboard = { enabled = true, preset = {
    header = 'S H O S H I N\n\nA fresh mind. A focused workspace.',
    keys = {
      { icon = '', key = 'f', desc = 'Find a file', action = ':ShoshinFiles' },
      { icon = '', key = 'e', desc = 'Explore this project', action = ':ShoshinExplore' },
-     { icon = '', key = 'r', desc = 'Recent files', action = function() Snacks.picker.recent() end },
+     { icon = '', key = 'r', desc = 'Recent files', action = ':ShoshinRecent' },
      { icon = '', key = 'n', desc = 'New file', action = ':ene | startinsert' },
      { icon = '', key = '?', desc = 'Shortcut guide', action = ':ShoshinHelp' },
      { icon = '', key = 'q', desc = 'Quit', action = ':qa' },
@@ -80,20 +101,37 @@ func snacksOptions(s State) string {
  }`
 }
 
+// sidebarOnStart opens a sidebar explorer without taking focus; other explorers stay closed.
+func sidebarOnStart(s State) string {
+	switch Value(s, "navigation.explorer", "native") {
+	case "snacks":
+		return "local ok, ui = pcall(require, 'snacks'); if ok then ui.explorer({ focus = false }) end"
+	case "neo-tree":
+		return "pcall(vim.cmd, 'Neotree show')"
+	case "nvim-tree":
+		return "local ok, api = pcall(require, 'nvim-tree.api'); if ok then api.tree.toggle({ focus = false, find_file = true }) end"
+	}
+	return "-- The chosen explorer is not a sidebar."
+}
+
 func workspaceLua(s State) string {
 	if Value(s, "experience.layout", "native") != "rich" {
 		return ""
 	}
-	return `-- Task-oriented shortcuts. User mappings load after these defaults.
+	native := ""
+	if Enabled(s, "completion.native") {
+		native = "vim.keymap.set('i', '<C-space>', function() vim.lsp.completion.get() end, { desc = 'Complete from language server' })\n"
+	}
+	return native + `-- Task-oriented shortcuts. User mappings load after these defaults.
 local map = function(key, action, description) vim.keymap.set('n', key, action, { desc = description, silent = true }) end
 local snacks = function(action, fallback)
   return function() local ok, ui = pcall(require, 'snacks'); if ok then action(ui) elseif fallback then fallback() else vim.notify('This feature is pending installation. Open ShoshinVim and /retry.') end end
 end
 map('<leader><space>', '<cmd>ShoshinFiles<CR>', 'Find file')
 map('<leader>ff', '<cmd>ShoshinFiles<CR>', 'Find file')
-map('<leader>fg', snacks(function(ui) ui.picker.grep() end), 'Search project text')
-map('<leader>fr', snacks(function(ui) ui.picker.recent() end), 'Recent files')
-map('<leader>fb', snacks(function(ui) ui.picker.buffers() end, function() vim.cmd.ls() end), 'Find buffer')
+map('<leader>fg', '<cmd>ShoshinGrep<CR>', 'Search project text')
+map('<leader>fr', '<cmd>ShoshinRecent<CR>', 'Recent files')
+map('<leader>fb', '<cmd>ShoshinBuffers<CR>', 'Find buffer')
 map('<leader>e', '<cmd>ShoshinExplore<CR>', 'Project explorer')
 map('<S-h>', '<cmd>bprevious<CR>', 'Previous buffer')
 map('<S-l>', '<cmd>bnext<CR>', 'Next buffer')
@@ -102,13 +140,18 @@ map('<leader>cf', '<cmd>ShoshinFormat<CR>', 'Format file')
 map('<leader>ca', vim.lsp.buf.code_action, 'Code action')
 map('<leader>cr', vim.lsp.buf.rename, 'Rename symbol')
 map('<leader>cd', vim.diagnostic.open_float, 'Line diagnostics')
-map('<leader>cl', snacks(function(ui) ui.picker.diagnostics() end, vim.diagnostic.setqflist), 'Project diagnostics')
+map('<leader>cl', '<cmd>ShoshinDiagnostics<CR>', 'Project diagnostics')
 map('gd', vim.lsp.buf.definition, 'Go to definition')
 map('gr', vim.lsp.buf.references, 'Find references')
 map('K', vim.lsp.buf.hover, 'Documentation')
-map('<leader>gg', snacks(function(ui) ui.picker.git_status() end), 'Git status')
-map('<leader>gd', snacks(function(ui) ui.picker.git_diff() end), 'Git diff')
-map('<leader>gp', function() local ok, git = pcall(require, 'gitsigns'); if ok then git.preview_hunk() end end, 'Preview Git hunk')
+map('<leader>gg', '<cmd>ShoshinGitStatus<CR>', 'Git status')
+map('<leader>gd', function() local ok, git = pcall(require, 'gitsigns'); if ok then git.diffthis() else vim.cmd('!git diff') end end, 'Git diff')
+map('<leader>gp', function()
+  local ok, git = pcall(require, 'gitsigns')
+  if ok then return git.preview_hunk() end
+  local has_diff, diff = pcall(require, 'mini.diff')
+  if has_diff then diff.toggle_overlay() end
+end, 'Preview Git hunk')
 map('<leader>ws', '<cmd>split<CR>', 'Split below')
 map('<leader>wv', '<cmd>vsplit<CR>', 'Split right')
 map('<leader>wd', '<cmd>close<CR>', 'Close window')
@@ -119,7 +162,6 @@ map('<C-l>', '<C-w>l', 'Focus right window')
 map('<leader>uw', function() vim.wo.wrap = not vim.wo.wrap end, 'Toggle line wrapping')
 map('<leader>t', snacks(function(ui) ui.terminal.toggle() end, function() vim.cmd.terminal() end), 'Toggle terminal')
 map('<Esc>', '<cmd>nohlsearch<CR>', 'Clear search highlight')
-vim.keymap.set('i', '<C-space>', function() vim.lsp.completion.get() end, { desc = 'Complete from language server' })
 vim.keymap.set('i', '<C-j>', function() return vim.fn.pumvisible() == 1 and '<C-n>' or '<C-j>' end, { expr = true, desc = 'Next completion' })
 vim.keymap.set('i', '<C-k>', function() return vim.fn.pumvisible() == 1 and '<C-p>' or '<C-k>' end, { expr = true, desc = 'Previous completion' })
 vim.keymap.set('s', '<Tab>', function() if vim.snippet.active({ direction = 1 }) then vim.snippet.jump(1) end end, { desc = 'Next snippet field' })
@@ -155,7 +197,7 @@ map('<leader>?', '<cmd>ShoshinHelp<CR>', 'Workspace guide')
 if not vim.g.shoshinvim_probe then
   vim.api.nvim_create_autocmd('VimEnter', { once = true, callback = function()
     if #vim.api.nvim_list_uis() > 0 and vim.fn.argc() > 0 and vim.o.columns >= 100 then
-      vim.schedule(function() local ok, ui = pcall(require, 'snacks'); if ok then ui.explorer({ focus = false }) end end)
+      vim.schedule(function() ` + sidebarOnStart(s) + ` end)
     end
   end })
 end

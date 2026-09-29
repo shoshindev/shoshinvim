@@ -142,8 +142,11 @@ func Dependencies(s State, target string) []Dependency {
 	if Value(s, "tools.provider", "system") == "mason" && hasWeb(s) {
 		list = append(list, Dependency{ID: "node", Purpose: "Mason JavaScript language tools"}, Dependency{ID: "npm", Purpose: "Mason JavaScript packages"})
 	}
-	if Value(s, "navigation.picker", "native") == "snacks" || Value(s, "experience.layout", "native") == "rich" {
+	if Value(s, "navigation.picker", "native") != "native" || Value(s, "experience.layout", "native") == "rich" {
 		list = append(list, Dependency{ID: "rg", Purpose: "Project text search", Instruction: "Install ripgrep with your package manager; no runtime installation is automatic."})
+	}
+	if Value(s, "navigation.picker", "native") == "fzf-lua" {
+		list = append(list, Dependency{ID: "fzf", Purpose: "fzf-lua fuzzy matching", Instruction: "Install fzf with your package manager (for example: brew install fzf)."})
 	}
 	for i := range list {
 		p, err := exec.LookPath(toolCommand(s, list[i].ID))

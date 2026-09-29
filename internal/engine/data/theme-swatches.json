@@ -1,0 +1,777 @@
+{
+  "catppuccin": [
+    "#1e1e2e",
+    "#cba6f7",
+    "#89b4fa",
+    "#a6e3a1",
+    "#f9e2af",
+    "#fab387"
+  ],
+  "catppuccin/frappe": [
+    "#303446",
+    "#ca9ee6",
+    "#8caaee",
+    "#a6d189",
+    "#e5c890",
+    "#ef9f76"
+  ],
+  "catppuccin/latte": [
+    "#eff1f5",
+    "#8839ef",
+    "#1e66f5",
+    "#40a02b",
+    "#df8e1d",
+    "#fe640b"
+  ],
+  "catppuccin/macchiato": [
+    "#24273a",
+    "#c6a0f6",
+    "#8aadf4",
+    "#a6da95",
+    "#eed49f",
+    "#f5a97f"
+  ],
+  "catppuccin/mocha": [
+    "#1e1e2e",
+    "#cba6f7",
+    "#89b4fa",
+    "#a6e3a1",
+    "#f9e2af",
+    "#fab387"
+  ],
+  "cyberdream/dark": [
+    "#16181a",
+    "#ffbd5e",
+    "#5ea1ff",
+    "#5eff6c",
+    "#bd5eff",
+    "#ff5ea0"
+  ],
+  "cyberdream/light": [
+    "#ffffff",
+    "#d17c00",
+    "#0057d1",
+    "#008b0c",
+    "#a018ff",
+    "#f40064"
+  ],
+  "cyberdream/muted": [
+    "#16181a",
+    "#e3a875",
+    "#78a8e8",
+    "#7ee088",
+    "#b07ee8",
+    "#e878a8"
+  ],
+  "default": [
+    "#14161b",
+    "#e0e2ea",
+    "#8cf8f7",
+    "#b3f6c0",
+    "#e0e2ea",
+    "#e0e2ea"
+  ],
+  "dracula/classic": [
+    "#282a36",
+    "#8be9fd",
+    "#f1fa8c",
+    "#f1fa8c",
+    "#8be9fd",
+    "#f1fa8c"
+  ],
+  "dracula/soft": [
+    "#292a35",
+    "#a7dfef",
+    "#e8eda2",
+    "#e8eda2",
+    "#a7dfef",
+    "#e8eda2"
+  ],
+  "edge/aura": [
+    "#2b2d37",
+    "#d38aea",
+    "#6cb6eb",
+    "#a0c980",
+    "#ec7279",
+    "#deb974"
+  ],
+  "edge/default": [
+    "#2c2e34",
+    "#d38aea",
+    "#6cb6eb",
+    "#a0c980",
+    "#ec7279",
+    "#deb974"
+  ],
+  "edge/light": [
+    "#fafafa",
+    "#b05ccc",
+    "#5079be",
+    "#608e32",
+    "#d05858",
+    "#be7e05"
+  ],
+  "edge/neon": [
+    "#2b2d3a",
+    "#d38aea",
+    "#6cb6eb",
+    "#a0c980",
+    "#ec7279",
+    "#deb974"
+  ],
+  "everforest/dark": [
+    "#2d353b",
+    "#e67e80",
+    "#a7c080",
+    "#a7c080",
+    "#dbbc7f",
+    "#83c092"
+  ],
+  "everforest/dark-hard": [
+    "#272e33",
+    "#e67e80",
+    "#a7c080",
+    "#a7c080",
+    "#dbbc7f",
+    "#83c092"
+  ],
+  "everforest/dark-soft": [
+    "#333c43",
+    "#e67e80",
+    "#a7c080",
+    "#a7c080",
+    "#dbbc7f",
+    "#83c092"
+  ],
+  "everforest/light": [
+    "#fdf6e3",
+    "#f85552",
+    "#8da101",
+    "#8da101",
+    "#dfa000",
+    "#35a77c"
+  ],
+  "github-theme/dark": [
+    "#0d1117",
+    "#ff7b72",
+    "#d2a8ff",
+    "#a5d6ff",
+    "#ffa657",
+    "#79c0ff"
+  ],
+  "github-theme/dark-dimmed": [
+    "#22272e",
+    "#f47067",
+    "#dcbdfb",
+    "#96d0ff",
+    "#f69d50",
+    "#6cb6ff"
+  ],
+  "github-theme/dark-high-contrast": [
+    "#0a0c10",
+    "#ff9492",
+    "#dbb7ff",
+    "#addcff",
+    "#ffb757",
+    "#91cbff"
+  ],
+  "github-theme/light": [
+    "#ffffff",
+    "#cf222e",
+    "#6639ba",
+    "#0a3069",
+    "#953800",
+    "#0550ae"
+  ],
+  "github-theme/light-high-contrast": [
+    "#ffffff",
+    "#a0111f",
+    "#512598",
+    "#032563",
+    "#702c00",
+    "#023b95"
+  ],
+  "gruvbox-material/dark": [
+    "#282828",
+    "#ea6962",
+    "#a9b665",
+    "#a9b665",
+    "#d8a657",
+    "#89b482"
+  ],
+  "gruvbox-material/dark-hard": [
+    "#1d2021",
+    "#ea6962",
+    "#a9b665",
+    "#a9b665",
+    "#d8a657",
+    "#89b482"
+  ],
+  "gruvbox-material/light": [
+    "#fbf1c7",
+    "#c14a4a",
+    "#6c782e",
+    "#6c782e",
+    "#b47109",
+    "#4c7a5d"
+  ],
+  "gruvbox/dark": [
+    "#282828",
+    "#fb4934",
+    "#b8bb26",
+    "#b8bb26",
+    "#fabd2f",
+    "#d3869b"
+  ],
+  "gruvbox/light": [
+    "#fbf1c7",
+    "#9d0006",
+    "#79740e",
+    "#79740e",
+    "#b57614",
+    "#8f3f71"
+  ],
+  "habamax": [
+    "#1c1c1c",
+    "#af87af",
+    "#87afaf",
+    "#5faf5f",
+    "#5f87af",
+    "#d75f87"
+  ],
+  "kanagawa/dragon": [
+    "#181616",
+    "#8992a7",
+    "#8ba4b0",
+    "#8a9a7b",
+    "#8ea4a2",
+    "#b6927b"
+  ],
+  "kanagawa/lotus": [
+    "#f2ecbc",
+    "#624c83",
+    "#4d699b",
+    "#6f894e",
+    "#597b75",
+    "#cc6d00"
+  ],
+  "kanagawa/wave": [
+    "#1f1f28",
+    "#957fb8",
+    "#7e9cd8",
+    "#98bb6c",
+    "#7aa89f",
+    "#ffa066"
+  ],
+  "lunaperche": [
+    "#000000",
+    "#e4e4e4",
+    "#ffd787",
+    "#5fd75f",
+    "#ff87ff"
+  ],
+  "material/darker": [
+    "#212121",
+    "#c792ea",
+    "#82aaff",
+    "#c3e88d",
+    "#c792ea",
+    "#ffcb6b"
+  ],
+  "material/deep-ocean": [
+    "#0f111a",
+    "#c792ea",
+    "#82aaff",
+    "#c3e88d",
+    "#c792ea",
+    "#ffcb6b"
+  ],
+  "material/lighter": [
+    "#fafafa",
+    "#7c4dff",
+    "#6182b8",
+    "#91b859",
+    "#7c4dff",
+    "#f6a434"
+  ],
+  "material/oceanic": [
+    "#25363b",
+    "#c792ea",
+    "#82aaff",
+    "#c3e88d",
+    "#c792ea",
+    "#ffcb6b"
+  ],
+  "material/palenight": [
+    "#292d3e",
+    "#c792ea",
+    "#82aaff",
+    "#c3e88d",
+    "#c792ea",
+    "#ffcb6b"
+  ],
+  "melange/dark": [
+    "#292522",
+    "#e49b5d",
+    "#ebc06d",
+    "#a3a9ce",
+    "#7b9695",
+    "#b380b0"
+  ],
+  "melange/light": [
+    "#f1f1f1",
+    "#bc5c00",
+    "#a06d00",
+    "#465aa4",
+    "#739797",
+    "#be79bb"
+  ],
+  "monokai-pro/classic": [
+    "#272822",
+    "#f92672",
+    "#a6e22e",
+    "#e6db74",
+    "#fdfff1",
+    "#ae81ff"
+  ],
+  "monokai-pro/light": [
+    "#faf4f2",
+    "#e14775",
+    "#269d69",
+    "#cc7a0a",
+    "#29242a",
+    "#7058be"
+  ],
+  "monokai-pro/machine": [
+    "#273136",
+    "#ff6d7e",
+    "#a2e57b",
+    "#ffed72",
+    "#f2fffc",
+    "#baa0f8"
+  ],
+  "monokai-pro/octagon": [
+    "#282a3a",
+    "#ff657a",
+    "#bad761",
+    "#ffd76d",
+    "#eaf2f1",
+    "#c39ac9"
+  ],
+  "monokai-pro/pro": [
+    "#2d2a2e",
+    "#ff6188",
+    "#a9dc76",
+    "#ffd866",
+    "#fcfcfa",
+    "#ab9df2"
+  ],
+  "monokai-pro/ristretto": [
+    "#2c2525",
+    "#fd6883",
+    "#adda78",
+    "#f9cc6c",
+    "#fff1f3",
+    "#a8a9eb"
+  ],
+  "monokai-pro/spectrum": [
+    "#222222",
+    "#fc618d",
+    "#7bd88f",
+    "#fce566",
+    "#f7f1ff",
+    "#948ae3"
+  ],
+  "moonfly": [
+    "#080808",
+    "#cf87e8",
+    "#74b2ff",
+    "#c6c684",
+    "#36c692",
+    "#de935f"
+  ],
+  "nightfly": [
+    "#011627",
+    "#c792ea",
+    "#82aaff",
+    "#ecc48d",
+    "#21c7a8",
+    "#f78c6c"
+  ],
+  "nightfox/carbonfox": [
+    "#161616",
+    "#be95ff",
+    "#8cb6ff",
+    "#25be6a",
+    "#08bdba",
+    "#5ae0df"
+  ],
+  "nightfox/dawnfox": [
+    "#faf4ed",
+    "#907aa9",
+    "#295e73",
+    "#618774",
+    "#ea9d34",
+    "#ca6e69"
+  ],
+  "nightfox/dayfox": [
+    "#f6f2ee",
+    "#6e33ce",
+    "#223d90",
+    "#396847",
+    "#ac5402",
+    "#7f5152"
+  ],
+  "nightfox/duskfox": [
+    "#232136",
+    "#c4a7e7",
+    "#65b1cd",
+    "#a3be8c",
+    "#f6c177",
+    "#f0a4a2"
+  ],
+  "nightfox/nightfox": [
+    "#192330",
+    "#9d79d6",
+    "#86abdc",
+    "#81b29a",
+    "#dbc074",
+    "#f6b079"
+  ],
+  "nightfox/nordfox": [
+    "#2e3440",
+    "#b48ead",
+    "#8cafd2",
+    "#a3be8c",
+    "#ebcb8b",
+    "#d89079"
+  ],
+  "nightfox/terafox": [
+    "#152528",
+    "#ad5c7c",
+    "#73a3b7",
+    "#7aa4a1",
+    "#fda47f",
+    "#ff9664"
+  ],
+  "nord": [
+    "#2e3440",
+    "#81a1c1",
+    "#88c0d0",
+    "#a3be8c",
+    "#81a1c1",
+    "#d8dee9"
+  ],
+  "nordic": [
+    "#242933",
+    "#d08770",
+    "#88c0d0",
+    "#a3be8c",
+    "#ebcb8b",
+    "#be9db8"
+  ],
+  "onedark/cool": [
+    "#242b38",
+    "#ca72e4",
+    "#5ab0f6",
+    "#97ca72",
+    "#ebc275",
+    "#4dbdcb"
+  ],
+  "onedark/dark": [
+    "#282c34",
+    "#c678dd",
+    "#61afef",
+    "#98c379",
+    "#e5c07b",
+    "#56b6c2"
+  ],
+  "onedark/darker": [
+    "#1f2329",
+    "#bf68d9",
+    "#4fa6ed",
+    "#8ebd6b",
+    "#e2b86b",
+    "#48b0bd"
+  ],
+  "onedark/deep": [
+    "#1a212e",
+    "#c75ae8",
+    "#41a7fc",
+    "#8bcd5b",
+    "#efbd5d",
+    "#34bfd0"
+  ],
+  "onedark/light": [
+    "#fafafa",
+    "#a626a4",
+    "#4078f2",
+    "#50a14f",
+    "#986801",
+    "#0184bc"
+  ],
+  "onedark/warm": [
+    "#2c2d30",
+    "#c27fd7",
+    "#68aee8",
+    "#99bc80",
+    "#dfbe81",
+    "#5fafb9"
+  ],
+  "onedarkpro/dark": [
+    "#000000",
+    "#d55fde",
+    "#61afef",
+    "#89ca78",
+    "#e5c07b",
+    "#d19a66"
+  ],
+  "onedarkpro/light": [
+    "#fafafa",
+    "#9a77cf",
+    "#118dc3",
+    "#1da912",
+    "#eea825",
+    "#ee9025"
+  ],
+  "onedarkpro/onedark": [
+    "#282c34",
+    "#c678dd",
+    "#61afef",
+    "#98c379",
+    "#e5c07b",
+    "#d19a66"
+  ],
+  "onedarkpro/vivid": [
+    "#282c34",
+    "#d55fde",
+    "#61afef",
+    "#89ca78",
+    "#e5c07b",
+    "#d19a66"
+  ],
+  "oxocarbon/dark": [
+    "#161616",
+    "#78a9ff",
+    "#3ddbd9",
+    "#be95ff",
+    "#78a9ff",
+    "#d0d0d0"
+  ],
+  "oxocarbon/light": [
+    "#ffffff",
+    "#ee5396",
+    "#ff7eb6",
+    "#be95ff",
+    "#ee5396",
+    "#37474f"
+  ],
+  "quiet": [
+    "#000000",
+    "#dadada",
+    "#dadada",
+    "#dadada",
+    "#dadada",
+    "#dadada"
+  ],
+  "retrobox": [
+    "#1c1c1c",
+    "#fb5944",
+    "#b8bb26",
+    "#b8bb26",
+    "#fabd2f",
+    "#d3869b"
+  ],
+  "rose-pine/dawn": [
+    "#faf4ed",
+    "#286983",
+    "#d7827e",
+    "#ea9d34",
+    "#56949f",
+    "#ea9d34"
+  ],
+  "rose-pine/main": [
+    "#191724",
+    "#31748f",
+    "#ebbcba",
+    "#f6c177",
+    "#9ccfd8",
+    "#f6c177"
+  ],
+  "rose-pine/moon": [
+    "#232136",
+    "#3e8fb0",
+    "#ea9a97",
+    "#f6c177",
+    "#9ccfd8",
+    "#f6c177"
+  ],
+  "slate": [
+    "#262626",
+    "#5f87d7",
+    "#ffd7af",
+    "#87d7ff",
+    "#5f87d7",
+    "#ffafaf"
+  ],
+  "solarized-osaka/dark": [
+    "#9eabac",
+    "#849900",
+    "#268bd3",
+    "#29a298",
+    "#b28500",
+    "#29a298"
+  ],
+  "solarized-osaka/light": [
+    "#637981",
+    "#849900",
+    "#268bd3",
+    "#29a298",
+    "#b28500",
+    "#29a298"
+  ],
+  "solarized-osaka/vivid": [
+    "#b6c5c6",
+    "#a2bb00",
+    "#5aaefa",
+    "#34c5b9",
+    "#dba500",
+    "#34c5b9"
+  ],
+  "sonokai/andromeda": [
+    "#2b2d3a",
+    "#fb617e",
+    "#9ed06c",
+    "#edc763",
+    "#6dcae8",
+    "#f89860"
+  ],
+  "sonokai/atlantis": [
+    "#2a2f38",
+    "#ff6578",
+    "#9dd274",
+    "#eacb64",
+    "#72cce8",
+    "#f69c5e"
+  ],
+  "sonokai/default": [
+    "#2c2e34",
+    "#fc5d7c",
+    "#9ed072",
+    "#e7c664",
+    "#76cce0",
+    "#f39660"
+  ],
+  "sonokai/espresso": [
+    "#312c2b",
+    "#f86882",
+    "#a6cd77",
+    "#f0c66f",
+    "#81d0c9",
+    "#f08d71"
+  ],
+  "sonokai/maia": [
+    "#273136",
+    "#f76c7c",
+    "#9cd57b",
+    "#e3d367",
+    "#78cee9",
+    "#f3a96a"
+  ],
+  "sonokai/shusia": [
+    "#2d2a2e",
+    "#f85e84",
+    "#9ecd6f",
+    "#e5c463",
+    "#7accd7",
+    "#ef9062"
+  ],
+  "sorbet": [
+    "#161821",
+    "#87afd7",
+    "#87d75f",
+    "#d7af5f",
+    "#87afd7",
+    "#d75f5f"
+  ],
+  "tokyonight": [
+    "#1a1b26",
+    "#7dcfff",
+    "#7aa2f7",
+    "#9ece6a",
+    "#2ac3de",
+    "#ff9e64"
+  ],
+  "tokyonight/day": [
+    "#e1e2e7",
+    "#007197",
+    "#2e7de9",
+    "#587539",
+    "#188092",
+    "#b15c00"
+  ],
+  "tokyonight/moon": [
+    "#222436",
+    "#86e1fc",
+    "#82aaff",
+    "#c3e88d",
+    "#65bcff",
+    "#ff966c"
+  ],
+  "tokyonight/storm": [
+    "#24283b",
+    "#7dcfff",
+    "#7aa2f7",
+    "#9ece6a",
+    "#2ac3de",
+    "#ff9e64"
+  ],
+  "unokai": [
+    "#282923",
+    "#f92672",
+    "#a6e22e",
+    "#e6db74",
+    "#fd971f",
+    "#ae81ff"
+  ],
+  "vague": [
+    "#141415",
+    "#6e94b2",
+    "#c48282",
+    "#e8b589",
+    "#9bb4bc",
+    "#aeaed1"
+  ],
+  "vscode/dark": [
+    "#1f1f1f",
+    "#c586c0",
+    "#dcdcaa",
+    "#ce9178",
+    "#569cd6",
+    "#569cd6"
+  ],
+  "vscode/light": [
+    "#ffffff",
+    "#af00db",
+    "#795e26",
+    "#a31515",
+    "#0000ff",
+    "#0000ff"
+  ],
+  "wildcharm": [
+    "#000000",
+    "#00afff",
+    "#ff87ff",
+    "#00d75f",
+    "#ffaf00",
+    "#ff5f87"
+  ],
+  "zaibatsu": [
+    "#0e0024",
+    "#ffafff",
+    "#87ffff",
+    "#ffff5f",
+    "#ff5faf",
+    "#ffff5f"
+  ]
+}

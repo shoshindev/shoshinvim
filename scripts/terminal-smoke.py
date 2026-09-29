@@ -29,8 +29,10 @@ with tempfile.TemporaryDirectory(prefix='shoshinvim-terminal-') as temp:
   assert not seen('Minimal native'),'presets are still offered'
   send(b'\r')                      # Start setup: the Editor form.
   assert seen('Relative'),'editor form did not render'
-  for _ in range(17):send(b'\r')   # Accept every recommended choice.
-  # Review validates the draft with Neovim before offering to save.
+  # Accept every recommended choice until the review offers to save; it validates with Neovim first.
+  for _ in range(40):
+   if seen('downloading'):break
+   send(b'\r',.4)
   assert wait_for('downloading',20),'review did not offer saving:\n'+text()[-2000:]
   for w,h in [(120,36),(80,24),(52,16),(40,10),(100,30)]:
    size(w,h);p.send_signal(signal.SIGWINCH);pump()
