@@ -28,10 +28,10 @@ Release archives carry `LICENSE`, `NOTICE` and `THIRD_PARTY_NOTICES.md` next to 
 
 ## README screenshots
 
-The setup screens and the wordmark in the README are SVG files drawn from the interface itself, in dark and light versions. Regenerate them after changing the interface:
+The setup screens and the wordmark in the README are SVG files drawn from the interface itself. The screens show a dark terminal, the usual default, so they look the same on GitHub's light and dark pages; the wordmark uses the light-terminal colors, which keep enough contrast on both. Regenerate them after changing the interface:
 
 ```sh
-make screenshots          # writes docs/assets/wordmark-*.svg and docs/assets/screens/
+make screenshots          # writes docs/assets/wordmark.svg and docs/assets/screens/
 ```
 
 The review screen needs Neovim; without it, that screen is left as it is.
