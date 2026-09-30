@@ -16,6 +16,16 @@ The real-Neovim suite downloads every offered plugin, theme, parser and language
 
 Cross compilation and local snapshot archives cover macOS ARM64/x86_64, Linux ARM64/x86_64, and Windows x86_64. CI is configured to run on each platform. Public installation channels are **not yet released**. The shell/PowerShell installers, Homebrew formula generator, checksums and draft-release provenance workflow are release infrastructure; do not advertise their remote installation URLs until release verification passes.
 
+## Licenses
+
+`THIRD_PARTY_NOTICES.md` lists the material ShoshinVim adapts and the license of every Go module compiled into the five release builds. It is generated; after changing dependencies, rewrite it and commit the result. CI fails when it is out of date.
+
+```sh
+make notices              # python3 scripts/third-party-notices.py
+```
+
+Release archives carry `LICENSE`, `NOTICE` and `THIRD_PARTY_NOTICES.md` next to the executable.
+
 ## README screenshots
 
 The setup screens and the wordmark in the README are SVG files drawn from the interface itself, in dark and light versions. Regenerate them after changing the interface:
