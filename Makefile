@@ -1,4 +1,4 @@
-.PHONY: build test check run cross
+.PHONY: build test check run cross screenshots
 build:
 	go build -trimpath -o bin/shoshinvim ./cmd/shoshinvim
 test:
@@ -14,3 +14,5 @@ cross:
 		os=$${target%/*}; arch=$${target#*/}; suffix=; [ "$$os" != windows ] || suffix=.exe; \
 		GOOS=$$os GOARCH=$$arch CGO_ENABLED=0 go build -trimpath -o bin/shoshinvim-$$os-$$arch$$suffix ./cmd/shoshinvim || exit; \
 	done
+screenshots:
+	SHOSHINVIM_SCREENSHOTS=docs/assets go test ./internal/ui -run TestScreenshots -count=1
