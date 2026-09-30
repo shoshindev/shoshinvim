@@ -135,15 +135,7 @@ func New(version string) *cobra.Command {
 		}{ins, engine.Dependencies(s, ins.Target), "not run"}
 		probed := false
 		n, v, e := engine.Neovim(cmd.Context(), bin)
-		// Report the Neovim actually used (--nvim, the preference or PATH), not only PATH's,
-		// and report it missing when it cannot be used even though PATH has another one.
-		for i := range r.Dependencies {
-			if d := &r.Dependencies[i]; d.ID == "nvim" && e == nil {
-				d.Path, d.Status, d.Instruction = n, "present", ""
-			} else if d.ID == "nvim" {
-				d.Path, d.Status, d.Instruction = "", "missing", "Install Neovim 0.12 or later, or choose one with --nvim"
-			}
-		}
+		r.Dependencies = engine.WithNeovim(r.Dependencies, n, e)
 		if e != nil {
 			r.Probe = e.Error()
 		} else {

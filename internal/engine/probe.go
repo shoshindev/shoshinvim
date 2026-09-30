@@ -195,6 +195,23 @@ func Dependencies(s State, target string) []Dependency {
 	return list
 }
 
+// WithNeovim makes the nvim row of deps report the Neovim ShoshinVim uses, given the
+// path and error Neovim returned for it (--nvim, the neovim preference or PATH).
+// Dependencies only looks on PATH, which may hold another Neovim than the one chosen.
+func WithNeovim(deps []Dependency, path string, err error) []Dependency {
+	for i := range deps {
+		if deps[i].ID != "nvim" {
+			continue
+		}
+		if err == nil {
+			deps[i].Path, deps[i].Status, deps[i].Instruction = path, "present", ""
+		} else {
+			deps[i].Path, deps[i].Status, deps[i].Instruction = "", "missing", "Install Neovim 0.12 or later, or choose one with --nvim"
+		}
+	}
+	return deps
+}
+
 // runtimeWorks tells a real runtime from a placeholder on PATH; macOS ships a java
 // command that only explains how to install Java.
 func runtimeWorks(id, path string) bool {

@@ -648,3 +648,16 @@ func TestStartScreensShowTheWordmark(t *testing.T) {
 		}
 	}
 }
+
+func TestWithNeovimReportsTheChosenNeovim(t *testing.T) {
+	deps := func() []Dependency {
+		return []Dependency{{ID: "nvim", Path: "/usr/bin/nvim", Status: "present"}, {ID: "git", Path: "/usr/bin/git", Status: "present"}}
+	}
+	if d := WithNeovim(deps(), "/opt/nvim/bin/nvim", nil); d[0].Path != "/opt/nvim/bin/nvim" || d[0].Status != "present" || d[1].Path != "/usr/bin/git" {
+		t.Fatalf("a working chosen Neovim is reported as %+v", d)
+	}
+	// PATH's Neovim is not reported when the chosen one cannot be used.
+	if d := WithNeovim(deps(), "", errors.New("Neovim 0.12+ required")); d[0].Path != "" || d[0].Status != "missing" || d[0].Instruction == "" || d[1].Status != "present" {
+		t.Fatalf("an unusable chosen Neovim is reported as %+v", d)
+	}
+}

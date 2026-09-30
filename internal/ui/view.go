@@ -1,9 +1,9 @@
 package ui
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -753,17 +753,16 @@ func (m *Model) reviewContent(cw, h int) []string {
 	return window(all, h, focus)
 }
 
-// dependencies reports required programs, finding Neovim where --nvim points.
+// dependencies reports required programs, with the Neovim that --nvim, the preference or
+// PATH chooses. A plan already checked that Neovim; without one it is checked here, which
+// runs it, so the review screen lists missing tools only once its plan is ready.
 func (m *Model) dependencies() []engine.Dependency {
 	deps := engine.Dependencies(m.draft, m.target)
-	for i, d := range deps {
-		if d.ID == "nvim" && m.bin != "" {
-			if p, err := exec.LookPath(m.bin); err == nil {
-				deps[i].Path, deps[i].Status = p, "present"
-			}
-		}
+	if m.plan != nil {
+		return engine.WithNeovim(deps, m.plan.Neovim, nil)
 	}
-	return deps
+	path, _, err := engine.Neovim(context.Background(), m.bin)
+	return engine.WithNeovim(deps, path, err)
 }
 
 // missingTools lists programs the user must install; Mason downloads language tools itself.
