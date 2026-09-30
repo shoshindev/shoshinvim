@@ -120,7 +120,8 @@ func TestThemesStyleEveryChosenPlugin(t *testing.T) {
 		}
 	}
 	s.Values["appearance.colorscheme"] = "everforest/dark-hard"
-	if got := colorschemeLua(s); !strings.Contains(got, "everforest_background = 'hard'") || !strings.Contains(got, "everforest_diagnostic_virtual_text = 'colored'") {
-		t.Errorf("everforest loses its variant or colored diagnostics:\n%s", got)
+	if got := colorschemeLua(s); !strings.Contains(got, "everforest_background = 'hard'") || !strings.Contains(got, "everforest_diagnostic_virtual_text = 'colored'") ||
+		!strings.Contains(got, "everforest_float_style = 'dim'") {
+		t.Errorf("everforest loses its variant, colored diagnostics or dim popups:\n%s", got)
 	}
 }
