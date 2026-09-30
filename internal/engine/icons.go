@@ -27,13 +27,22 @@ func iconGroups(s State) []iconGroup {
 	if !nerdIcons(s) {
 		return []iconGroup{
 			{"diagnostics", []icon{{"Error", "E", ""}, {"Warn", "W", ""}, {"Info", "I", ""}, {"Hint", "H", ""}}},
-			{"git", []icon{{"added", "+", ""}, {"modified", "~", ""}, {"removed", "-", ""}}},
+			{"git", []icon{{"added", "+", ""}, {"modified", "~", ""}, {"removed", "-", ""},
+				{"sign", "▎", ""}, {"delete", "▁", ""}, {"topdelete", "▔", ""}}},
+			{"ui", []icon{{"clock", "", ""}, {"modified", "[+]", ""}, {"readonly", "[-]", ""},
+				{"section_left", "", ""}, {"section_right", "", ""}, {"component_left", "|", ""}, {"component_right", "|", ""},
+				{"search", ">", ""}, {"caret", ">", ""}}},
 		}
 	}
 	return []iconGroup{
 		// LazyVim's icons (lua/lazyvim/config/init.lua).
 		{"diagnostics", []icon{nf("Error", 0xf057, "fa-times_circle"), nf("Warn", 0xf071, "fa-warning"), nf("Info", 0xf05a, "fa-info_circle"), nf("Hint", 0xf0eb, "fa-lightbulb_o")}},
-		{"git", []icon{nf("added", 0xf0fe, "fa-plus_square"), nf("modified", 0xf14b, "fa-pencil_square"), nf("removed", 0xf146, "fa-minus_square")}},
+		{"git", []icon{nf("added", 0xf0fe, "fa-plus_square"), nf("modified", 0xf14b, "fa-pencil_square"), nf("removed", 0xf146, "fa-minus_square"),
+			{"sign", "▎", ""}, nf("delete", 0xf0da, "fa-caret_right"), nf("topdelete", 0xf0da, "fa-caret_right")}},
+		{"ui", []icon{nf("clock", 0xf017, "fa-clock_o"), {"modified", "●", ""}, nf("readonly", 0xf023, "fa-lock"),
+			nf("section_left", 0xe0b0, "pl-left_hard_divider"), nf("section_right", 0xe0b2, "pl-right_hard_divider"),
+			nf("component_left", 0xe0b1, "pl-left_soft_divider"), nf("component_right", 0xe0b3, "pl-right_soft_divider"),
+			nf("search", 0xf002, "fa-search"), nf("caret", 0xf054, "fa-chevron_right")}},
 		{"dap", []icon{nf("Stopped", 0xf0055, "md-arrow_right_thick"), nf("Breakpoint", 0xf111, "fa-circle"), nf("BreakpointCondition", 0xf059, "fa-question_circle"),
 			nf("BreakpointRejected", 0xf06a, "fa-exclamation_circle"), {"LogPoint", ".>", ""}}},
 		// blink.cmp's kind icons, so every completion menu shows the same ones.

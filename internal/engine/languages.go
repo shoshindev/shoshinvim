@@ -154,6 +154,23 @@ func lspLua(s State) string {
 		}
 		fmt.Fprintf(&b, "if not vim.g.shoshinvim_probe and vim.fn.executable(%s) == 1 then vim.lsp.enable(%s) end\n", LuaString(toolCommand(s, srv.Command)), LuaString(srv.Name))
 	}
+	// kickstart.nvim's reference highlighting: pause on a name to see its other uses.
+	b.WriteString(`vim.api.nvim_create_autocmd('LspAttach', {
+  group = vim.api.nvim_create_augroup('ShoshinLspAttach', { clear = true }),
+  callback = function(event)
+    local client = vim.lsp.get_client_by_id(event.data.client_id)
+    if not (client and client:supports_method('textDocument/documentHighlight', event.buf)) then return end
+    local group = vim.api.nvim_create_augroup('ShoshinLspHighlight', { clear = false })
+    vim.api.nvim_clear_autocmds({ group = group, buffer = event.buf })
+    vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, { group = group, buffer = event.buf, callback = vim.lsp.buf.document_highlight })
+    vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, { group = group, buffer = event.buf, callback = vim.lsp.buf.clear_references })
+    vim.api.nvim_create_autocmd('LspDetach', { group = group, buffer = event.buf, callback = function()
+      vim.lsp.buf.clear_references()
+      vim.api.nvim_clear_autocmds({ group = group, buffer = event.buf })
+    end })
+  end,
+})
+`)
 	return b.String()
 }
 

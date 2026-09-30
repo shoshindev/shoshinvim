@@ -5,11 +5,12 @@ package engine
 func completionEngineLua(s State) string {
 	switch Value(s, "completion.engine", "native") {
 	case "blink.cmp":
-		// Pure-Lua matching needs no prebuilt binary. Without a Nerd Font, kinds are
-		// shown as text instead of blink's icon column.
-		menu := "\n      menu = { draw = { columns = { { 'label', 'label_description', gap = 1 }, { 'kind' } } } },"
+		// Pure-Lua matching needs no prebuilt binary. Labels are colored like code, as in
+		// LazyVim. Without a Nerd Font, kinds are shown as text instead of blink's icon
+		// column. blink's windows follow the popup border choice by themselves.
+		menu := "\n      menu = { draw = { treesitter = { 'lsp' }, columns = { { 'label', 'label_description', gap = 1 }, { 'kind' } } } },"
 		if nerdIcons(s) {
-			menu = ""
+			menu = "\n      menu = { draw = { treesitter = { 'lsp' } } },"
 		}
 		return `if not vim.g.shoshinvim_probe then
   local ok, blink = pcall(require, 'blink.cmp')
@@ -26,18 +27,21 @@ func completionEngineLua(s State) string {
 end
 `
 	case "nvim-cmp":
-		format := ""
+		extra := ""
 		if nerdIcons(s) {
-			format = `
+			extra = `
     formatting = { format = function(_, item)
       item.kind = (require('user_config.icons').kinds[item.kind] or '') .. ' ' .. item.kind
       return item
     end },`
 		}
+		if b := borderStyle(s); b != "" {
+			extra += "\n    window = { completion = cmp.config.window.bordered({ border = " + LuaString(b) + " }), documentation = cmp.config.window.bordered({ border = " + LuaString(b) + " }) },"
+		}
 		return `if not vim.g.shoshinvim_probe then
   local ok, cmp = pcall(require, 'cmp')
   if ok then cmp.setup({
-    snippet = { expand = function(args) vim.snippet.expand(args.body) end },` + format + `
+    snippet = { expand = function(args) vim.snippet.expand(args.body) end },` + extra + `
     mapping = cmp.mapping.preset.insert({
       ['<C-Space>'] = cmp.mapping.complete(),
       ['<C-y>'] = cmp.mapping.confirm({ select = true }),
