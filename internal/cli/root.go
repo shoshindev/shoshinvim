@@ -117,7 +117,7 @@ func New(version string) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return printResult(cmd, r, string(engine.JSON(r)))
+		return printResult(cmd, r, inspectionText(r))
 	}}
 	doctor := &cobra.Command{Use: "doctor", Short: "Check dependencies and safe generated configuration", RunE: func(cmd *cobra.Command, args []string) error {
 		ins, err := engine.Inspect(target)
@@ -133,10 +133,17 @@ func New(version string) *cobra.Command {
 			Dependencies []engine.Dependency `json:"dependencies"`
 			Probe        string              `json:"probe"`
 		}{ins, engine.Dependencies(s, ins.Target), "not run"}
+		probed := false
 		n, v, e := engine.Neovim(cmd.Context(), bin)
 		if e != nil {
 			r.Probe = e.Error()
 		} else {
+			// Report the Neovim actually used (--nvim or the preference), not only PATH's.
+			for i := range r.Dependencies {
+				if r.Dependencies[i].ID == "nvim" {
+					r.Dependencies[i].Path, r.Dependencies[i].Status, r.Dependencies[i].Instruction = n, "present", ""
+				}
+			}
 			files, e := engine.Generate(s)
 			if e == nil {
 				e = engine.Probe(cmd.Context(), n, files)
@@ -144,10 +151,10 @@ func New(version string) *cobra.Command {
 			if e != nil {
 				r.Probe = e.Error()
 			} else {
-				r.Probe = "Safe generated core validated with " + v + "; arbitrary user/plugin Lua was not executed"
+				r.Probe, probed = "Safe generated core validated with "+v+"; arbitrary user/plugin Lua was not executed", true
 			}
 		}
-		return printResult(cmd, r, string(engine.JSON(r)))
+		return printResult(cmd, r, doctorText(r.Inspection, r.Dependencies, r.Probe, probed))
 	}}
 	var stateFile, outFile, profile string
 	var external bool
@@ -223,7 +230,7 @@ func New(version string) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if err = printResult(cmd, r, "Local configuration saved and verified. Restart Neovim.\n"+string(engine.JSON(r))); err != nil {
+		if err = printResult(cmd, r, applyText(r)); err != nil {
 			return err
 		}
 		for _, a := range r.External {
@@ -274,7 +281,7 @@ func New(version string) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		return printResult(cmd, r, string(engine.JSON(r)))
+		return printResult(cmd, r, actionsText(r))
 	}}
 	update := &cobra.Command{Use: "update", Short: "Update using the installation owner", RunE: func(cmd *cobra.Command, args []string) error {
 		return distribution.Update(cmd.Context(), version, func(s string) error { return Confirm(cmd.InOrStdin(), cmd.ErrOrStderr(), s) }, cmd.OutOrStdout())
@@ -296,7 +303,8 @@ func New(version string) *cobra.Command {
 			return fmt.Errorf("unsupported shell")
 		}
 	}}
-	man := &cobra.Command{Use: "man <directory>", Short: "Generate manual pages", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
+	// Release builds run man to generate the manual pages; it is not listed for users.
+	man := &cobra.Command{Use: "man <directory>", Short: "Generate manual pages", Hidden: true, Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
 		if err := os.MkdirAll(args[0], 0755); err != nil {
 			return err
 		}
