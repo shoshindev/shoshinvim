@@ -38,7 +38,7 @@ A guided setup in your terminal that writes plain Lua you own.
 
 **Review.** A summary of every section, the files that would be written, and every plugin, language tool and parser that would be downloaded.
 
-<img alt="The review: a line per section, 17 new files in ~/.config/nvim, 22 plugins, 8 language tools and 18 syntax parsers to download, and Save and download as the recommended action." src="docs/assets/screens/review.svg">
+<img alt="The review: a line per section, 18 new files in ~/.config/nvim, 22 plugins, 8 language tools and 18 syntax parsers to download, and Save and download as the recommended action." src="docs/assets/screens/review.svg">
 
 ## What you get
 
