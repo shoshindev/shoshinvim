@@ -428,6 +428,13 @@ assert(vim.lsp.config.lua_ls.settings.Lua.workspace.library[1] == vim.env.VIMRUN
 local messages = vim.api.nvim_exec2('messages', { output = true }).output
 if ok and (messages:find('Error') or messages:find('E%d+:')) then ok, err = false, messages end
 io.stdout:write(ok and 'RESULT ok\n' or ('RESULT fail: ' .. tostring(err) .. '\n'))
+-- Shut language servers down before quitting; some (jdtls) keep writing to their cache
+-- after Neovim exits, which would leave the test's temporary folder in use.
+for _, client in ipairs(vim.lsp.get_clients()) do client:stop() end
+if not vim.wait(15000, function() return #vim.lsp.get_clients() == 0 end, 100) then
+  for _, client in ipairs(vim.lsp.get_clients()) do client:stop(true) end
+  vim.wait(5000, function() return #vim.lsp.get_clients() == 0 end, 100)
+end
 vim.cmd('qa!')`
 			if err := os.WriteFile(filepath.Join(tmp, "check.lua"), []byte(script), 0600); err != nil {
 				t.Fatal(err)
