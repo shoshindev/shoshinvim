@@ -135,15 +135,18 @@ func New(version string) *cobra.Command {
 		}{ins, engine.Dependencies(s, ins.Target), "not run"}
 		probed := false
 		n, v, e := engine.Neovim(cmd.Context(), bin)
+		// Report the Neovim actually used (--nvim, the preference or PATH), not only PATH's,
+		// and report it missing when it cannot be used even though PATH has another one.
+		for i := range r.Dependencies {
+			if d := &r.Dependencies[i]; d.ID == "nvim" && e == nil {
+				d.Path, d.Status, d.Instruction = n, "present", ""
+			} else if d.ID == "nvim" {
+				d.Path, d.Status, d.Instruction = "", "missing", "Install Neovim 0.12 or later, or choose one with --nvim"
+			}
+		}
 		if e != nil {
 			r.Probe = e.Error()
 		} else {
-			// Report the Neovim actually used (--nvim or the preference), not only PATH's.
-			for i := range r.Dependencies {
-				if r.Dependencies[i].ID == "nvim" {
-					r.Dependencies[i].Path, r.Dependencies[i].Status, r.Dependencies[i].Instruction = n, "present", ""
-				}
-			}
 			files, e := engine.Generate(s)
 			if e == nil {
 				e = engine.Probe(cmd.Context(), n, files)
@@ -230,7 +233,7 @@ func New(version string) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if err = printResult(cmd, r, applyText(r)); err != nil {
+		if err = printResult(cmd, r, applyText(p.Target, r)); err != nil {
 			return err
 		}
 		for _, a := range r.External {
