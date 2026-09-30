@@ -191,7 +191,7 @@ func TestRecommendedChoicesInstallTheExpectedPlugins(t *testing.T) {
 	if err = c.Validate(s); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"blink.cmp", "bufferline", "conform", "gitsigns", "guess-indent", "indent-blankline", "lspconfig", "lualine", "mason", "mini.ai", "mini.surround", "neo-tree", "nui", "nvim-autopairs", "nvim-treesitter", "plenary", "snacks", "telescope", "todo-comments", "tokyonight", "which-key"}
+	want := []string{"blink.cmp", "bufferline", "conform", "gitsigns", "guess-indent", "indent-blankline", "lspconfig", "lualine", "mason", "mini.ai", "mini.surround", "neo-tree", "noice", "nui", "nvim-autopairs", "nvim-treesitter", "plenary", "snacks", "telescope", "todo-comments", "tokyonight", "which-key"}
 	if got := engine.Plugins(s); !reflect.DeepEqual(got, want) {
 		t.Fatalf("plugins %v, want %v", got, want)
 	}

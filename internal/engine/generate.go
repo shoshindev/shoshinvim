@@ -180,7 +180,7 @@ func Plugins(s State) []string {
 	s = withLegacyWorkspace(s)
 	set := map[string]bool{}
 	for _, pair := range [][2]string{{"navigation.picker", "native"}, {"navigation.explorer", "native"}, {"git.hunks", "native"}, {"formatting.provider", "native"}, {"lsp.provider", "native"}, {"tools.provider", "system"}, {"appearance.statusline", "native"}, {"appearance.buffers", "native"}, {"navigation.shortcuts", "native"}, {"completion.engine", "native"},
-		{"workspace.start_screen", "none"}, {"appearance.indent", "none"}, {"appearance.notifications", "none"}, {"editor.detect_indent", "none"}, {"syntax.engine", "native"},
+		{"workspace.start_screen", "none"}, {"appearance.indent", "none"}, {"appearance.notifications", "none"}, {"appearance.cmdline", "native"}, {"editor.detect_indent", "none"}, {"syntax.engine", "native"},
 		{"coding.pairs", "none"}, {"coding.surround", "none"}, {"coding.textobjects", "none"}, {"coding.todo", "none"}, {"coding.lint", "none"}, {"coding.debug", "none"}} {
 		if v, _ := Value(s, pair[0], pair[1]).(string); v != pair[1] && v != "" {
 			set[v] = true

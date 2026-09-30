@@ -210,7 +210,7 @@ The user selects the manager before plugin-backed features are generated. Changi
 | Indent guides | `lukas-reineke/indent-blankline.nvim` | `mini.indentscope`; `snacks.indent`; none |
 | Scope/context | `nvim-treesitter/nvim-treesitter-context` | native winbar/breadcrumbs; none |
 | Notifications | Native `vim.notify` | `folke/snacks.nvim` notifier; `rcarriga/nvim-notify` |
-| Command/message UI | Native `[RECOMMENDED]` | `folke/noice.nvim` `[OPT-IN]` |
+| Command/message UI | `folke/noice.nvim` `[RECOMMENDED]` | Native; Neovim 0.12's `ui2` once it is no longer experimental |
 | Startup screen | None `[RECOMMENDED: MINIMAL]` | Snacks dashboard; `goolord/alpha-nvim`; `nvimdev/dashboard-nvim` |
 | Cursor/scroll animation | None `[RECOMMENDED]` | `sphamba/smear-cursor.nvim`; `karb94/neoscroll.nvim` `[OPT-IN]` |
 
