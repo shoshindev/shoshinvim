@@ -125,3 +125,21 @@ func TestThemesStyleEveryChosenPlugin(t *testing.T) {
 		t.Errorf("everforest loses its variant, colored diagnostics or dim popups:\n%s", got)
 	}
 }
+
+// Every plugin offered has a deliberate loading rule; themes load at startup.
+func TestEveryPluginHasALoadingRule(t *testing.T) {
+	themes := map[string]bool{"lazy": true}
+	for _, theme := range Themes() {
+		themes[theme.Plugin] = true
+	}
+	for id := range plugins() {
+		if _, ok := loadRules[id]; !ok && !themes[id] {
+			t.Errorf("%s has no loading rule", id)
+		}
+	}
+	for id := range loadRules {
+		if _, ok := PluginInfo(id); !ok {
+			t.Errorf("a loading rule names %s, which is not offered", id)
+		}
+	}
+}

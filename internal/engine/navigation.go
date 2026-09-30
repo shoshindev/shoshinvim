@@ -105,8 +105,8 @@ func nvimTreeSetup(s State) string {
 		icons = ", icons = { show = { file = false }, glyphs = { bookmark = '*', hidden = 'h', folder = { arrow_closed = '>', arrow_open = 'v', default = '+', open = '-', empty = '+', empty_open = '-', symlink = '@', symlink_open = '@' }, git = { unstaged = '*', staged = '+', unmerged = '!', renamed = '>', untracked = '?', deleted = 'x', ignored = '.' } } }"
 	}
 	return "m.setup({ hijack_cursor = true, sync_root_with_cwd = true, update_focused_file = { enable = true, update_root = false },\n" +
-		"    view = { width = 30, preserve_window_proportions = true },\n" +
-		"    renderer = { root_folder_label = false, highlight_git = 'name', indent_markers = { enable = true }" + icons + " } })"
+		"  view = { width = 30, preserve_window_proportions = true },\n" +
+		"  renderer = { root_folder_label = false, highlight_git = 'name', indent_markers = { enable = true }" + icons + " } })"
 }
 
 // finderSetup gives Telescope NvChad's layout (prompt on top, results below it) and
@@ -117,20 +117,14 @@ func finderSetup(s State, picker string) string {
 	case "telescope":
 		border := ""
 		if b == "single" {
-			border = "\n    borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' },"
+			border = "\n  borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' },"
 		}
-		return `if not vim.g.shoshinvim_probe then
-  local ok, telescope = pcall(require, 'telescope')
-  if ok then
-    local icons = require('user_config.icons').ui
-    telescope.setup({ defaults = {
-      prompt_prefix = ' ' .. icons.search .. ' ', selection_caret = icons.caret .. ' ', entry_prefix = '  ',
-      sorting_strategy = 'ascending',
-      layout_config = { horizontal = { prompt_position = 'top', preview_width = 0.55 }, width = 0.87, height = 0.8 },` + border + `
-    } })
-  end
-end
-`
+		return onLoad("telescope", `local icons = require('user_config.icons').ui
+require('telescope').setup({ defaults = {
+  prompt_prefix = ' ' .. icons.search .. ' ', selection_caret = icons.caret .. ' ', entry_prefix = '  ',
+  sorting_strategy = 'ascending',
+  layout_config = { horizontal = { prompt_position = 'top', preview_width = 0.55 }, width = 0.87, height = 0.8 },`+border+`
+} })`)
 	case "fzf-lua":
 		opts := []string{"'default-title'", "fzf_colors = true"}
 		if b != "" {
@@ -141,7 +135,7 @@ end
 			icons = "'mini'"
 		}
 		opts = append(opts, "defaults = { file_icons = "+icons+" }")
-		return "if not vim.g.shoshinvim_probe then\n  local ok, fzf = pcall(require, 'fzf-lua')\n  if ok then fzf.setup({ " + strings.Join(opts, ", ") + " }) end\nend\n"
+		return onLoad("fzf-lua", "require('fzf-lua').setup({ "+strings.Join(opts, ", ")+" })")
 	}
 	return ""
 }
@@ -179,7 +173,7 @@ end
 			b.WriteString("vim.g.loaded_netrw, vim.g.loaded_netrwPlugin = 1, 1 -- nvim-tree replaces netrw\n")
 		}
 		if e.setup != nil {
-			fmt.Fprintf(&b, "if not vim.g.shoshinvim_probe then\n  local ok, m = pcall(require, %s)\n  if ok then %s end\nend\n", LuaString(e.module), e.setup(s))
+			b.WriteString(onLoad(explorer, "local m = require("+LuaString(e.module)+")\n"+e.setup(s)))
 		}
 		fmt.Fprintf(&b, "command(\"ShoshinExplore\", with(%s, function(m) %s end), \"Project explorer\")\n", LuaString(e.module), e.open)
 	} else {
