@@ -135,15 +135,10 @@ func New(version string) *cobra.Command {
 		}{ins, engine.Dependencies(s, ins.Target), "not run"}
 		probed := false
 		n, v, e := engine.Neovim(cmd.Context(), bin)
+		r.Dependencies = engine.WithNeovim(r.Dependencies, n, e)
 		if e != nil {
 			r.Probe = e.Error()
 		} else {
-			// Report the Neovim actually used (--nvim or the preference), not only PATH's.
-			for i := range r.Dependencies {
-				if r.Dependencies[i].ID == "nvim" {
-					r.Dependencies[i].Path, r.Dependencies[i].Status, r.Dependencies[i].Instruction = n, "present", ""
-				}
-			}
 			files, e := engine.Generate(s)
 			if e == nil {
 				e = engine.Probe(cmd.Context(), n, files)
@@ -230,7 +225,7 @@ func New(version string) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if err = printResult(cmd, r, applyText(r)); err != nil {
+		if err = printResult(cmd, r, applyText(p.Target, r)); err != nil {
 			return err
 		}
 		for _, a := range r.External {

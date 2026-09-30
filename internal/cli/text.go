@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/shoshindev/shoshinvim/internal/engine"
@@ -60,9 +61,11 @@ func doctorText(ins engine.Inspection, deps []engine.Dependency, probe string, p
 	return b.String()
 }
 
-func applyText(r engine.ApplyResult) string {
-	text := "Local configuration saved and verified. Restart Neovim.\nTransaction " + r.Transaction +
-		" (undo with: shoshinvim rollback --transaction " + r.Transaction + ")"
+// applyText names the target in the undo command: rollback otherwise looks in the default
+// target, which differs when the plan was made with --config-dir or another NVIM_APPNAME.
+func applyText(target string, r engine.ApplyResult) string {
+	text := "Local configuration saved and verified. Restart Neovim.\nTo undo transaction " + r.Transaction + ", run:\n" +
+		"  shoshinvim rollback --config-dir " + shellArg(runtime.GOOS, target) + " --transaction " + r.Transaction
 	if len(r.External) > 0 {
 		text += "\n\nDownloads\n" + actionsText(r.External)
 	}
@@ -88,4 +91,23 @@ func actionsText(rs []engine.ActionResult) string {
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+// shellArg quotes s for the platform's usual shell, POSIX shells on macOS and Linux and
+// PowerShell on Windows, unless it holds only characters neither treats specially.
+func shellArg(goos, s string) string {
+	plain := "/._-:"
+	if goos == "windows" {
+		plain += `\`
+	}
+	special := func(r rune) bool {
+		return !('a' <= r && r <= 'z' || 'A' <= r && r <= 'Z' || '0' <= r && r <= '9' || strings.ContainsRune(plain, r))
+	}
+	if s != "" && strings.IndexFunc(s, special) < 0 {
+		return s
+	}
+	if goos == "windows" {
+		return "'" + strings.ReplaceAll(s, "'", "''") + "'"
+	}
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }

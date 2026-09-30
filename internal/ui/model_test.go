@@ -424,6 +424,38 @@ func TestShortcutRowsFitTheTerminal(t *testing.T) {
 	}
 }
 
+func TestDependenciesReportTheChosenNeovim(t *testing.T) {
+	m := newModel(t)
+	// PATH has a Neovim, but --nvim names one that does not exist.
+	bin := t.TempDir()
+	name := "nvim"
+	if runtime.GOOS == "windows" {
+		name = "nvim.bat"
+	}
+	if err := os.WriteFile(filepath.Join(bin, name), []byte("exit 0\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin)
+	m.bin = filepath.Join(t.TempDir(), "missing", "nvim")
+	nvim := func() engine.Dependency {
+		for _, d := range m.dependencies() {
+			if d.ID == "nvim" {
+				return d
+			}
+		}
+		t.Fatal("no Neovim row")
+		return engine.Dependency{}
+	}
+	if d := nvim(); d.Status != "missing" || d.Path != "" {
+		t.Fatalf("a --nvim that does not exist is reported as %+v", d)
+	}
+	// A plan names the Neovim it was checked with.
+	m.plan = &engine.Plan{Neovim: "/opt/nvim/bin/nvim"}
+	if d := nvim(); d.Status != "present" || d.Path != m.plan.Neovim {
+		t.Fatalf("the Neovim a plan was checked with is reported as %+v", d)
+	}
+}
+
 func TestSaveWithoutDownloadingWritesTarget(t *testing.T) {
 	needNeovim(t)
 	m := newModel(t)
