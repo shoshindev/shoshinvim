@@ -317,6 +317,32 @@ assert(#require('lint').get_running() == 0 and #vim.diagnostic.get(0) == 0, 'ESL
 		choice{"debug nvim-dap-view", map[string]any{"coding.debug": "nvim-dap-view", "tools.provider": "mason", "language.typescript.lsp": true, "keymaps.style": "lazyvim"},
 			debugSession + "\nassert(vim.fn.maparg('<leader>db', 'n') ~= '', 'Space db is not mapped')"},
 	)
+	// Themes style the plugins chosen with them: each group below is set by the theme
+	// itself (colors, not the plugin's default link).
+	workspace := map[string]any{"git.hunks": "gitsigns", "navigation.picker": "telescope", "navigation.explorer": "neo-tree", "navigation.shortcuts": "which-key",
+		"keymaps.style": "lazyvim", "appearance.indent": "indent-blankline", "appearance.buffers": "bufferline", "appearance.notifications": "snacks",
+		"workspace.start_screen": "snacks", "appearance.cmdline": "noice", "completion.engine": "blink.cmp", "language.lua.lsp": true}
+	for theme, groups := range map[string][]string{
+		"tokyonight":           {"GitSignsAdd", "NeoTreeNormal", "TelescopeBorder", "WhichKeyGroup", "SnacksIndent", "BlinkCmpMenu"},
+		"solarized-osaka/dark": {"GitSignsAdd", "NeoTreeNormal", "TelescopeBorder", "WhichKeyGroup", "SnacksIndent", "BlinkCmpMenu"},
+		// catppuccin links some groups on purpose (TelescopeBorder to FloatBorder), so it is
+		// checked by groups it colors.
+		"catppuccin/mocha": {"GitSignsAdd", "NeoTreeNormal", "TelescopeSelection", "WhichKeyGroup", "SnacksNotifierInfo", "BlinkCmpKind", "NoiceCmdlinePopupBorder"},
+		"material/darker":  {"GitSignsAdd", "WhichKeyGroup", "BlinkCmpMenu", "NoiceCmdlinePopupBorder"},
+	} {
+		values := maps.Clone(workspace)
+		values["appearance.colorscheme"] = theme
+		cases = append(cases, choice{"theme plugins " + theme, values, `for _, group in ipairs({ ` + luaList(groups) + ` }) do
+  local hl = vim.api.nvim_get_hl(0, { name = group })
+  assert(hl.link == nil and (hl.fg or hl.bg), group .. ' is not styled by the theme: ' .. vim.inspect(hl))
+end`})
+	}
+	cases = append(cases,
+		choice{"theme kanagawa gutter", map[string]any{"appearance.colorscheme": "kanagawa/wave"}, "assert(vim.api.nvim_get_hl(0, { name = 'SignColumn' }).bg == nil, 'the sign column has its own background')"},
+		choice{"theme everforest diagnostics", map[string]any{"appearance.colorscheme": "everforest/dark-hard"}, "assert(vim.g.everforest_diagnostic_virtual_text == 'colored', 'grey inline diagnostics')"},
+		choice{"theme catppuccin tabs", map[string]any{"appearance.colorscheme": "catppuccin/mocha", "appearance.buffers": "bufferline"}, "assert(vim.api.nvim_get_hl(0, { name = 'BufferLineBufferSelected' }).italic, 'bufferline lacks catppuccin colors')"},
+		choice{"theme rose-pine tabs", map[string]any{"appearance.colorscheme": "rose-pine/main", "appearance.buffers": "bufferline"}, "assert(package.loaded['rose-pine.plugins.bufferline'], 'bufferline lacks rose-pine colors')"},
+	)
 	// Each interface choice also works with Nerd Font icons, which changes its setup.
 	for _, c := range slices.Clone(cases) {
 		for _, prefix := range []string{"statusline ", "tabs ", "finder ", "explorer ", "completion ", "start ", "hints ", "debug nvim-dap-view", "polish ", "noice "} {

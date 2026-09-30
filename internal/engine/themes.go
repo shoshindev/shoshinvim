@@ -142,7 +142,7 @@ func colorschemeLua(s State) string {
 		if !found {
 			return ""
 		}
-		name, label, before, plugin = v.Colorscheme, t.Label, v.Before, t.Plugin != ""
+		name, label, before, plugin = v.Colorscheme, t.Label, themeSetup(s, t, v), t.Plugin != ""
 		if v.SetBackground {
 			background = v.Background
 		}

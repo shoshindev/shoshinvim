@@ -100,3 +100,27 @@ func TestNoiceLeavesEachJobWithItsPlugin(t *testing.T) {
 		t.Error("the built-in command line needs no noice")
 	}
 }
+
+// Themes that style only the plugins they are told about are told about every chosen
+// plugin, and a variant's own setting survives the theme's setup.
+func TestThemesStyleEveryChosenPlugin(t *testing.T) {
+	s := polishedState()
+	for _, id := range []string{"tokyonight", "solarized-osaka/dark"} {
+		s.Values["appearance.colorscheme"] = id
+		got := colorschemeLua(s)
+		for _, name := range repositoryNames(s) {
+			if !strings.Contains(got, "["+LuaString(name)+"] = true") {
+				t.Errorf("%s is not told about %s:\n%s", id, name, got)
+			}
+		}
+	}
+	for id := range materialPlugins {
+		if _, ok := PluginInfo(id); !ok {
+			t.Errorf("material.nvim's module %s names no plugin", id)
+		}
+	}
+	s.Values["appearance.colorscheme"] = "everforest/dark-hard"
+	if got := colorschemeLua(s); !strings.Contains(got, "everforest_background = 'hard'") || !strings.Contains(got, "everforest_diagnostic_virtual_text = 'colored'") {
+		t.Errorf("everforest loses its variant or colored diagnostics:\n%s", got)
+	}
+}
