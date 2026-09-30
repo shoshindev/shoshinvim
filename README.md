@@ -83,6 +83,8 @@ goreleaser check
 goreleaser release --snapshot --clean --skip=publish,announce,validate
 ```
 
+The real-Neovim suite downloads every offered plugin, theme, parser and language tool and checks each choice by what it does: `SHOSHINVIM_INTEGRATION=1 go test ./internal/engine/`. Languages whose runtime is missing are skipped; `SHOSHINVIM_ALL_LANGUAGES=1` makes that a failure. The **Real Neovim** workflow (`.github/workflows/integration.yml`) runs it on Linux with every runtime installed, weekly, on demand, and on pull requests labeled `integration`.
+
 `scripts/editor-smoke.py` drives the real Neovim UI through MessagePack RPC against a separately installed Rich IDE target. It requires Python `msgpack` and Pillow for macOS screenshots. It never installs dependencies. The Lua integration script checks real language-server responses and formatting separately.
 
 Cross compilation and local snapshot archives cover macOS ARM64/x86_64, Linux ARM64/x86_64, and Windows x86_64. CI is configured to run on each platform. Public installation channels are **not yet released**. The shell/PowerShell installers, Homebrew formula generator, checksums and draft-release provenance workflow are release infrastructure; do not advertise their remote installation URLs until release verification passes.
