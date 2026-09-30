@@ -107,16 +107,21 @@ end
 	case "nvim-dap-ui":
 		// kickstart's debug.lua settings: icons that work in every terminal, or the
 		// plugin's own with a Nerd Font.
-		icons := `
-    icons = { expanded = '▾', collapsed = '▸', current_frame = '*' },
-    controls = { icons = { pause = '⏸', play = '▶', step_into = '⏎', step_over = '⏭', step_out = '⏮', step_back = 'b', run_last = '▶▶', terminate = '⏹', disconnect = '⏏' } },
-  `
-		if nerd {
-			icons = ""
+		var opts []string
+		if !nerd {
+			opts = append(opts, "icons = { expanded = '▾', collapsed = '▸', current_frame = '*' }",
+				"controls = { icons = { pause = '⏸', play = '▶', step_into = '⏎', step_over = '⏭', step_out = '⏮', step_back = 'b', run_last = '▶▶', terminate = '⏹', disconnect = '⏏' } }")
+		}
+		if border := borderStyle(s); border != "" {
+			opts = append(opts, "floating = { border = "+LuaString(border)+" }")
+		}
+		setup := "{}"
+		if len(opts) > 0 {
+			setup = "{\n    " + strings.Join(opts, ",\n    ") + ",\n  }"
 		}
 		b.WriteString(`local ui_ok, dapui = pcall(require, 'dapui')
 if ui_ok then
-  dapui.setup({` + icons + `})
+  dapui.setup(` + setup + `)
   dap.listeners.after.event_initialized.shoshinvim = function() dapui.open() end
   dap.listeners.before.event_terminated.shoshinvim = function() dapui.close() end
   dap.listeners.before.event_exited.shoshinvim = function() dapui.close() end

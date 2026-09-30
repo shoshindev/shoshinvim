@@ -381,10 +381,22 @@ func guideLua(s State, keys []EffectiveKeymap) string {
   vim.bo[buf].modifiable = false
   local width = math.min(72, vim.o.columns - 4)
   local height = math.min(#lines, vim.o.lines - 4)
-  vim.api.nvim_open_win(buf, true, { relative = 'editor', width = width, height = height, row = math.max(0, math.floor((vim.o.lines - height) / 2) - 1), col = math.max(0, math.floor((vim.o.columns - width) / 2)), border = 'rounded', title = ' Shortcuts ', title_pos = 'center' })
+  vim.api.nvim_open_win(buf, true, { relative = 'editor', width = width, height = height, row = math.max(0, math.floor((vim.o.lines - height) / 2) - 1), col = math.max(0, math.floor((vim.o.columns - width) / 2)), border = ` + LuaString(guideBorder(s)) + `, title = ' Shortcuts ', title_pos = 'center' })
   vim.keymap.set('n', 'q', '<cmd>close<CR>', { buffer = buf, silent = true })
 end, { desc = 'Shortcut guide' })
 `
+}
+
+// guideBorder frames the shortcut guide like other popups. Its title needs a border,
+// so without one it gets a blank frame.
+func guideBorder(s State) string {
+	if b := borderStyle(s); b != "" {
+		return b
+	}
+	if b, set := s.Values["options.winborder"]; set && b == "" {
+		return "solid"
+	}
+	return "rounded"
 }
 
 var specialKey = regexp.MustCompile(`<[^<>]+>`)

@@ -71,18 +71,79 @@ var nativeCommands = map[string]string{
 	"ShoshinConfigFiles": "vim.cmd.edit(vim.fn.fnameescape(config_root()))",
 }
 
-// Explorers: how to open each one, and setup to run once it is loaded, with plain
-// symbols in place of their Nerd Font icons, or with icons.
-var explorers = map[string]struct{ module, open, setup, nerdSetup string }{
-	"snacks": {"snacks", "m.explorer()", "", ""},
-	"neo-tree": {"neo-tree", "vim.cmd('Neotree toggle reveal')",
-		"m.setup({ default_component_configs = { indent = { expander_collapsed = '▸', expander_expanded = '▾' }, icon = { folder_closed = '+', folder_open = '-', folder_empty = '-', folder_empty_open = '-', selected = '*', default = ' ' }, git_status = { symbols = { added = '+', modified = '~', deleted = 'x', renamed = '>', untracked = '?', ignored = '.', unstaged = '*', staged = '+', conflict = '!' } } }, filesystem = { follow_current_file = { enabled = true } } })",
-		"m.setup({ filesystem = { follow_current_file = { enabled = true } } })"},
-	"nvim-tree": {"nvim-tree", "require('nvim-tree.api').tree.toggle({ find_file = true })",
-		"m.setup({ renderer = { icons = { show = { file = false }, glyphs = { bookmark = '*', hidden = 'h', folder = { arrow_closed = '>', arrow_open = 'v', default = '+', open = '-', empty = '+', empty_open = '-', symlink = '@', symlink_open = '@' }, git = { unstaged = '*', staged = '+', unmerged = '!', renamed = '>', untracked = '?', deleted = 'x', ignored = '.' } } } } })",
-		"m.setup({})"},
-	"oil":        {"oil", "m.open()", "", ""},
-	"mini.files": {"mini.files", "local path = vim.api.nvim_buf_get_name(0); m.open(path ~= '' and path or nil)", "", ""},
+// Explorers: how to open each one, and setup to run once it is loaded.
+var explorers = map[string]struct {
+	module, open string
+	setup        func(State) string
+}{
+	"snacks":     {"snacks", "m.explorer()", nil},
+	"neo-tree":   {"neo-tree", "vim.cmd('Neotree toggle reveal')", neoTreeSetup},
+	"nvim-tree":  {"nvim-tree", "require('nvim-tree.api').tree.toggle({ find_file = true })", nvimTreeSetup},
+	"oil":        {"oil", "m.open()", nil},
+	"mini.files": {"mini.files", "local path = vim.api.nvim_buf_get_name(0); m.open(path ~= '' and path or nil)", nil},
+}
+
+// neoTreeSetup follows the open file, notices changes made outside Neovim, and closes
+// with the last file window, as LazyVim's does.
+func neoTreeSetup(s State) string {
+	parts := []string{"close_if_last_window = true"}
+	if b := borderStyle(s); b != "" {
+		parts = append(parts, "popup_border_style = "+LuaString(b))
+	}
+	if !nerdIcons(s) {
+		parts = append(parts, "default_component_configs = { indent = { expander_collapsed = '▸', expander_expanded = '▾' }, icon = { folder_closed = '+', folder_open = '-', folder_empty = '-', folder_empty_open = '-', selected = '*', default = ' ' }, git_status = { symbols = { added = '+', modified = '~', deleted = 'x', renamed = '>', untracked = '?', ignored = '.', unstaged = '*', staged = '+', conflict = '!' } } }")
+	}
+	parts = append(parts, "filesystem = { follow_current_file = { enabled = true }, use_libuv_file_watcher = true }")
+	return "m.setup({ " + strings.Join(parts, ", ") + " })"
+}
+
+// nvimTreeSetup uses NvChad's settings: a narrow tree that follows the open file,
+// indent guides, and Git status coloring file names.
+func nvimTreeSetup(s State) string {
+	icons := ""
+	if !nerdIcons(s) {
+		icons = ", icons = { show = { file = false }, glyphs = { bookmark = '*', hidden = 'h', folder = { arrow_closed = '>', arrow_open = 'v', default = '+', open = '-', empty = '+', empty_open = '-', symlink = '@', symlink_open = '@' }, git = { unstaged = '*', staged = '+', unmerged = '!', renamed = '>', untracked = '?', deleted = 'x', ignored = '.' } } }"
+	}
+	return "m.setup({ hijack_cursor = true, sync_root_with_cwd = true, update_focused_file = { enable = true, update_root = false },\n" +
+		"    view = { width = 30, preserve_window_proportions = true },\n" +
+		"    renderer = { root_folder_label = false, highlight_git = 'name', indent_markers = { enable = true }" + icons + " } })"
+}
+
+// finderSetup gives Telescope NvChad's layout (prompt on top, results below it) and
+// fzf-lua the theme's colors; the other finders need no setup.
+func finderSetup(s State, picker string) string {
+	b := borderStyle(s)
+	switch picker {
+	case "telescope":
+		border := ""
+		if b == "single" {
+			border = "\n    borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' },"
+		}
+		return `if not vim.g.shoshinvim_probe then
+  local ok, telescope = pcall(require, 'telescope')
+  if ok then
+    local icons = require('user_config.icons').ui
+    telescope.setup({ defaults = {
+      prompt_prefix = ' ' .. icons.search .. ' ', selection_caret = icons.caret .. ' ', entry_prefix = '  ',
+      sorting_strategy = 'ascending',
+      layout_config = { horizontal = { prompt_position = 'top', preview_width = 0.55 }, width = 0.87, height = 0.8 },` + border + `
+    } })
+  end
+end
+`
+	case "fzf-lua":
+		opts := []string{"'default-title'", "fzf_colors = true"}
+		if b != "" {
+			opts = append(opts, "winopts = { border = "+LuaString(b)+" }")
+		}
+		icons := "false"
+		if nerdIcons(s) {
+			icons = "'mini'"
+		}
+		opts = append(opts, "defaults = { file_icons = "+icons+" }")
+		return "if not vim.g.shoshinvim_probe then\n  local ok, fzf = pcall(require, 'fzf-lua')\n  if ok then fzf.setup({ " + strings.Join(opts, ", ") + " }) end\nend\n"
+	}
+	return ""
 }
 
 func navigationLua(s State) string {
@@ -105,6 +166,7 @@ end
 	if picker == "native" || picker == "mini.pick" {
 		b.WriteString("if vim.fn.executable('rg') == 1 then vim.o.grepprg = 'rg --vimgrep --smart-case' end\n")
 	}
+	b.WriteString(finderSetup(s, picker))
 	for _, c := range finderCommands {
 		if call, ok := finder.calls[c.name]; hasFinder && ok {
 			fmt.Fprintf(&b, "command(%s, with(%s, function(m) %s end), %s)\n", LuaString(c.name), LuaString(finder.module), call, LuaString(c.desc))
@@ -116,12 +178,8 @@ end
 		if explorer == "nvim-tree" {
 			b.WriteString("vim.g.loaded_netrw, vim.g.loaded_netrwPlugin = 1, 1 -- nvim-tree replaces netrw\n")
 		}
-		setup := e.setup
-		if nerdIcons(s) {
-			setup = e.nerdSetup
-		}
-		if setup != "" {
-			fmt.Fprintf(&b, "if not vim.g.shoshinvim_probe then\n  local ok, m = pcall(require, %s)\n  if ok then %s end\nend\n", LuaString(e.module), setup)
+		if e.setup != nil {
+			fmt.Fprintf(&b, "if not vim.g.shoshinvim_probe then\n  local ok, m = pcall(require, %s)\n  if ok then %s end\nend\n", LuaString(e.module), e.setup(s))
 		}
 		fmt.Fprintf(&b, "command(\"ShoshinExplore\", with(%s, function(m) %s end), \"Project explorer\")\n", LuaString(e.module), e.open)
 	} else {

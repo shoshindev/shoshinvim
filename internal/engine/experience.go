@@ -10,30 +10,7 @@ func appearanceLua(s State) string {
 	b.WriteString(colorschemeLua(s))
 	nerd := nerdIcons(s)
 	if Value(s, "appearance.statusline", "native") == "lualine" {
-		// A space follows each Nerd Font icon; plain letters read as E:2 W:1.
-		gap, count := "''", "':'"
-		if nerd {
-			gap, count = "' '", "' '"
-		}
-		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
-  local ok, line = pcall(require, 'lualine')
-  if ok then
-    local icons = require('user_config.icons')
-    line.setup({
-      options = { theme = 'auto', icons_enabled = %s, globalstatus = true,
-        component_separators = '|', section_separators = '', ignore_focus = { 'snacks_picker_list', 'snacks_picker_input' }, disabled_filetypes = { statusline = { 'snacks_dashboard' } } },
-      sections = {
-        lualine_a = { 'mode' },
-        lualine_b = { 'branch', { 'diff', symbols = { added = icons.git.added .. %[2]s, modified = icons.git.modified .. %[2]s, removed = icons.git.removed .. %[2]s } } },
-        lualine_c = { { 'filename', path = 1 }, { 'diagnostics', symbols = { error = icons.diagnostics.Error .. %[3]s, warn = icons.diagnostics.Warn .. %[3]s, info = icons.diagnostics.Info .. %[3]s, hint = icons.diagnostics.Hint .. %[3]s } } },
-        lualine_x = { function() return vim.lsp.status() end, 'filetype' },
-        lualine_y = { 'progress' }, lualine_z = { 'location' },
-      },
-      extensions = { 'quickfix', 'oil', 'neo-tree', 'nvim-tree' },
-    })
-  end
-end
-`, Lua(nerd), gap, count)
+		b.WriteString(lualineLua(s))
 	}
 	if Value(s, "appearance.statusline", "native") == "mini.statusline" {
 		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
@@ -45,22 +22,40 @@ end
 	if Value(s, "appearance.buffers", "native") == "bufferline" {
 		markers := "" // bufferline's arrows and close buttons are Nerd Font glyphs by default.
 		if !nerd {
-			markers = "\n    left_trunc_marker = '<', right_trunc_marker = '>', buffer_close_icon = 'x', close_icon = 'x',"
+			markers = "\n      left_trunc_marker = '<', right_trunc_marker = '>', buffer_close_icon = 'x', close_icon = 'x',"
 		}
+		gap := "''"
+		if nerd {
+			gap = "' '"
+		}
+		// LazyVim's settings: error and warning counts on each tab, and closing a tab
+		// keeps the window layout.
 		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
   local ok, line = pcall(require, 'bufferline')
-  if ok then line.setup({ options = {
-    diagnostics = 'nvim_lsp', separator_style = 'thin', show_buffer_icons = %s,
-    always_show_bufferline = false,
-    show_buffer_close_icons = false, show_close_icon = false,%s
-    offsets = {
-      { filetype = 'snacks_layout_box', text = 'PROJECT', text_align = 'left' },
-      { filetype = 'neo-tree', text = 'PROJECT', text_align = 'left' },
-      { filetype = 'NvimTree', text = 'PROJECT', text_align = 'left' },
-    },
-  } }) end
+  if ok then
+    local icons = require('user_config.icons').diagnostics
+    local function close(n)
+      local has_snacks, snacks = pcall(require, 'snacks')
+      if has_snacks then snacks.bufdelete(n) else vim.cmd.bdelete({ tostring(n), bang = true }) end
+    end
+    line.setup({ options = {
+      close_command = close, right_mouse_command = close,
+      diagnostics = 'nvim_lsp',
+      diagnostics_indicator = function(_, _, diag)
+        return vim.trim((diag.error and icons.Error .. %[3]s .. diag.error .. ' ' or '') .. (diag.warning and icons.Warn .. %[3]s .. diag.warning or ''))
+      end,
+      separator_style = 'thin', show_buffer_icons = %[1]s,
+      always_show_bufferline = false,
+      show_buffer_close_icons = false, show_close_icon = false,%[2]s
+      offsets = {
+        { filetype = 'snacks_layout_box', text = 'PROJECT', text_align = 'left', highlight = 'Directory', separator = true },
+        { filetype = 'neo-tree', text = 'PROJECT', text_align = 'left', highlight = 'Directory', separator = true },
+        { filetype = 'NvimTree', text = 'PROJECT', text_align = 'left', highlight = 'Directory', separator = true },
+      },
+    } })
+  end
 end
-`, Lua(nerd), markers)
+`, Lua(nerd), markers, gap)
 	}
 	if Value(s, "appearance.buffers", "native") == "barbar" {
 		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
@@ -85,11 +80,15 @@ end
 	case "which-key":
 		// With a Nerd Font, which-key's own icons, chosen by the group or shortcut name;
 		// otherwise key names and plain symbols in place of its glyphs.
-		setup := "wk.setup({ preset = 'modern', delay = 300 })"
+		win := "" // which-key frames its popup itself, rounded unless told otherwise.
+		if border := borderStyle(s); border != "" {
+			win = ", win = { border = " + LuaString(border) + " }"
+		}
+		setup := "wk.setup({ preset = 'modern', delay = 300" + win + " })"
 		if !nerd {
 			setup = `local key_names = {}
     for _, key in ipairs({ 'Up', 'Down', 'Left', 'Right', 'C', 'M', 'D', 'S', 'CR', 'Esc', 'ScrollWheelDown', 'ScrollWheelUp', 'NL', 'BS', 'Space', 'Tab', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12' }) do key_names[key] = key end
-    wk.setup({ preset = 'modern', delay = 300, icons = { mappings = false, keys = key_names, breadcrumb = '>', separator = '->', group = '+' } })`
+    wk.setup({ preset = 'modern', delay = 300` + win + `, icons = { mappings = false, keys = key_names, breadcrumb = '>', separator = '->', group = '+' } })`
 		}
 		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
   local ok, wk = pcall(require, 'which-key')
@@ -115,6 +114,58 @@ end
 `, strings.Join(groups.miniClue, ", "))
 	}
 	return b.String()
+}
+
+// lualineLua lays the status line out as LazyVim does: mode · branch · diagnostics and
+// file · language server progress and Git changes · position · time.
+func lualineLua(s State) string {
+	nerd := nerdIcons(s)
+	// A space follows each Nerd Font icon; plain letters read as E:2 W:1.
+	gap, count := "''", "':'"
+	fileType, language, clock := "", ", 'filetype'", "function() return os.date('%R') end"
+	if nerd {
+		gap, count = "' '", "' '"
+		// The file type shows as its icon before the name instead of as a word.
+		fileType = "\n          { 'filetype', icon_only = true, separator = '', padding = { left = 1, right = 0 } },"
+		language, clock = "", "function() return icons.ui.clock .. ' ' .. os.date('%R') end"
+	}
+	c := "{ 'diagnostics', symbols = { error = icons.diagnostics.Error .. %[3]s, warn = icons.diagnostics.Warn .. %[3]s, info = icons.diagnostics.Info .. %[3]s, hint = icons.diagnostics.Hint .. %[3]s } }," +
+		fileType + "\n          { 'filename', path = 1, symbols = { modified = icons.ui.modified, readonly = icons.ui.readonly } }"
+	// Git change counts come live from the chosen Git plugin.
+	source := ""
+	switch Value(s, "git.hunks", "native") {
+	case "gitsigns":
+		source = ",\n            source = function() local g = vim.b.gitsigns_status_dict; if g then return { added = g.added, modified = g.changed, removed = g.removed } end end"
+	case "mini.diff":
+		source = ",\n            source = function() local d = vim.b.minidiff_summary; if d then return { added = d.add, modified = d.change, removed = d.delete } end end"
+	}
+	return fmt.Sprintf(`if not vim.g.shoshinvim_probe then
+  local ok, line = pcall(require, 'lualine')
+  if ok then
+    local icons = require('user_config.icons')
+    line.setup({
+      options = { theme = 'auto', icons_enabled = %[1]s, globalstatus = true,
+        component_separators = { left = icons.ui.component_left, right = icons.ui.component_right },
+        section_separators = { left = icons.ui.section_left, right = icons.ui.section_right },
+        ignore_focus = { 'snacks_picker_list', 'snacks_picker_input' }, disabled_filetypes = { statusline = { 'snacks_dashboard', 'ministarter' } } },
+      sections = {
+        lualine_a = { 'mode' },
+        lualine_b = { 'branch' },
+        lualine_c = {
+          `+c+`,
+        },
+        lualine_x = {
+          function() return vim.lsp.status() end,
+          { 'diff', symbols = { added = icons.git.added .. %[2]s, modified = icons.git.modified .. %[2]s, removed = icons.git.removed .. %[2]s }%[4]s }%[5]s,
+        },
+        lualine_y = { { 'progress', separator = ' ', padding = { left = 1, right = 0 } }, { 'location', padding = { left = 0, right = 1 } } },
+        lualine_z = { %[6]s },
+      },
+      extensions = { 'quickfix', 'oil', 'neo-tree', 'nvim-tree', 'lazy', 'mason', 'fzf', 'nvim-dap-ui', 'man' },
+    })
+  end
+end
+`, Lua(nerd), gap, count, source, language, clock)
 }
 
 type groupLists struct{ whichKey, miniClue []string }
@@ -161,6 +212,9 @@ func snacksOptions(s State) string {
 	} else {
 		fmt.Fprintf(&b, " input = { enabled = %s, icon = '' },\n notifier = { enabled = %s, timeout = 3000, icons = { error = 'E', warn = 'W', info = 'I', debug = 'D', trace = 'T' } },\n", notify, notify)
 	}
+	if notify == "true" {
+		b.WriteString(" styles = { notification = { wo = { wrap = true } } }, -- Long messages wrap instead of being cut off.\n")
+	}
 	if Value(s, "workspace.start_screen", "none") == "snacks" {
 		b.WriteString(` dashboard = { enabled = true, preset = {
    keys = {
@@ -173,7 +227,7 @@ func snacksOptions(s State) string {
 			fmt.Fprintf(&b, "     { icon = %s, key = %s, desc = %s, action = %s },\n", icon, LuaString(item.key), LuaString(item.label), LuaString(":"+item.command))
 		}
 		b.WriteString(`   },
- }, sections = { function(self) return require('user_config.logo').sections(self:size().width) end, { section = 'keys', gap = 1, padding = 1 }, { text = 'Press your leader key in a file to discover shortcuts.', align = 'center', padding = 1 } } },
+ }, sections = { function(self) return require('user_config.logo').sections(self:size().width) end, { section = 'keys', gap = 1, padding = 1 }, { text = 'Press your leader key in a file to discover shortcuts.', align = 'center', padding = 1 }, { section = 'startup' } } },
 `)
 	}
 	b.WriteString(" }")
@@ -203,6 +257,10 @@ var snacksKinds = []string{"Array", "Boolean", "Class", "Color", "Control", "Col
 	"Field", "File", "Folder", "Function", "Interface", "Key", "Keyword", "Method", "Module", "Namespace", "Null", "Number", "Object", "Operator",
 	"Package", "Property", "Reference", "Snippet", "String", "Struct", "Text", "TypeParameter", "Unit", "Unknown", "Value", "Variable"}
 
+// guidelessFiletypes are the start screens, sidebars and plugin windows that indent
+// guides leave alone.
+var guidelessFiletypes = []string{"help", "lazy", "mason", "notify", "snacks_dashboard", "snacks_notif", "ministarter", "neo-tree", "NvimTree", "oil", "minifiles", "noice", "dap-view", "dapui_scopes"}
+
 type startItem struct{ key, label, command string }
 
 // startItems are the start screen's entries; the guide appears only when shortcuts exist.
@@ -228,11 +286,15 @@ func interfaceLua(s State) string {
 		}
 		setup("mini.starter", "local logo = require('user_config.logo')\n  m.setup({ header = logo.header, items = { "+strings.Join(items, ", ")+" }, footer = 'Press your leader key in a file to discover shortcuts.',\n    content_hooks = { logo.paint, m.gen_hook.adding_bullet(), m.gen_hook.aligning('center', 'center') } })")
 	}
+	// Guides stay out of start screens, sidebars and plugin windows.
+	quiet := luaList(guidelessFiletypes)
 	switch Value(s, "appearance.indent", "none") {
 	case "indent-blankline":
-		setup("ibl", "m.setup({ indent = { char = '│' }, scope = { enabled = false } })")
+		// The scope around the cursor is highlighted where Tree-sitter reads the code.
+		scope := Lua(Value(s, "syntax.engine", "native") == "nvim-treesitter")
+		setup("ibl", "m.setup({ indent = { char = '│', tab_char = '│' }, scope = { enabled = "+scope+", show_start = false, show_end = false },\n    exclude = { filetypes = { "+quiet+" } } })")
 	case "mini.indentscope":
-		setup("mini.indentscope", "m.setup({ symbol = '│' })")
+		setup("mini.indentscope", "m.setup({ symbol = '│', options = { try_as_border = true } })\n  vim.api.nvim_create_autocmd('FileType', { group = vim.api.nvim_create_augroup('ShoshinIndentscope', { clear = true }),\n    pattern = { "+quiet+" }, callback = function() vim.b.miniindentscope_disable = true end })")
 	}
 	if Value(s, "appearance.notifications", "none") == "fidget" {
 		setup("fidget", "m.setup({})")

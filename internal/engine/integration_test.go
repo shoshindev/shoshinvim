@@ -168,6 +168,35 @@ assert(found, 'no ` + filetype + ` window')`})
 		choice{"icons plain", map[string]any{"appearance.icons": "plain", "appearance.statusline": "lualine", "appearance.buffers": "bufferline", "navigation.explorer": "neo-tree",
 			"navigation.picker": "snacks", "appearance.notifications": "snacks", "navigation.shortcuts": "which-key", "keymaps.style": "lazyvim",
 			"completion.engine": "blink.cmp", "language.lua.lsp": true}, plainIconsCheck},
+		choice{"polish rounded", map[string]any{"options.winborder": "rounded", "options.fillchars": "eob: ", "navigation.shortcuts": "which-key", "keymaps.style": "lazyvim",
+			"navigation.picker": "telescope", "navigation.explorer": "neo-tree", "appearance.statusline": "lualine", "appearance.indent": "indent-blankline",
+			"language.lua.lsp": true, "diagnostics.virtual_text": true, "completion.engine": "blink.cmp"}, `assert(require('which-key.config').options.win.border == 'rounded', 'which-key border')
+assert(require('lazy.core.config').options.ui.border == 'rounded', 'lazy.nvim border')
+assert(vim.o.pumborder == 'rounded' and vim.o.smoothscroll and vim.o.splitkeep == 'screen' and not vim.o.ruler, 'refinements')
+assert(vim.o.fillchars:find('eob: ', 1, true) and vim.o.fillchars:find('diff:', 1, true), 'fillchars ' .. vim.o.fillchars)
+local inline = vim.diagnostic.config().virtual_text
+assert(type(inline) == 'table' and inline.prefix == '●' and vim.diagnostic.config().signs.text, 'diagnostics')
+assert(require('telescope.config').values.sorting_strategy == 'ascending', 'telescope layout')
+assert(require('neo-tree').ensure_config().close_if_last_window, 'neo-tree')
+assert(#vim.api.nvim_get_autocmds({ group = 'ShoshinLspAttach' }) == 1, 'no reference highlighting')`},
+		choice{"polish single", map[string]any{"options.winborder": "single", "navigation.picker": "fzf-lua", "navigation.explorer": "nvim-tree",
+			"completion.engine": "nvim-cmp", "language.lua.lsp": true, "diagnostics.virtual_text": false, "appearance.indent": "mini.indentscope"},
+			`assert(require('fzf-lua.config').globals.winopts.border == 'single', 'fzf-lua border')
+assert(require('cmp.config').get().window.completion.border == 'single', 'completion border')
+assert(vim.o.pumborder == 'single', 'pumborder ' .. vim.o.pumborder)
+assert(vim.diagnostic.config().virtual_text == false, 'signs only')
+vim.cmd('ShoshinExplore')
+assert(vim.wait(4000, function()
+  for _, w in ipairs(vim.api.nvim_list_wins()) do
+    if vim.bo[vim.api.nvim_win_get_buf(w)].filetype == 'NvimTree' then return vim.api.nvim_win_get_width(w) == 30 end
+  end
+end, 50), 'no 30 column file tree')`},
+		choice{"polish folds", map[string]any{"syntax.engine": "nvim-treesitter", "tools.provider": "mason", "options.number": true}, `assert(vim.o.foldmethod == 'expr' and vim.o.foldlevel == 99, 'folds ' .. vim.o.foldmethod)
+local file = vim.fn.tempname() .. '.lua'
+vim.fn.writefile({ 'local function f()', '  return 1', 'end' }, file)
+vim.cmd.edit(file)
+vim.treesitter.get_parser(0):parse()
+assert(vim.fn.foldlevel(2) > 0, 'a function is not a fold')`},
 		choice{"detect indent", map[string]any{"editor.detect_indent": "guess-indent"}, "assert(package.loaded['guess-indent'], 'guess-indent not loaded')"},
 		choice{"editor behaviors", map[string]any{"editor.highlight_yank": true, "editor.trim_whitespace": true, "editor.restore_cursor": true, "editor.spell_prose": true},
 			"local events = {}; for _, a in ipairs(vim.api.nvim_get_autocmds({ group = 'ShoshinEditor' })) do events[a.event] = true end; for _, e in ipairs({ 'TextYankPost', 'BufWritePre', 'BufReadPost', 'FileType' }) do assert(events[e], 'missing ' .. e) end"},
@@ -272,7 +301,7 @@ assert(#require('lint').get_running() == 0 and #vim.diagnostic.get(0) == 0, 'ESL
 	)
 	// Each interface choice also works with Nerd Font icons, which changes its setup.
 	for _, c := range slices.Clone(cases) {
-		for _, prefix := range []string{"statusline ", "tabs ", "finder ", "explorer ", "completion ", "start ", "hints ", "debug nvim-dap-view"} {
+		for _, prefix := range []string{"statusline ", "tabs ", "finder ", "explorer ", "completion ", "start ", "hints ", "debug nvim-dap-view", "polish "} {
 			if strings.HasPrefix(c.name, prefix) {
 				values := maps.Clone(c.values)
 				values["appearance.icons"] = "nerd"

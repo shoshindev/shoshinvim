@@ -1,0 +1,76 @@
+package engine
+
+import (
+	"regexp"
+	"strings"
+	"testing"
+)
+
+func polishedState() State {
+	s, _ := LoadCatalog().Profile(NewState(), "rich-ide")
+	s.Values["syntax.engine"] = "nvim-treesitter"
+	delete(s.Values, "options.pumheight") // The profile sets it; each test chooses its own.
+	return s
+}
+
+// A value the state sets always wins over ShoshinVim's refinements.
+func TestRefinementsNeverOverrideTheState(t *testing.T) {
+	chosen := map[string]any{"smoothscroll": false, "splitkeep": "cursor", "pumheight": 5.0, "pumborder": "single", "ruler": true,
+		"shortmess": "filnxtToOF", "foldmethod": "manual", "foldexpr": "0", "foldlevel": 0.0, "foldlevelstart": -1.0, "foldtext": "foldtext()"}
+	for name := range chosen {
+		if !regexp.MustCompile(`vim\.(o|opt)\.` + name + `\b`).MatchString(refinementsLua(polishedState())) {
+			t.Fatalf("%s is not refined, so this test does not cover it", name)
+		}
+	}
+	for name, value := range chosen {
+		s := polishedState()
+		if err := LoadCatalog().Set(&s, "options."+name, value, true); err != nil {
+			t.Fatal(err)
+		}
+		if regexp.MustCompile(`vim\.(o|opt)\.` + name + `\b`).MatchString(refinementsLua(s)) {
+			t.Errorf("the refinements override the chosen %s", name)
+		}
+	}
+	s := polishedState()
+	s.Values["options.fillchars"] = "eob: ,fold:-"
+	if got := refinementsLua(s); !strings.Contains(got, "fillchars:append({ foldsep = ' ', diff = '╱' })") {
+		t.Errorf("fillchars must only add what the chosen value lacks:\n%s", got)
+	}
+}
+
+func TestNeovimDefaultsStayWithoutEditorOptions(t *testing.T) {
+	s, _ := LoadCatalog().Profile(NewState(), "custom")
+	files, err := Generate(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := files["lua/user_config/options.lua"]; ok {
+		t.Fatal("a state without options must keep Neovim's defaults")
+	}
+}
+
+// Plugins with frames of their own follow the popup border choice; with borders off
+// they keep their own frame, and the shortcut guide gets a blank one for its title.
+func TestPluginBordersFollowTheChoice(t *testing.T) {
+	for winborder, want := range map[any]string{"rounded": "rounded", "single": "single", "": "", nil: ""} {
+		s := polishedState()
+		s.Values["navigation.shortcuts"] = "which-key"
+		delete(s.Values, "options.winborder")
+		if winborder != nil {
+			s.Values["options.winborder"] = winborder
+		}
+		files, err := Generate(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		whichKey := strings.Contains(files["lua/user_config/appearance.lua"], "win = { border = ")
+		lazy := strings.Contains(files["lua/user_config/plugins.lua"], "ui = { border = ")
+		if whichKey != (want != "") || lazy != (want != "") || borderStyle(s) != want {
+			t.Errorf("winborder %v: which-key border %v, lazy.nvim border %v, style %q", winborder, whichKey, lazy, borderStyle(s))
+		}
+		guide := map[any]string{"rounded": "rounded", "single": "single", "": "solid", nil: "rounded"}[winborder]
+		if got := guideBorder(s); got != guide {
+			t.Errorf("winborder %v: guide border %q, want %q", winborder, got, guide)
+		}
+	}
+}

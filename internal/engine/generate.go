@@ -77,6 +77,9 @@ func Generate(s State) (map[string]string, error) {
 			}
 		}
 	}
+	if opts.Len() > 0 { // A state without options keeps Neovim's defaults.
+		opts.WriteString(refinementsLua(s))
+	}
 	add("options", opts.String())
 	var autocmds strings.Builder
 	for _, ft := range sorted(s.Filetypes) {
@@ -216,9 +219,7 @@ end
 	if Value(s, "appearance.buffers", "native") == "barbar" {
 		b.WriteString("vim.g.barbar_auto_setup = false -- configured in appearance.lua\n")
 	}
-	if nerdIcons(s) && Value(s, "workspace.start_screen", "none") == "snacks" {
-		b.WriteString("local icons = require('user_config.icons') -- for the start screen\n")
-	}
+	b.WriteString("local icons = require('user_config.icons')\n")
 	for _, id := range Plugins(s) {
 		_, _, dir, err := source(s, id)
 		if err != nil {
@@ -230,17 +231,21 @@ end
 			config = ", priority = 900, opts = " + snacksOptions(s)
 		case id == themePlugin(s):
 			config = ", priority = 1000"
-		case id == "mini.pick", id == "mini.files":
-			opts := miniPlainIcons[id]
-			if nerdIcons(s) {
-				opts = "{}" // Icons come from mini.icons.
-			}
-			config = fmt.Sprintf(", main = %s, opts = %s", LuaString(id), opts)
+		case id == "mini.pick":
+			config = ", main = 'mini.pick', opts = " + miniPickOpts(s)
+		case id == "mini.files":
+			config = ", main = 'mini.files', opts = " + miniFilesOpts(s)
 		case id == "guess-indent":
 			config = ", main = 'guess-indent', opts = {}"
 		case id == "mini.diff":
-			config = ", main = 'mini.diff', opts = { view = { style = 'sign', signs = { add = '+', change = '~', delete = '_' } } }"
-		case id == "oil", id == "gitsigns":
+			config = ", main = 'mini.diff', opts = { view = { style = 'sign', signs = { add = icons.git.sign, change = icons.git.sign, delete = icons.git.delete } } }"
+		case id == "gitsigns":
+			// LazyVim's thin bars; staged changes use the same shapes in a dimmer color.
+			config = `, opts = {
+  signs = { add = { text = icons.git.sign }, change = { text = icons.git.sign }, delete = { text = icons.git.delete }, topdelete = { text = icons.git.topdelete }, changedelete = { text = icons.git.sign }, untracked = { text = icons.git.sign } },
+  signs_staged = { add = { text = icons.git.sign }, change = { text = icons.git.sign }, delete = { text = icons.git.delete }, topdelete = { text = icons.git.topdelete }, changedelete = { text = icons.git.sign } },
+}`
+		case id == "oil":
 			config = ", opts = {}"
 		case id == "nvim-autopairs", id == "mini.pairs", id == "nvim-surround":
 			config = fmt.Sprintf(", main = %s, opts = {}", LuaString(id))
@@ -265,7 +270,7 @@ end
 			// init runs before any plugin loads, so the first lookup finds it.
 			config = ", main = 'mini.icons', opts = {}, init = function()\n  package.preload['nvim-web-devicons'] = function()\n    require('mini.icons').mock_nvim_web_devicons()\n    return package.loaded['nvim-web-devicons']\n  end\nend"
 		case id == "mason":
-			config = ", opts = { PATH = 'prepend', install_root_dir = base .. '/mason' }"
+			config = ", opts = { PATH = 'prepend', install_root_dir = base .. '/mason', ui = { icons = { package_installed = '✓', package_pending = '➜', package_uninstalled = '✗' } } }"
 		}
 		// lazy.nvim expects a plugin inside its root to live at root/<name>.
 		fmt.Fprintf(&b, "installed(%s, { name = %s, lazy = false%s })\n", LuaString(dir), LuaString(dir), config)
@@ -278,43 +283,76 @@ require('lazy').setup(specs, {
   install = { missing = false }, checker = { enabled = false },
   change_detection = { enabled = false }, rocks = { enabled = false },
   pkg = { enabled = false }, local_spec = false,
-  performance = { rtp = { paths = { config_root } } },` + lazyIcons(s) + `
+  performance = { rtp = { paths = { config_root } } },` + lazyUI(s) + `
 })
 `)
 	return b.String()
 }
 
-// miniPlainIcons keep mini.files and mini.pick from drawing their Nerd Font fallback
-// icons when there is no icon plugin.
-var miniPlainIcons = map[string]string{
-	"mini.files": "{ content = { prefix = function(entry)\n  if entry.fs_type == 'directory' then return '▸ ', 'MiniFilesDirectory' end\n  return '  ', 'MiniFilesFile'\nend } }",
-	"mini.pick":  "{ source = { show = function(buf, items, query) require('mini.pick').default_show(buf, items, query) end } }",
+// miniPickOpts centers mini.pick's window (its documented example), and without a
+// Nerd Font keeps it from drawing its fallback glyphs.
+func miniPickOpts(s State) string {
+	show := ""
+	if !nerdIcons(s) {
+		show = " source = { show = function(buf, items, query) require('mini.pick').default_show(buf, items, query) end },"
+	}
+	return `{` + show + ` window = { config = function()
+  local height, width = math.floor(0.618 * vim.o.lines), math.floor(0.618 * vim.o.columns)
+  return { anchor = 'NW', height = height, width = width, row = math.floor(0.5 * (vim.o.lines - height)), col = math.floor(0.5 * (vim.o.columns - width)) }
+end } }`
 }
 
-// lazyIcons gives lazy.nvim's window kickstart.nvim's symbols for terminals without a
-// Nerd Font (favorite and import, which kickstart leaves out, added).
-func lazyIcons(s State) string {
-	if nerdIcons(s) {
+// miniFilesOpts previews the file or folder under the cursor, as LazyVim's mini.files
+// does; without a Nerd Font, folders are marked with a triangle instead of a glyph.
+func miniFilesOpts(s State) string {
+	prefix := ""
+	if !nerdIcons(s) {
+		prefix = ` content = { prefix = function(entry)
+  if entry.fs_type == 'directory' then return '▸ ', 'MiniFilesDirectory' end
+  return '  ', 'MiniFilesFile'
+end },`
+	}
+	return `{` + prefix + ` windows = { preview = true, width_focus = 30, width_preview = 30 } }`
+}
+
+// lazyUI frames lazy.nvim's window like other popups (it has no border by default) and,
+// without a Nerd Font, uses kickstart.nvim's symbols (favorite and import added).
+func lazyUI(s State) string {
+	var ui []string
+	if b := borderStyle(s); b != "" {
+		ui = append(ui, "border = "+LuaString(b))
+	}
+	if !nerdIcons(s) {
+		ui = append(ui, `icons = { cmd = '⌘', config = '🛠', event = '📅', favorite = '★', ft = '📂', init = '⚙', import = '↳', keys = '🗝',
+    plugin = '🔌', runtime = '💻', require = '🌙', source = '📄', start = '🚀', task = '📌', lazy = '💤 ' }`)
+	}
+	if len(ui) == 0 {
 		return ""
 	}
-	return `
-  ui = { icons = { cmd = '⌘', config = '🛠', event = '📅', favorite = '★', ft = '📂', init = '⚙', import = '↳', keys = '🗝',
-    plugin = '🔌', runtime = '💻', require = '🌙', source = '📄', start = '🚀', task = '📌', lazy = '💤 ' } },`
+	return "\n  ui = { " + strings.Join(ui, ", ") + " },"
 }
 
-// diagnosticsLua shows diagnostics with the chosen icons in the sign column.
+// diagnosticsLua shows diagnostics as LazyVim does: the chosen icons in the sign
+// column, the most severe first, and the source named when several servers report.
 func diagnosticsLua(s State) string {
 	if !diagnosticsChosen(s) {
 		return ""
 	}
+	inline := "false"
+	if Enabled(s, "diagnostics.virtual_text") {
+		inline = "{ spacing = 4, source = 'if_many', prefix = '●' }"
+	}
 	return `local icons = require('user_config.icons').diagnostics
 vim.diagnostic.config({
-  virtual_text = ` + Lua(s.Values["diagnostics.virtual_text"]) + `,
+  virtual_text = ` + inline + `,
+  underline = true,
+  update_in_insert = false,
   severity_sort = true,
   signs = { text = {
     [vim.diagnostic.severity.ERROR] = icons.Error, [vim.diagnostic.severity.WARN] = icons.Warn,
     [vim.diagnostic.severity.INFO] = icons.Info, [vim.diagnostic.severity.HINT] = icons.Hint,
   } },
+  float = { source = 'if_many' },
 })
 `
 }
