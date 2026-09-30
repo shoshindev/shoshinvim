@@ -12,6 +12,7 @@ A guided setup in your terminal that writes plain Lua you own.
 [![CI](https://github.com/shoshindev/shoshinvim/actions/workflows/ci.yml/badge.svg)](https://github.com/shoshindev/shoshinvim/actions/workflows/ci.yml)
 ![Status: development alpha](https://img.shields.io/badge/status-development%20alpha-D27E99)
 ![Neovim 0.12+](https://img.shields.io/badge/Neovim-0.12%2B-7E9CD8)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-98BB6C)](LICENSE)
 
 <sub>初心 · <i>shoshin</i> · beginner's mind</sub>
 
@@ -109,3 +110,9 @@ Installing plugins needs Git. Web language tools, linters and the JavaScript deb
 ## Credits
 
 The shortcut styles are copied from [kickstart.nvim](https://github.com/nvim-lua/kickstart.nvim) and [LazyVim](https://github.com/LazyVim/LazyVim) and credited in the setup. Recommendations follow what they, [NvChad](https://github.com/NvChad/NvChad) and [AstroNvim](https://github.com/AstroNvim/AstroNvim) ship. The interface colors are inspired by [Kanagawa](https://github.com/rebelot/kanagawa.nvim). Every plugin ShoshinVim offers is listed with its repository and license in [`plugins.json`](internal/engine/data/plugins.json).
+
+## License
+
+ShoshinVim is licensed under the [Apache License 2.0](LICENSE). The material it adapts from kickstart.nvim, LazyVim, nvim-lspconfig and Neovim, and the Go modules built into the executable, keep their own licenses; see the [third-party notices](THIRD_PARTY_NOTICES.md).
+
+The configuration files ShoshinVim generates are yours: the ShoshinVim authors place no conditions on how you use, change or share them.

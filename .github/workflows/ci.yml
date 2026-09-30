@@ -34,6 +34,9 @@ jobs:
         run: |
           sh -n scripts/shoshinvim-installer.sh
           python3 scripts/test-installer.py
+      - name: Third-party notices are current
+        if: runner.os == 'Linux'
+        run: python3 scripts/third-party-notices.py --check
       - name: PowerShell installer syntax
         if: runner.os == 'Windows'
         shell: pwsh

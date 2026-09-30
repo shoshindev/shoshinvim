@@ -1,0 +1,12 @@
+ShoshinVim
+Copyright 2026 The ShoshinVim Authors
+
+Licensed under the Apache License, Version 2.0; see LICENSE.
+
+ShoshinVim includes material adapted from kickstart.nvim (MIT License) and from
+LazyVim, nvim-lspconfig and Neovim (Apache License 2.0), and its executable is
+built with Go modules under their own licenses. THIRD_PARTY_NOTICES.md lists
+each of them with its license text.
+
+The configuration files ShoshinVim generates are yours: the ShoshinVim authors
+place no conditions on how you use, change or share them.

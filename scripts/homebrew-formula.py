@@ -23,6 +23,7 @@ print('class Shoshinvim < Formula')
 print('  desc "Design and safely generate a Neovim configuration"')
 print('  homepage "https://github.com/shoshindev/shoshinvim"')
 print(f'  version "{version}"')
+print('  license "Apache-2.0"')
 for os_name, suffix in [('macos', 'apple-darwin'), ('linux', 'unknown-linux-gnu')]:
     print(f'  on_{os_name} do')
     for arch, cpu in [('aarch64', 'arm'), ('x86_64', 'intel')]:

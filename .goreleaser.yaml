@@ -24,6 +24,9 @@ archives:
     name_template: '{{ .ProjectName }}_{{ .Version }}_{{ if eq .Arch "arm64" }}aarch64{{ else }}x86_64{{ end }}-{{ if eq .Os "darwin" }}apple-darwin{{ else if eq .Os "windows" }}pc-windows-msvc{{ else }}unknown-linux-gnu{{ end }}'
     files:
       - README.md
+      - LICENSE
+      - NOTICE
+      - THIRD_PARTY_NOTICES.md
       - src: bin/completions/*
         dst: completions
       - src: bin/man/*

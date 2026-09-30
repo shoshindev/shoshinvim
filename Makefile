@@ -1,4 +1,4 @@
-.PHONY: build test check run cross screenshots
+.PHONY: build test check run cross screenshots notices
 build:
 	go build -trimpath -o bin/shoshinvim ./cmd/shoshinvim
 test:
@@ -16,3 +16,5 @@ cross:
 	done
 screenshots:
 	SHOSHINVIM_SCREENSHOTS=docs/assets go test ./internal/ui -run TestScreenshots -count=1
+notices:
+	python3 scripts/third-party-notices.py
