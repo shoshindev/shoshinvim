@@ -571,3 +571,21 @@ func TestOneFailingModuleDoesNotDisableTheRest(t *testing.T) {
 		t.Fatalf("later modules must load and the failure must be reported: %v %q", err, out)
 	}
 }
+
+// The option snapshot ships in every executable, so it must not carry defaults that
+// describe the machine it was taken on: home and temporary folders, install prefixes
+// or the snapshot user's shell. Such defaults are recorded as null.
+func TestOptionDefaultsAreNotMachineSpecific(t *testing.T) {
+	markers := []string{"/Users/", "/home/", "/var/folders/", "/private/var/", "/opt/homebrew", "/usr/local/Cellar", "/nix/store", `C:\`, "/bin/zsh", "/bin/bash"}
+	for name, o := range LoadCatalog().Options {
+		value, ok := o.Default.(string)
+		if !ok {
+			continue
+		}
+		for _, m := range markers {
+			if strings.Contains(value, m) {
+				t.Errorf("options.json default for %s describes the snapshot machine (%q): record it as null", name, value)
+			}
+		}
+	}
+}
