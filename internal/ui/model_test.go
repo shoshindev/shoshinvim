@@ -106,21 +106,24 @@ func TestWelcomeOffersNoPresets(t *testing.T) {
 	}
 }
 
-func TestLogoGlyphsAreWellFormed(t *testing.T) {
-	for _, r := range logoWord {
-		g, ok := logoGlyphs[r]
-		if !ok || len(g) != logoRows {
-			t.Fatalf("glyph %q missing or not %d rows tall", r, logoRows)
-		}
-		for _, row := range g {
-			if len(row) != len(g[0]) || strings.Trim(row, "#.") != "" {
-				t.Fatalf("glyph %q has a ragged or invalid row %q", r, row)
-			}
-		}
-	}
+func TestLogoLinesHaveTheWordmarkWidth(t *testing.T) {
 	for _, line := range newTheme(true, true).Logo() {
 		if w := ansi.StringWidth(line); w != logoWidth() {
 			t.Fatalf("logo line is %d wide, want %d: %q", w, logoWidth(), line)
+		}
+	}
+}
+
+// Generated start screens use engine.LogoColors; they must stay the welcome's colors.
+func TestGeneratedLogoColorsMatchTheTheme(t *testing.T) {
+	for _, dark := range []bool{true, false} {
+		th := newTheme(dark, false)
+		want := engine.LogoColors(dark)
+		for y, c := range th.logo {
+			r, g, b, _ := c.RGBA()
+			if got := fmt.Sprintf("#%02X%02X%02X", r>>8, g>>8, b>>8); got != want[y] {
+				t.Fatalf("dark=%v row %d: theme %s, engine.LogoColors %s", dark, y, got, want[y])
+			}
 		}
 	}
 }

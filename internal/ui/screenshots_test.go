@@ -12,6 +12,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/shoshindev/shoshinvim/internal/engine"
 )
 
 // TestScreenshots draws the wordmark and setup screens as SVG files for the README:
@@ -247,15 +248,7 @@ func wordmarkSVG(t theme) []byte {
 	w := logoWidth()
 	var b strings.Builder
 	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">`+"\n", w*px, logoRows*py, w*px, logoRows*py)
-	for y := range logoRows {
-		var row strings.Builder
-		for i, r := range logoWord {
-			if i > 0 {
-				row.WriteByte('.')
-			}
-			row.WriteString(logoGlyphs[r][y])
-		}
-		pixels := row.String()
+	for y, pixels := range engine.LogoPixels() {
 		var d strings.Builder
 		for x := 0; x < len(pixels); {
 			n := len(pixels[x:]) - len(strings.TrimLeft(pixels[x:], pixels[x:x+1]))

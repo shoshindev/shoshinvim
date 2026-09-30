@@ -129,7 +129,7 @@
 <text x="36" y="383" fill="#98BB6C">✓</text>
 <text x="54 63 72" y="383" fill="#DCD7BA">Git</text>
 <text x="216 225 234 243 252" y="383" fill="#727169">Files</text>
-<text x="333 342" y="383" fill="#DCD7BA">17</text>
+<text x="333 342" y="383" fill="#DCD7BA">18</text>
 <text x="360 369 378" y="383" fill="#DCD7BA">new</text>
 <text x="396 405" y="383" fill="#DCD7BA">in</text>
 <text x="423 432 441 450 459 468 477 486 495 504 513 522 531 540" y="383" fill="#DCD7BA">~/.config/nvim</text>
@@ -178,7 +178,7 @@
 <text x="432" y="543" fill="#7E9CD8">◆</text>
 <text x="450 459 468 477 486 495 504 513 522 531 540" y="543" fill="#7E9CD8">recommended</text>
 <text x="261 270 279 288 297" y="563" fill="#727169">Write</text>
-<text x="315 324" y="563" fill="#727169">17</text>
+<text x="315 324" y="563" fill="#727169">18</text>
 <text x="342 351 360 369 378 387" y="563" fill="#727169">files,</text>
 <text x="405 414 423 432" y="563" fill="#727169">then</text>
 <text x="450 459 468 477 486 495 504 513" y="563" fill="#727169">download</text>
