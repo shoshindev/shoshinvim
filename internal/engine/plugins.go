@@ -77,6 +77,10 @@ func withRequirements(ids []string) []string {
 // Custom themes come from a repository the user names; they are pinned but not reviewed.
 const customThemeID = "custom-theme"
 
+// lazy.nvim counts itself installed only in a folder named after its repository, so it
+// lives in plugins/lazy.nvim. Earlier versions put it in plugins/lazy (see acquire).
+const lazyFolder, legacyLazyFolder = "lazy.nvim", "lazy"
+
 var (
 	repositoryPattern  = regexp.MustCompile(`^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$`)
 	revisionPattern    = regexp.MustCompile(`^[0-9a-f]{40}$`)
@@ -98,6 +102,9 @@ func source(s State, id string) (repository, revision, dir string, err error) {
 	p, ok := PluginInfo(id)
 	if !ok {
 		return "", "", "", fmt.Errorf("missing adapter %s", id)
+	}
+	if id == "lazy" {
+		return p.Repository, p.Revision, lazyFolder, nil
 	}
 	return p.Repository, p.Revision, id, nil
 }

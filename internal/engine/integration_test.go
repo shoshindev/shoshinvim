@@ -140,6 +140,16 @@ assert(found, 'no ` + filetype + ` window')`})
 		cases = append(cases, choice{"shortcuts " + style["keymaps.style"].(string), style, strings.Join(checks, "\n")})
 	}
 	cases = append(cases,
+		// Each plugin manager case has a data folder of its own, so lazy.nvim finds no other
+		// case's plugins there.
+		choice{"plugin manager", map[string]any{"git.hunks": "gitsigns"}, lazyCheck},
+		// Earlier versions downloaded lazy.nvim to plugins/lazy; downloading again moves it,
+		choice{"plugin manager moved from earlier folder", map[string]any{"git.hunks": "gitsigns"}, lazyCheck},
+		// and until then plugins still load from there.
+		choice{"plugin manager in earlier folder", map[string]any{"git.hunks": "gitsigns"}, "assert(package.loaded['gitsigns'], 'gitsigns not loaded')"},
+		// Files an earlier version generated, such as ones restored from history, find it
+		// through the link the move leaves.
+		choice{"plugin manager earlier files", map[string]any{"git.hunks": "gitsigns"}, lazyCheck},
 		choice{"shortcut command", map[string]any{"keymaps.style": "none"}, "assert(vim.fn.maparg('<leader>L', 'n'):find('Lazy'), 'custom command shortcut')"},
 		choice{"start snacks", map[string]any{"workspace.start_screen": "snacks"}, "assert(require('snacks').config.dashboard.enabled, 'dashboard off')\n" +
 			"Snacks.dashboard.open({ win = vim.api.nvim_get_current_win(), buf = vim.api.nvim_get_current_buf() })\n" + logoCheck},
@@ -400,6 +410,13 @@ assert(vim.lsp.config.lua_ls.settings.Lua.workspace.library[1] == vim.env.VIMRUN
 			if err != nil {
 				t.Fatal(err)
 			}
+			if c.name == "plugin manager earlier files" {
+				lua := files["lua/user_config/plugins.lua"]
+				files["lua/user_config/plugins.lua"] = strings.Replace(lua, "'/plugins/lazy.nvim'", "'/plugins/lazy'", 1)
+				if files["lua/user_config/plugins.lua"] == lua {
+					t.Fatal("plugins.lua no longer names the lazy.nvim folder")
+				}
+			}
 			for name, content := range files {
 				p := filepath.Join(target, filepath.FromSlash(name))
 				if err := os.MkdirAll(filepath.Dir(p), 0700); err != nil {
@@ -409,18 +426,36 @@ assert(vim.lsp.config.lua_ls.settings.Lua.workspace.library[1] == vim.env.VIMRUN
 					t.Fatal(err)
 				}
 			}
+			if strings.HasPrefix(c.name, "plugin manager") {
+				t.Setenv("XDG_DATA_HOME", filepath.Join(t.TempDir(), "data"))
+			}
 			actions, err := Actions(s, target)
 			if err != nil {
 				t.Fatal(err)
 			}
 			base, _ := Canonical(DataDirFor(target))
+			earlier := strings.Contains(c.name, "earlier")
+			if earlier {
+				a := actions[0]
+				a.Destination = filepath.Join(base, "plugins", legacyLazyFolder)
+				if _, err := acquire(context.Background(), base, nvim, a); err != nil {
+					t.Fatalf("download lazy.nvim to its earlier folder: %v", err)
+				}
+			}
 			for _, a := range actions {
 				if a.Kind == "mason" && !strings.HasPrefix(c.name, "language ") && !strings.HasPrefix(c.name, "basic server") && a.Package != "tree-sitter-cli" && a.Package != "markdownlint" && a.Package != "js-debug-adapter" {
 					continue // Only the language cases and the tools a case exercises are installed.
 				}
+				if a.ID == "lazy" && c.name == "plugin manager in earlier folder" {
+					continue // Saved without downloading: lazy.nvim stays where it was.
+				}
 				if !Installed(a) {
-					if err := acquire(context.Background(), base, nvim, a); err != nil {
+					note, err := acquire(context.Background(), base, nvim, a)
+					if err != nil {
 						t.Fatalf("download %s: %v", a.ID, err)
+					}
+					if a.ID == "lazy" && earlier && note == "" {
+						t.Fatal("lazy.nvim was downloaded again instead of moved from its earlier folder")
 					}
 				}
 			}
@@ -482,6 +517,15 @@ vim.cmd('qa!')`
 		}
 	}
 }
+
+// lazyCheck: lazy.nvim counts itself installed and finds nothing to clean, so :Lazy lists
+// no missing or unknown plugins.
+const lazyCheck = `local config = require('lazy.core.config')
+assert(config.plugins['lazy.nvim']._.installed, 'lazy.nvim does not count itself installed')
+local unknown = {}
+for _, p in ipairs(config.to_clean) do unknown[#unknown + 1] = p.name end
+assert(#unknown == 0, 'lazy.nvim would clean ' .. table.concat(unknown, ', '))
+assert(package.loaded['gitsigns'], 'gitsigns not loaded')`
 
 // tabsCheck: the tab row stays hidden until two files are open, so an empty start
 // screen gets no blank bar.
