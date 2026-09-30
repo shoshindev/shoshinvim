@@ -49,18 +49,19 @@ func lintLua(s State) string {
 			byFiletype = append(byFiletype, ft+" = { 'eslint_d' }")
 		}
 	}
-	return fmt.Sprintf(`local ok, lint = false, nil
-if not vim.g.shoshinvim_probe then ok, lint = pcall(require, 'lint') end
-if not ok then return end
+	return fmt.Sprintf(`if vim.g.shoshinvim_probe then return end
 local by_filetype = { %s }
 local needs_project = { eslint_d = { %s } }
+-- nvim-lint loads the first time a file it lints is opened.
 local function run(buf)
   local names = {}
   for _, name in ipairs(by_filetype[vim.bo[buf].filetype] or {}) do
     local markers = needs_project[name]
     if vim.fn.executable(name) == 1 and (not markers or vim.fs.root(buf, markers)) then names[#names + 1] = name end
   end
-  if #names > 0 then lint.try_lint(names) end
+  if #names == 0 then return end
+  local ok, lint = pcall(require, 'lint')
+  if ok then lint.try_lint(names) end
 end
 vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufWritePost', 'InsertLeave' }, {
   group = vim.api.nvim_create_augroup('ShoshinLint', { clear = true }),
@@ -77,9 +78,7 @@ func debugLua(s State) string {
 		return ""
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, `local ok, dap = false, nil
-if not vim.g.shoshinvim_probe then ok, dap = pcall(require, 'dap') end
-if not ok then return end
+	fmt.Fprintf(&b, `local dap = require('dap')
 -- js-debug-adapter is the VS Code JavaScript debugger, run as a server.
 dap.adapters['pwa-node'] = {
   type = 'server', host = 'localhost', port = '${port}',
@@ -103,6 +102,7 @@ for name, text in pairs(require('user_config.icons').dap) do
 end
 `)
 	}
+	toggle := ""
 	switch Value(s, "coding.debug", "none") {
 	case "nvim-dap-ui":
 		// kickstart's debug.lua settings: icons that work in every terminal, or the
@@ -117,32 +117,34 @@ end
 		}
 		setup := "{}"
 		if len(opts) > 0 {
-			setup = "{\n    " + strings.Join(opts, ",\n    ") + ",\n  }"
+			setup = "{\n  " + strings.Join(opts, ",\n  ") + ",\n}"
 		}
-		b.WriteString(`local ui_ok, dapui = pcall(require, 'dapui')
-if ui_ok then
-  dapui.setup(` + setup + `)
-  dap.listeners.after.event_initialized.shoshinvim = function() dapui.open() end
-  dap.listeners.before.event_terminated.shoshinvim = function() dapui.close() end
-  dap.listeners.before.event_exited.shoshinvim = function() dapui.close() end
-  vim.api.nvim_create_user_command('ShoshinDebugView', function() dapui.toggle() end, { desc = 'Toggle the debugger view' })
-end
+		b.WriteString(`local dapui = require('dapui')
+dapui.setup(` + setup + `)
+dap.listeners.after.event_initialized.shoshinvim = function() dapui.open() end
+dap.listeners.before.event_terminated.shoshinvim = function() dapui.close() end
+dap.listeners.before.event_exited.shoshinvim = function() dapui.close() end
 `)
+		toggle = "require('dapui').toggle()"
 	case "nvim-dap-view":
 		icons := `
-    icons = { collapsed = '▸ ', expanded = '▾ ', disabled = '○', enabled = '●', disconnect = '⏏', filter = 'f', negate = '! ',
-      pause = '⏸', play = '▶', run_last = '▶▶', step_back = 'b', step_into = '⏎', step_out = '⏮', step_over = '⏭', terminate = '⏹' },`
+  icons = { collapsed = '▸ ', expanded = '▾ ', disabled = '○', enabled = '●', disconnect = '⏏', filter = 'f', negate = '! ',
+    pause = '⏸', play = '▶', run_last = '▶▶', step_back = 'b', step_into = '⏎', step_out = '⏮', step_over = '⏭', terminate = '⏹' },`
 		if nerd {
 			icons = ""
 		}
-		b.WriteString(`local view_ok, view = pcall(require, 'dap-view')
-if view_ok then
-  view.setup({
-    auto_toggle = true,` + icons + `
-  })
-  vim.api.nvim_create_user_command('ShoshinDebugView', function() view.toggle() end, { desc = 'Toggle the debugger view' })
-end
+		b.WriteString(`require('dap-view').setup({
+  auto_toggle = true,` + icons + `
+})
 `)
+		toggle = "require('dap-view').toggle()"
 	}
-	return b.String()
+	// The debugger loads with its first shortcut or command; its view is set up with it.
+	return onLoad("nvim-dap", b.String()) + `vim.api.nvim_create_user_command('ShoshinDebugView', function()
+  if not pcall(require, 'dap') then -- Loads the debugger, and so sets its view up, first.
+    return vim.notify('nvim-dap is not installed yet. Open ShoshinVim and download plugins.', vim.log.levels.WARN)
+  end
+  ` + toggle + `
+end, { desc = 'Toggle the debugger view' })
+`
 }

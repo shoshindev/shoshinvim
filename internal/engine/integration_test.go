@@ -57,16 +57,16 @@ func TestChoicesInRealNeovim(t *testing.T) {
 			"appearance.custom_theme.revision": custom.Revision, "appearance.custom_theme.colorscheme": "kanagawa-dragon"},
 			activeColorscheme("kanagawa-dragon")},
 		choice{"git mini.diff", map[string]any{"git.hunks": "mini.diff"}, "assert(_G.MiniDiff, 'mini.diff not set up')"},
-		choice{"git gitsigns", map[string]any{"git.hunks": "gitsigns"}, "assert(package.loaded['gitsigns'], 'gitsigns not loaded')"},
+		choice{"git gitsigns", map[string]any{"git.hunks": "gitsigns"}, openFile + "assert(package.loaded['gitsigns'], 'gitsigns not loaded')"},
 		choice{"statusline lualine", map[string]any{"appearance.statusline": "lualine"}, "assert(package.loaded['lualine'] and vim.o.statusline:find('lualine'), vim.o.statusline)"},
 		choice{"statusline mini", map[string]any{"appearance.statusline": "mini.statusline"}, "assert(_G.MiniStatusline and vim.o.statusline:find('MiniStatusline'), vim.o.statusline)"},
 		choice{"tabs bufferline", map[string]any{"appearance.buffers": "bufferline"}, "assert(package.loaded['bufferline'], 'bufferline not loaded')\n" + tabsCheck},
 		choice{"tabs barbar", map[string]any{"appearance.buffers": "barbar"}, "assert(package.loaded['barbar'], 'barbar not loaded')\n" + tabsCheck},
 		choice{"tabs mini", map[string]any{"appearance.buffers": "mini.tabline"}, "assert(_G.MiniTabline and vim.o.tabline:find('MiniTabline'), vim.o.tabline)"},
 		choice{"completion blink", map[string]any{"completion.engine": "blink.cmp", "language.lua.lsp": true},
-			"assert(package.loaded['blink.cmp']); local c = vim.lsp.config['*']; assert(c and c.capabilities and c.capabilities.textDocument.completion.completionItem.snippetSupport, 'capabilities')"},
+			openFile + "assert(package.loaded['blink.cmp']); local c = vim.lsp.config['*']; assert(c and c.capabilities and c.capabilities.textDocument.completion.completionItem.snippetSupport, 'capabilities')"},
 		choice{"completion nvim-cmp", map[string]any{"completion.engine": "nvim-cmp", "language.lua.lsp": true},
-			"local cmp = require('cmp'); assert(#cmp.get_config().sources >= 3, 'sources'); local c = vim.lsp.config['*']; assert(c and c.capabilities and c.capabilities.textDocument.completion.completionItem.snippetSupport, 'capabilities')"},
+			openFile + "local cmp = require('cmp'); assert(#cmp.get_config().sources >= 3, 'sources'); local c = vim.lsp.config['*']; assert(c and c.capabilities and c.capabilities.textDocument.completion.completionItem.snippetSupport, 'capabilities')"},
 	)
 	for _, picker := range []string{"native", "snacks", "telescope", "fzf-lua", "mini.pick"} {
 		var commands []string
@@ -148,7 +148,7 @@ assert(found, 'no ` + filetype + ` window')`})
 		// Earlier versions downloaded lazy.nvim to plugins/lazy; downloading again moves it,
 		choice{"plugin manager moved from earlier folder", map[string]any{"git.hunks": "gitsigns"}, lazyCheck},
 		// and until then plugins still load from there.
-		choice{"plugin manager in earlier folder", map[string]any{"git.hunks": "gitsigns"}, "assert(package.loaded['gitsigns'], 'gitsigns not loaded')"},
+		choice{"plugin manager in earlier folder", map[string]any{"git.hunks": "gitsigns"}, openFile + "assert(package.loaded['gitsigns'], 'gitsigns not loaded')"},
 		// Files an earlier version generated, such as ones restored from history, find it
 		// through the link the move leaves.
 		choice{"plugin manager earlier files", map[string]any{"git.hunks": "gitsigns"}, lazyCheck},
@@ -156,11 +156,14 @@ assert(found, 'no ` + filetype + ` window')`})
 		choice{"start snacks", map[string]any{"workspace.start_screen": "snacks"}, "assert(require('snacks').config.dashboard.enabled, 'dashboard off')\n" +
 			"Snacks.dashboard.open({ win = vim.api.nvim_get_current_win(), buf = vim.api.nvim_get_current_buf() })\n" + logoCheck},
 		choice{"start mini.starter", map[string]any{"workspace.start_screen": "mini.starter"}, "assert(_G.MiniStarter, 'mini.starter not set up')\nMiniStarter.open()\n" + logoCheck},
-		choice{"indent blankline", map[string]any{"appearance.indent": "indent-blankline"}, "assert(package.loaded['ibl'], 'ibl not loaded')"},
+		choice{"indent blankline", map[string]any{"appearance.indent": "indent-blankline"}, openFile + "assert(package.loaded['ibl'], 'ibl not loaded')"},
 		choice{"indent snacks", map[string]any{"appearance.indent": "snacks"}, "assert(require('snacks').config.indent.enabled, 'snacks indent off')"},
-		choice{"indent mini", map[string]any{"appearance.indent": "mini.indentscope"}, "assert(_G.MiniIndentscope, 'mini.indentscope not set up')"},
+		choice{"indent mini", map[string]any{"appearance.indent": "mini.indentscope"}, openFile + "assert(_G.MiniIndentscope, 'mini.indentscope not set up')"},
 		choice{"notify snacks", map[string]any{"appearance.notifications": "snacks"}, "assert(require('snacks').config.notifier.enabled, 'notifier off')"},
-		choice{"notify fidget", map[string]any{"appearance.notifications": "fidget"}, "assert(package.loaded['fidget'], 'fidget not loaded')"},
+		// fidget loads when a language server attaches; the event stands in for one.
+		choice{"notify fidget", map[string]any{"appearance.notifications": "fidget"}, `assert(not package.loaded['fidget'], 'fidget loaded before a language server attached')
+vim.api.nvim_exec_autocmds('LspAttach', { buffer = 0, data = { client_id = 0 } })
+assert(package.loaded['fidget'], 'fidget not loaded')`},
 		choice{"hints mini.clue", map[string]any{"navigation.shortcuts": "mini.clue", "keymaps.style": "kickstart"}, "assert(_G.MiniClue, 'mini.clue not set up')"},
 		choice{"hints which-key", map[string]any{"navigation.shortcuts": "which-key", "keymaps.style": "lazyvim"}, "assert(package.loaded['which-key'], 'which-key not loaded')"},
 		choice{"icons nerd", map[string]any{"appearance.icons": "nerd", "appearance.statusline": "lualine", "appearance.buffers": "bufferline", "navigation.explorer": "neo-tree",
@@ -215,7 +218,7 @@ assert(vim.wait(2000, config.is_running), 'noice is not running')
 assert(config.options.lsp.progress.enabled == false, 'fidget keeps language server progress')
 assert(config.options.lsp.signature.enabled, 'noice shows signature help')
 assert(config.options.lsp.override['cmp.entry.get_documentation'], 'nvim-cmp documentation')`},
-		choice{"detect indent", map[string]any{"editor.detect_indent": "guess-indent"}, "assert(package.loaded['guess-indent'], 'guess-indent not loaded')"},
+		choice{"detect indent", map[string]any{"editor.detect_indent": "guess-indent"}, openFile + "assert(package.loaded['guess-indent'], 'guess-indent not loaded')"},
 		choice{"editor behaviors", map[string]any{"editor.highlight_yank": true, "editor.trim_whitespace": true, "editor.restore_cursor": true, "editor.spell_prose": true},
 			"local events = {}; for _, a in ipairs(vim.api.nvim_get_autocmds({ group = 'ShoshinEditor' })) do events[a.event] = true end; for _, e in ipairs({ 'TextYankPost', 'BufWritePre', 'BufReadPost', 'FileType' }) do assert(events[e], 'missing ' .. e) end"},
 	)
@@ -317,6 +320,66 @@ assert(#require('lint').get_running() == 0 and #vim.diagnostic.get(0) == 0, 'ESL
 		choice{"debug nvim-dap-view", map[string]any{"coding.debug": "nvim-dap-view", "tools.provider": "mason", "language.typescript.lsp": true, "keymaps.style": "lazyvim"},
 			debugSession + "\nassert(vim.fn.maparg('<leader>db', 'n') ~= '', 'Space db is not mapped')"},
 	)
+	// Plugins load when first needed: at startup only those that must, then with the first
+	// screen, the first file, the first typing and the first search.
+	full := map[string]any{"appearance.icons": "nerd", "appearance.statusline": "lualine", "appearance.buffers": "bufferline", "navigation.shortcuts": "which-key",
+		"keymaps.style": "kickstart", "navigation.picker": "telescope", "navigation.explorer": "neo-tree", "git.hunks": "gitsigns", "workspace.start_screen": "snacks",
+		"appearance.notifications": "snacks", "appearance.cmdline": "noice", "appearance.indent": "indent-blankline", "completion.engine": "blink.cmp",
+		"language.lua.lsp": true, "lsp.provider": "lspconfig", "formatting.provider": "conform", "tools.provider": "mason", "syntax.engine": "nvim-treesitter",
+		"coding.pairs": "nvim-autopairs", "coding.surround": "mini.surround", "coding.textobjects": "mini.ai", "coding.todo": "todo-comments",
+		"editor.detect_indent": "guess-indent", "appearance.colorscheme": "tokyonight"}
+	stages := map[string][]string{}
+	fullState := NewState()
+	for id, v := range full {
+		fullState.Values[id] = v
+	}
+	for _, id := range Plugins(fullState) {
+		rule := loadRules[id]
+		switch {
+		case rule.startup || id == themePlugin(fullState):
+			stages["startup"] = append(stages["startup"], id)
+		case slices.Contains(rule.events, "VeryLazy"):
+			stages["screen"] = append(stages["screen"], id)
+		case slices.Contains(rule.events, "BufNewFile"):
+			stages["file"] = append(stages["file"], id)
+		case slices.Contains(rule.events, "InsertEnter"):
+			stages["insert"] = append(stages["insert"], id)
+		}
+	}
+	stages["startup"] = append(stages["startup"], "lazy.nvim")
+	slices.Sort(stages["startup"])
+	cases = append(cases, choice{"startup loading", full, `local function loaded()
+  local names = {}
+  for _, p in ipairs(require('lazy').plugins()) do
+    if p._.loaded then names[#names + 1] = p.name end
+  end
+  table.sort(names)
+  return names
+end
+local function expect(when, names)
+  local now = {}
+  for _, name in ipairs(loaded()) do now[name] = true end
+  for _, name in ipairs(names) do
+    assert(now[name], name .. ' did not load ' .. when .. '; loaded: ' .. table.concat(loaded(), ' '))
+  end
+end
+local start = table.concat(loaded(), ' ')
+assert(start == ` + LuaString(strings.Join(stages["startup"], " ")) + `, 'loaded at startup: ' .. start)
+` + firstScreenDrawn + `
+expect('with the first screen', { ` + luaList(stages["screen"]) + ` })
+` + openFile + `expect('with the first file', { ` + luaList(stages["file"]) + ` })
+vim.api.nvim_feedkeys(vim.keycode('i<Esc>'), 'mx', false)
+expect('when typing', { ` + luaList(stages["insert"]) + ` })
+vim.cmd('ShoshinFiles')
+expect('when searching', { 'telescope' })
+-- Set up as it loads, so even the first picker has the chosen layout.
+local prompt
+assert(vim.wait(4000, function()
+  prompt = vim.api.nvim_get_current_buf()
+  return vim.bo[prompt].filetype == 'TelescopePrompt'
+end, 50), 'no Telescope prompt')
+local picker = require('telescope.actions.state').get_current_picker(prompt)
+assert(picker.sorting_strategy == 'ascending', 'the first picker was opened before Telescope was set up')`})
 	// Themes style the plugins chosen with them: each group below is set by the theme
 	// itself (colors, not the plugin's default link).
 	workspace := map[string]any{"git.hunks": "gitsigns", "navigation.picker": "telescope", "navigation.explorer": "neo-tree", "navigation.shortcuts": "which-key",
@@ -565,7 +628,13 @@ assert(vim.lsp.config.lua_ls.settings.Lua.workspace.library[1] == vim.env.VIMRUN
 				}
 			}
 			tmp := t.TempDir()
-			script := "local ok, err = pcall(function()\n" + c.check + "\nend)\n" + swatchLua + `
+			check := c.check
+			if !strings.HasPrefix(c.name, "startup ") { // Checked before the first screen is drawn.
+				check = firstScreenDrawn + "\n" + check
+			}
+			script := "local ok, err = pcall(function()\n" + check + "\nend)\n" + swatchLua + `
+local has_plugins, plugins = pcall(require, 'user_config.plugins')
+if ok and has_plugins and type(plugins) == 'table' and #plugins.errors > 0 then ok, err = false, table.concat(plugins.errors, '\n') end
 local messages = vim.api.nvim_exec2('messages', { output = true }).output
 if ok and (messages:find('Error') or messages:find('E%d+:')) then ok, err = false, messages end
 io.stdout:write(ok and 'RESULT ok\n' or ('RESULT fail: ' .. tostring(err) .. '\n'))
@@ -623,6 +692,16 @@ vim.cmd('qa!')`
 	}
 }
 
+// openFile opens a new file, which loads the plugins that wait for the first file.
+const openFile = "vim.cmd.edit(vim.fn.tempname() .. '.lua')\n"
+
+// firstScreenDrawn does what lazy.nvim does once a UI has drawn Neovim's first screen: load the
+// plugins waiting for VeryLazy. A headless Neovim has no UI, so it never happens there.
+const firstScreenDrawn = `if package.loaded['lazy'] and not vim.g.did_very_lazy then
+  vim.g.did_very_lazy = true
+  vim.api.nvim_exec_autocmds('User', { pattern = 'VeryLazy', modeline = false })
+end`
+
 // lazyCheck: lazy.nvim counts itself installed and finds nothing to clean, so :Lazy lists
 // no missing or unknown plugins.
 const lazyCheck = `local config = require('lazy.core.config')
@@ -630,7 +709,7 @@ assert(config.plugins['lazy.nvim']._.installed, 'lazy.nvim does not count itself
 local unknown = {}
 for _, p in ipairs(config.to_clean) do unknown[#unknown + 1] = p.name end
 assert(#unknown == 0, 'lazy.nvim would clean ' .. table.concat(unknown, ', '))
-assert(package.loaded['gitsigns'], 'gitsigns not loaded')`
+` + openFile + `assert(package.loaded['gitsigns'], 'gitsigns not loaded')`
 
 // tabsCheck: the tab row stays hidden until two files are open, so an empty start
 // screen gets no blank bar.
@@ -653,9 +732,9 @@ const nerdIconsCheck = `local function has_glyph(text)
     if c >= 0xE000 and c <= 0xF8FF or c >= 0xF0000 then return true end
   end
 end
-assert(_G.MiniIcons, 'mini.icons not set up')
 local icon = require('nvim-web-devicons').get_icon('init.lua', 'lua')
 assert(icon and has_glyph(icon), 'no file icon: ' .. tostring(icon))
+assert(_G.MiniIcons, 'mini.icons not set up')
 assert(require('lualine').get_config().options.icons_enabled, 'status line icons off')
 Snacks.dashboard.open({ win = vim.api.nvim_get_current_win(), buf = vim.api.nvim_get_current_buf() })
 local shown = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n')

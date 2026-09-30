@@ -114,20 +114,16 @@ func Generate(s State) (map[string]string, error) {
 `)
 	}
 	if Value(s, "formatting.provider", "native") == "conform" {
-		add("formatting", `local ok, conform = false, nil
-if not vim.g.shoshinvim_probe then ok, conform = pcall(require, 'conform') end
-if ok then
-  conform.setup({ formatters = {
-`+formatterCommands(s)+`  }, formatters_by_ft = { `+formattersByFiletype(s)+` }`+func() string {
-			if Enabled(s, "formatting.on_save") {
-				return ", format_on_save = { timeout_ms = 2000, lsp_format = 'fallback' }"
-			}
-			return ""
-		}()+` })
-  vim.api.nvim_create_user_command('ShoshinFormat', function() conform.format({ async = true, lsp_format = 'fallback' }) end, {})
-else
-  vim.api.nvim_create_user_command('ShoshinFormat', function() vim.lsp.buf.format({ async = true }) end, {})
-end
+		onSave := ""
+		if Enabled(s, "formatting.on_save") {
+			onSave = ", format_on_save = { timeout_ms = 2000, lsp_format = 'fallback' }"
+		}
+		add("formatting", onLoad("conform", "require('conform').setup({ formatters = {\n"+formatterCommands(s)+"}, formatters_by_ft = { "+formattersByFiletype(s)+" }"+onSave+" })")+
+			`-- conform once it is downloaded, the language server until then.
+vim.api.nvim_create_user_command('ShoshinFormat', function()
+  local ok, conform = pcall(require, 'conform')
+  if ok then conform.format({ async = true, lsp_format = 'fallback' }) else vim.lsp.buf.format({ async = true }) end
+end, {})
 `)
 	} else {
 		body := "vim.api.nvim_create_user_command('ShoshinFormat', function() vim.lsp.buf.format({ async = true }) end, {})\n"
@@ -202,17 +198,42 @@ func pluginLua(s State) string {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString(`if vim.g.shoshinvim_probe then return end
+	b.WriteString(`-- Plugins load when first needed. The other modules set each one up through on_load,
+-- which runs as lazy.nvim loads it; setup errors are kept in M.errors.
+local M = { errors = {}, setups = {} }
+local function run(name, setup)
+  local done, err = pcall(setup)
+  if not done then
+    M.errors[#M.errors + 1] = name .. ': ' .. tostring(err)
+    vim.notify('ShoshinVim could not set up ' .. name .. ': ' .. tostring(err), vim.log.levels.ERROR)
+  end
+end
+-- configure is every plugin's config: its options, applied as lazy.nvim does, then the
+-- setups registered for it, before the code that loaded it goes on.
+function M.configure(plugin, opts)
+  if plugin.opts ~= nil then require(require('lazy.core.loader').get_main(plugin)).setup(opts) end
+  for _, setup in ipairs(M.setups[plugin.name] or {}) do run(plugin.name, setup) end
+  M.setups[plugin.name] = nil
+end
+function M.on_load(name, setup)
+  local ok, config = pcall(require, 'lazy.core.config')
+  local plugin = ok and config.plugins[name]
+  if not plugin then return end -- Not downloaded yet.
+  if plugin._.loaded then return run(name, setup) end
+  M.setups[name] = M.setups[name] or {}
+  table.insert(M.setups[name], setup)
+end
+if vim.g.shoshinvim_probe then return M end
 local base = vim.fn.stdpath('data') .. '/shoshinvim'
 local lazy_path = base .. '/plugins/lazy.nvim'
 if not vim.uv.fs_stat(lazy_path .. '/lua/lazy/init.lua') then
   lazy_path = base .. '/plugins/lazy' -- Earlier versions downloaded it here; downloading again moves it.
-  if not vim.uv.fs_stat(lazy_path .. '/lua/lazy/init.lua') then return end
+  if not vim.uv.fs_stat(lazy_path .. '/lua/lazy/init.lua') then return M end
 end
 vim.opt.rtp:prepend(lazy_path)
 local specs = {}
 local function installed(name, spec)
-  spec.dir = base .. '/plugins/' .. name
+  spec.dir, spec.config = base .. '/plugins/' .. name, M.configure
   if vim.uv.fs_stat(spec.dir) then specs[#specs + 1] = spec end
 end
 `)
@@ -271,9 +292,13 @@ end
 			config = ", main = 'mini.icons', opts = {}, init = function()\n  package.preload['nvim-web-devicons'] = function()\n    require('mini.icons').mock_nvim_web_devicons()\n    return package.loaded['nvim-web-devicons']\n  end\nend"
 		case id == "mason":
 			config = ", opts = { PATH = 'prepend', install_root_dir = base .. '/mason', ui = { icons = { package_installed = '✓', package_pending = '➜', package_uninstalled = '✗' } } }"
+		case id == "lualine", id == "mini.statusline":
+			// LazyVim's: until the status line loads, files get an empty bar and the start
+			// screen none, instead of Neovim's own for a moment. Its setup restores it.
+			config = ", init = function()\n  -- Until it loads: an empty bar in files and none on the start screen (LazyVim's).\n  vim.g.shoshinvim_laststatus = vim.o.laststatus\n  if vim.fn.argc(-1) > 0 then vim.o.statusline = ' ' else vim.o.laststatus = 0 end\nend"
 		}
 		// lazy.nvim expects a plugin inside its root to live at root/<name>.
-		fmt.Fprintf(&b, "installed(%s, { name = %s, lazy = false%s })\n", LuaString(dir), LuaString(dir), config)
+		fmt.Fprintf(&b, "installed(%s, { name = %s, %s%s })\n", LuaString(dir), LuaString(dir), loadFields(s, id), config)
 	}
 	// lazy.nvim resets the runtime path to Neovim's own config folder; keep this one too,
 	// so `nvim -u <target>/init.lua` still finds the modules loaded after plugins.
@@ -285,6 +310,7 @@ require('lazy').setup(specs, {
   pkg = { enabled = false }, local_spec = false,
   performance = { rtp = { paths = { config_root } } },` + lazyUI(s) + `
 })
+return M
 `)
 	return b.String()
 }
@@ -372,7 +398,7 @@ func formatterCommands(s State) string {
 	var b strings.Builder
 	for _, f := range Formatters(s) {
 		if cmd := toolCommand(s, f.Command); cmd != f.Command {
-			fmt.Fprintf(&b, "    [%s] = { command = %s },\n", LuaString(f.Name), LuaString(cmd))
+			fmt.Fprintf(&b, "  [%s] = { command = %s },\n", LuaString(f.Name), LuaString(cmd))
 		}
 	}
 	return b.String()
