@@ -88,14 +88,13 @@ func Generate(s State) (map[string]string, error) {
 	}
 	autocmds.WriteString(editorAutocmds(s))
 	add("autocmds", autocmds.String())
+	add("icons", iconsLua(s))
 	add("plugins", pluginLua(s))
 	add("syntax", syntaxLua(s))
 	add("appearance", appearanceLua(s))
 	add("navigation", navigationLua(s))
 	add("git", gitLua(s))
-	if _, ok := s.Values["diagnostics.virtual_text"]; ok {
-		add("diagnostics", "vim.diagnostic.config({ virtual_text = "+Lua(s.Values["diagnostics.virtual_text"])+", severity_sort = true })\n")
-	}
+	add("diagnostics", diagnosticsLua(s))
 	add("lsp", completionCapabilities(s)+lspLua(s))
 	if engine := completionEngineLua(s); engine != "" {
 		add("completion", engine)
@@ -187,6 +186,9 @@ func Plugins(s State) []string {
 	if p := themePlugin(s); p != "" {
 		set[p] = true
 	}
+	if nerdIcons(s) {
+		set["mini.icons"] = true
+	}
 	if !needsTools(s) {
 		delete(set, "mason") // Chosen, but nothing needs a separate program.
 	}
@@ -214,6 +216,9 @@ end
 	if Value(s, "appearance.buffers", "native") == "barbar" {
 		b.WriteString("vim.g.barbar_auto_setup = false -- configured in appearance.lua\n")
 	}
+	if nerdIcons(s) && Value(s, "workspace.start_screen", "none") == "snacks" {
+		b.WriteString("local icons = require('user_config.icons') -- for the start screen\n")
+	}
 	for _, id := range Plugins(s) {
 		_, _, dir, err := source(s, id)
 		if err != nil {
@@ -226,7 +231,11 @@ end
 		case id == themePlugin(s):
 			config = ", priority = 1000"
 		case id == "mini.pick", id == "mini.files":
-			config = fmt.Sprintf(", main = %s, opts = {}", LuaString(id))
+			opts := miniPlainIcons[id]
+			if nerdIcons(s) {
+				opts = "{}" // Icons come from mini.icons.
+			}
+			config = fmt.Sprintf(", main = %s, opts = %s", LuaString(id), opts)
 		case id == "guess-indent":
 			config = ", main = 'guess-indent', opts = {}"
 		case id == "mini.diff":
@@ -251,6 +260,10 @@ end
 		case id == "mini.ai":
 			// kickstart's settings; aa and ii avoid Neovim 0.12's an/in selection keys.
 			config = ", main = 'mini.ai', opts = { n_lines = 500, mappings = { around_next = 'aa', inside_next = 'ii' } }"
+		case id == "mini.icons":
+			// Plugins that look for nvim-web-devicons get mini.icons instead (LazyVim's setup).
+			// init runs before any plugin loads, so the first lookup finds it.
+			config = ", main = 'mini.icons', opts = {}, init = function()\n  package.preload['nvim-web-devicons'] = function()\n    require('mini.icons').mock_nvim_web_devicons()\n    return package.loaded['nvim-web-devicons']\n  end\nend"
 		case id == "mason":
 			config = ", opts = { PATH = 'prepend', install_root_dir = base .. '/mason' }"
 		}
@@ -265,10 +278,50 @@ require('lazy').setup(specs, {
   install = { missing = false }, checker = { enabled = false },
   change_detection = { enabled = false }, rocks = { enabled = false },
   pkg = { enabled = false }, local_spec = false,
-  performance = { rtp = { paths = { config_root } } },
+  performance = { rtp = { paths = { config_root } } },` + lazyIcons(s) + `
 })
 `)
 	return b.String()
+}
+
+// miniPlainIcons keep mini.files and mini.pick from drawing their Nerd Font fallback
+// icons when there is no icon plugin.
+var miniPlainIcons = map[string]string{
+	"mini.files": "{ content = { prefix = function(entry)\n  if entry.fs_type == 'directory' then return '▸ ', 'MiniFilesDirectory' end\n  return '  ', 'MiniFilesFile'\nend } }",
+	"mini.pick":  "{ source = { show = function(buf, items, query) require('mini.pick').default_show(buf, items, query) end } }",
+}
+
+// lazyIcons gives lazy.nvim's window kickstart.nvim's symbols for terminals without a
+// Nerd Font (favorite and import, which kickstart leaves out, added).
+func lazyIcons(s State) string {
+	if nerdIcons(s) {
+		return ""
+	}
+	return `
+  ui = { icons = { cmd = '⌘', config = '🛠', event = '📅', favorite = '★', ft = '📂', init = '⚙', import = '↳', keys = '🗝',
+    plugin = '🔌', runtime = '💻', require = '🌙', source = '📄', start = '🚀', task = '📌', lazy = '💤 ' } },`
+}
+
+// diagnosticsLua shows diagnostics with the chosen icons in the sign column.
+func diagnosticsLua(s State) string {
+	if !diagnosticsChosen(s) {
+		return ""
+	}
+	return `local icons = require('user_config.icons').diagnostics
+vim.diagnostic.config({
+  virtual_text = ` + Lua(s.Values["diagnostics.virtual_text"]) + `,
+  severity_sort = true,
+  signs = { text = {
+    [vim.diagnostic.severity.ERROR] = icons.Error, [vim.diagnostic.severity.WARN] = icons.Warn,
+    [vim.diagnostic.severity.INFO] = icons.Info, [vim.diagnostic.severity.HINT] = icons.Hint,
+  } },
+})
+`
+}
+
+func diagnosticsChosen(s State) bool {
+	_, ok := s.Values["diagnostics.virtual_text"]
+	return ok
 }
 
 func toolCommand(s State, name string) string {

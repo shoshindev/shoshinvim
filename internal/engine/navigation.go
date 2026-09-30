@@ -71,13 +71,18 @@ var nativeCommands = map[string]string{
 	"ShoshinConfigFiles": "vim.cmd.edit(vim.fn.fnameescape(config_root()))",
 }
 
-// Explorers: how to open each one, and setup to run once it is loaded.
-var explorers = map[string]struct{ module, open, setup string }{
-	"snacks":     {"snacks", "m.explorer()", ""},
-	"neo-tree":   {"neo-tree", "vim.cmd('Neotree toggle reveal')", "m.setup({ default_component_configs = { icon = { folder_closed = '+', folder_open = '-', folder_empty = '-', default = ' ' }, git_status = { symbols = { added = '+', modified = '~', deleted = 'x', renamed = '>', untracked = '?', ignored = '.', unstaged = '*', staged = '+', conflict = '!' } } }, filesystem = { follow_current_file = { enabled = true } } })"},
-	"nvim-tree":  {"nvim-tree", "require('nvim-tree.api').tree.toggle({ find_file = true })", "m.setup({ renderer = { icons = { show = { file = false }, glyphs = { folder = { arrow_closed = '>', arrow_open = 'v', default = '+', open = '-', empty = '+', empty_open = '-', symlink = '@', symlink_open = '@' }, git = { unstaged = '*', staged = '+', unmerged = '!', renamed = '>', untracked = '?', deleted = 'x', ignored = '.' } } } } })"},
-	"oil":        {"oil", "m.open()", ""},
-	"mini.files": {"mini.files", "local path = vim.api.nvim_buf_get_name(0); m.open(path ~= '' and path or nil)", ""},
+// Explorers: how to open each one, and setup to run once it is loaded, with plain
+// symbols in place of their Nerd Font icons, or with icons.
+var explorers = map[string]struct{ module, open, setup, nerdSetup string }{
+	"snacks": {"snacks", "m.explorer()", "", ""},
+	"neo-tree": {"neo-tree", "vim.cmd('Neotree toggle reveal')",
+		"m.setup({ default_component_configs = { indent = { expander_collapsed = '▸', expander_expanded = '▾' }, icon = { folder_closed = '+', folder_open = '-', folder_empty = '-', folder_empty_open = '-', selected = '*', default = ' ' }, git_status = { symbols = { added = '+', modified = '~', deleted = 'x', renamed = '>', untracked = '?', ignored = '.', unstaged = '*', staged = '+', conflict = '!' } } }, filesystem = { follow_current_file = { enabled = true } } })",
+		"m.setup({ filesystem = { follow_current_file = { enabled = true } } })"},
+	"nvim-tree": {"nvim-tree", "require('nvim-tree.api').tree.toggle({ find_file = true })",
+		"m.setup({ renderer = { icons = { show = { file = false }, glyphs = { bookmark = '*', hidden = 'h', folder = { arrow_closed = '>', arrow_open = 'v', default = '+', open = '-', empty = '+', empty_open = '-', symlink = '@', symlink_open = '@' }, git = { unstaged = '*', staged = '+', unmerged = '!', renamed = '>', untracked = '?', deleted = 'x', ignored = '.' } } } } })",
+		"m.setup({})"},
+	"oil":        {"oil", "m.open()", "", ""},
+	"mini.files": {"mini.files", "local path = vim.api.nvim_buf_get_name(0); m.open(path ~= '' and path or nil)", "", ""},
 }
 
 func navigationLua(s State) string {
@@ -111,8 +116,12 @@ end
 		if explorer == "nvim-tree" {
 			b.WriteString("vim.g.loaded_netrw, vim.g.loaded_netrwPlugin = 1, 1 -- nvim-tree replaces netrw\n")
 		}
-		if e.setup != "" {
-			fmt.Fprintf(&b, "if not vim.g.shoshinvim_probe then\n  local ok, m = pcall(require, %s)\n  if ok then %s end\nend\n", LuaString(e.module), e.setup)
+		setup := e.setup
+		if nerdIcons(s) {
+			setup = e.nerdSetup
+		}
+		if setup != "" {
+			fmt.Fprintf(&b, "if not vim.g.shoshinvim_probe then\n  local ok, m = pcall(require, %s)\n  if ok then %s end\nend\n", LuaString(e.module), setup)
 		}
 		fmt.Fprintf(&b, "command(\"ShoshinExplore\", with(%s, function(m) %s end), \"Project explorer\")\n", LuaString(e.module), e.open)
 	} else {

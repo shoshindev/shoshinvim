@@ -14,7 +14,7 @@ The Workspace section's **Your shortcuts** step lists every key you will have, g
 
 ## In Neovim
 
-With the recommended kickstart.nvim shortcuts, press **Space** and pause inside Neovim to see what comes next. **Space ?** opens a guide to the keys actually configured; **Space sf** finds files; **Space sg** searches text; **Space Space** lists open buffers; **Space f** formats; **`\`** opens the explorer. The LazyVim style uses LazyVim's keys instead (**Space Space** finds files, **Space e** explorer, **Space cf** formats, **Shift H/L** switches buffers). Completion uses **Ctrl Space** to request, **Ctrl n/p** to select, and **Ctrl y** to accept. Enter keeps its normal behavior. The default interface does not require a Nerd Font.
+With the recommended kickstart.nvim shortcuts, press **Space** and pause inside Neovim to see what comes next. **Space ?** opens a guide to the keys actually configured; **Space sf** finds files; **Space sg** searches text; **Space Space** lists open buffers; **Space f** formats; **`\`** opens the explorer. The LazyVim style uses LazyVim's keys instead (**Space Space** finds files, **Space e** explorer, **Space cf** formats, **Shift H/L** switches buffers). Completion uses **Ctrl Space** to request, **Ctrl n/p** to select, and **Ctrl y** to accept. Enter keeps its normal behavior. Icons need a Nerd Font: the Appearance step shows a few glyphs, and if they look like boxes or question marks, plain symbols keep every screen readable. Ghostty, WezTerm and kitty include the glyphs, so ShoshinVim recommends icons there or when a Nerd Font is installed.
 
 ## CLI
 

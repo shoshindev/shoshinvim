@@ -46,19 +46,22 @@
 <text x="459 468 477 486 495" y="163" fill="#DCD7BA">Night</text>
 <text x="513 522 531 540 549 558 567" y="163" fill="#DCD7BA">variant</text>
 <text x="585" y="163" fill="#DCD7BA">·</text>
-<text x="603 612 621 630 639 648 657" y="163" fill="#DCD7BA">lualine</text>
-<text x="675" y="163" fill="#DCD7BA">·</text>
-<text x="693 702 711 720 729 738 747 756 765 774" y="163" fill="#DCD7BA">bufferline</text>
-<text x="792" y="163" fill="#DCD7BA">·</text>
-<text x="810 819 828 837 846 855 864 873 882 891 900 909 918 927 936 945" y="163" fill="#DCD7BA">indent-blankline</text>
-<text x="963" y="163" fill="#DCD7BA">·</text>
+<text x="603 612 621 630 639" y="163" fill="#DCD7BA">plain</text>
+<text x="657 666 675 684 693 702 711" y="163" fill="#DCD7BA">symbols</text>
+<text x="729" y="163" fill="#DCD7BA">·</text>
+<text x="747 756 765 774 783 792 801" y="163" fill="#DCD7BA">lualine</text>
+<text x="819" y="163" fill="#DCD7BA">·</text>
+<text x="837 846 855 864 873 882 891 900 909 918" y="163" fill="#DCD7BA">bufferline</text>
+<text x="936" y="163" fill="#DCD7BA">·</text>
 <text x="36" y="183" fill="#98BB6C">✓</text>
 <text x="54 63 72 81 90 99 108 117 126" y="183" fill="#DCD7BA">Workspace</text>
-<text x="333 342 351 360 369 378" y="183" fill="#DCD7BA">Snacks</text>
-<text x="396 405 414 423 432 441 450 459 468 477 486 495 504" y="183" fill="#DCD7BA">notifications</text>
-<text x="522" y="183" fill="#DCD7BA">·</text>
-<text x="540 549 558 567 576 585 594" y="183" fill="#DCD7BA">rounded</text>
-<text x="612 621 630 639 648 657 666" y="183" fill="#DCD7BA">borders</text>
+<text x="333 342 351 360 369 378 387 396 405 414 423 432 441 450 459 468" y="183" fill="#DCD7BA">indent-blankline</text>
+<text x="486" y="183" fill="#DCD7BA">·</text>
+<text x="504 513 522 531 540 549" y="183" fill="#DCD7BA">Snacks</text>
+<text x="567 576 585 594 603 612 621 630 639 648 657 666 675" y="183" fill="#DCD7BA">notifications</text>
+<text x="693" y="183" fill="#DCD7BA">·</text>
+<text x="711 720 729 738 747 756 765" y="183" fill="#DCD7BA">rounded</text>
+<text x="783 792 801 810 819 828 837" y="183" fill="#DCD7BA">borders</text>
 <text x="216 225 234 243 252 261 270 279 288" y="203" fill="#727169">Workspace</text>
 <text x="333 342 351 360 369 378 387 396 405 414 423 432 441 450" y="203" fill="#DCD7BA">kickstart.nvim</text>
 <text x="468 477 486 495 504 513 522 531 540" y="203" fill="#DCD7BA">shortcuts</text>
@@ -129,7 +132,7 @@
 <text x="36" y="383" fill="#98BB6C">✓</text>
 <text x="54 63 72" y="383" fill="#DCD7BA">Git</text>
 <text x="216 225 234 243 252" y="383" fill="#727169">Files</text>
-<text x="333 342" y="383" fill="#DCD7BA">18</text>
+<text x="333 342" y="383" fill="#DCD7BA">19</text>
 <text x="360 369 378" y="383" fill="#DCD7BA">new</text>
 <text x="396 405" y="383" fill="#DCD7BA">in</text>
 <text x="423 432 441 450 459 468 477 486 495 504 513 522 531 540" y="383" fill="#DCD7BA">~/.config/nvim</text>
@@ -178,7 +181,7 @@
 <text x="432" y="543" fill="#7E9CD8">◆</text>
 <text x="450 459 468 477 486 495 504 513 522 531 540" y="543" fill="#7E9CD8">recommended</text>
 <text x="261 270 279 288 297" y="563" fill="#727169">Write</text>
-<text x="315 324" y="563" fill="#727169">18</text>
+<text x="315 324" y="563" fill="#727169">19</text>
 <text x="342 351 360 369 378 387" y="563" fill="#727169">files,</text>
 <text x="405 414 423 432" y="563" fill="#727169">then</text>
 <text x="450 459 468 477 486 495 504 513" y="563" fill="#727169">download</text>

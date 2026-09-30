@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -161,6 +163,11 @@ assert(found, 'no ` + filetype + ` window')`})
 		choice{"notify fidget", map[string]any{"appearance.notifications": "fidget"}, "assert(package.loaded['fidget'], 'fidget not loaded')"},
 		choice{"hints mini.clue", map[string]any{"navigation.shortcuts": "mini.clue", "keymaps.style": "kickstart"}, "assert(_G.MiniClue, 'mini.clue not set up')"},
 		choice{"hints which-key", map[string]any{"navigation.shortcuts": "which-key", "keymaps.style": "lazyvim"}, "assert(package.loaded['which-key'], 'which-key not loaded')"},
+		choice{"icons nerd", map[string]any{"appearance.icons": "nerd", "appearance.statusline": "lualine", "appearance.buffers": "bufferline", "navigation.explorer": "neo-tree",
+			"navigation.shortcuts": "which-key", "keymaps.style": "lazyvim", "workspace.start_screen": "snacks"}, nerdIconsCheck},
+		choice{"icons plain", map[string]any{"appearance.icons": "plain", "appearance.statusline": "lualine", "appearance.buffers": "bufferline", "navigation.explorer": "neo-tree",
+			"navigation.picker": "snacks", "appearance.notifications": "snacks", "navigation.shortcuts": "which-key", "keymaps.style": "lazyvim",
+			"completion.engine": "blink.cmp", "language.lua.lsp": true}, plainIconsCheck},
 		choice{"detect indent", map[string]any{"editor.detect_indent": "guess-indent"}, "assert(package.loaded['guess-indent'], 'guess-indent not loaded')"},
 		choice{"editor behaviors", map[string]any{"editor.highlight_yank": true, "editor.trim_whitespace": true, "editor.restore_cursor": true, "editor.spell_prose": true},
 			"local events = {}; for _, a in ipairs(vim.api.nvim_get_autocmds({ group = 'ShoshinEditor' })) do events[a.event] = true end; for _, e in ipairs({ 'TextYankPost', 'BufWritePre', 'BufReadPost', 'FileType' }) do assert(events[e], 'missing ' .. e) end"},
@@ -263,6 +270,25 @@ assert(#require('lint').get_running() == 0 and #vim.diagnostic.get(0) == 0, 'ESL
 		choice{"debug nvim-dap-view", map[string]any{"coding.debug": "nvim-dap-view", "tools.provider": "mason", "language.typescript.lsp": true, "keymaps.style": "lazyvim"},
 			debugSession + "\nassert(vim.fn.maparg('<leader>db', 'n') ~= '', 'Space db is not mapped')"},
 	)
+	// Each interface choice also works with Nerd Font icons, which changes its setup.
+	for _, c := range slices.Clone(cases) {
+		for _, prefix := range []string{"statusline ", "tabs ", "finder ", "explorer ", "completion ", "start ", "hints ", "debug nvim-dap-view"} {
+			if strings.HasPrefix(c.name, prefix) {
+				values := maps.Clone(c.values)
+				values["appearance.icons"] = "nerd"
+				check := c.check
+				switch c.name {
+				case "tabs bufferline", "tabs barbar":
+					check += "\nassert(" + hasGlyph + "(vim.api.nvim_eval_statusline(vim.o.tabline, { use_tabline = true }).str), 'no file icons in the tab row')"
+				case "debug nvim-dap-view":
+					check += "\nassert(" + hasGlyph + "(vim.fn.sign_getdefined('DapBreakpoint')[1].text), 'breakpoint sign has no icon')"
+				case "explorer nvim-tree", "explorer neo-tree", "explorer mini.files", "explorer oil":
+					check += "\nvim.wait(500)\nlocal shown = ''\nfor _, w in ipairs(vim.api.nvim_list_wins()) do\n  local b = vim.api.nvim_win_get_buf(w)\n  shown = shown .. table.concat(vim.api.nvim_buf_get_lines(b, 0, -1, false), '\\n')\n  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(b, -1, 0, -1, { details = true })) do\n    for _, chunk in ipairs(m[4].virt_text or {}) do shown = shown .. chunk[1] end\n  end\nend\nassert(" + hasGlyph + "(shown), 'no icons in the explorer: ' .. shown)"
+				}
+				cases = append(cases, choice{"nerd " + c.name, values, check})
+			}
+		}
+	}
 	// Every language: its server attaches in a small project, Tree-sitter parses the file,
 	// and its formatter (when it has one) rewrites messy code as expected.
 	type sample struct {
@@ -540,3 +566,76 @@ for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, -1, 0, -1, { details = true 
 end
 assert(cells > 0, 'no wordmark on the start screen')
 assert(vim.api.nvim_get_hl(0, { name = 'ShoshinLogo1' }).bg, 'wordmark has no color')`
+
+// nerdIconsCheck: mini.icons answers for nvim-web-devicons, so the file tree, status
+// line and start screen show Nerd Font icons.
+const nerdIconsCheck = `local function has_glyph(text)
+  for _, c in ipairs(vim.fn.str2list(text)) do
+    if c >= 0xE000 and c <= 0xF8FF or c >= 0xF0000 then return true end
+  end
+end
+assert(_G.MiniIcons, 'mini.icons not set up')
+local icon = require('nvim-web-devicons').get_icon('init.lua', 'lua')
+assert(icon and has_glyph(icon), 'no file icon: ' .. tostring(icon))
+assert(require('lualine').get_config().options.icons_enabled, 'status line icons off')
+Snacks.dashboard.open({ win = vim.api.nvim_get_current_win(), buf = vim.api.nvim_get_current_buf() })
+local shown = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n')
+for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, -1, 0, -1, { details = true })) do
+  for _, chunk in ipairs(m[4].virt_text or {}) do shown = shown .. chunk[1] end
+end
+assert(shown:find(require('user_config.icons').start.ShoshinFiles, 1, true), 'no icons on the start screen')
+vim.fn.writefile({ 'return 1' }, 'init.lua')
+vim.cmd('ShoshinExplore')
+local tree
+assert(vim.wait(4000, function()
+  for _, w in ipairs(vim.api.nvim_list_wins()) do
+    local buf = vim.api.nvim_win_get_buf(w)
+    if vim.bo[buf].filetype == 'neo-tree' then
+      tree = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n')
+      return tree:find('init.lua', 1, true) ~= nil
+    end
+  end
+end, 50), 'no file tree')
+assert(has_glyph(tree), 'the file tree has no icons: ' .. tree)`
+
+// plainIconsCheck: with plain symbols, no plugin keeps a Nerd Font glyph from its
+// defaults in what it shows.
+const plainIconsCheck = `local function glyphs(where, value, seen)
+  seen = seen or {}
+  if type(value) == 'string' then
+    for _, c in ipairs(vim.fn.str2list(value)) do
+      if c >= 0xE000 and c <= 0xF8FF or c >= 0xF0000 then error(where .. ' is a Nerd Font glyph: ' .. value) end
+    end
+  elseif type(value) == 'table' and not seen[value] then
+    seen[value] = true
+    for k, v in pairs(value) do glyphs(where .. '.' .. tostring(k), v, seen) end
+  end
+end
+glyphs('snacks picker', require('snacks.picker.config').get({}).icons)
+glyphs('lazy.nvim', require('lazy.core.config').options.ui.icons)
+local wk = require('which-key.config').options.icons -- Its name rules apply only with icons on.
+glyphs('which-key', { wk.keys, wk.breadcrumb, wk.separator, wk.group })
+glyphs('neo-tree', require('neo-tree').ensure_config().default_component_configs)
+glyphs('bufferline', require('bufferline.config').get().options)
+local columns = require('blink.cmp.config').completion.menu.draw.columns
+if type(columns) == 'function' then columns = columns() end -- blink picks columns by mode.
+for _, column in ipairs(columns) do
+  for _, c in ipairs(column) do assert(c ~= 'kind_icon', 'completion menu shows kind icons') end
+end
+vim.notify('plain', vim.log.levels.WARN)
+assert(vim.wait(2000, function()
+  for _, w in ipairs(vim.api.nvim_list_wins()) do
+    if vim.bo[vim.api.nvim_win_get_buf(w)].filetype == 'snacks_notif' then
+      glyphs('notification title', vim.api.nvim_win_get_config(w).title)
+      return true
+    end
+  end
+end, 50), 'no notification window')`
+
+// hasGlyph is a Lua function expression: whether text holds a Nerd Font glyph.
+const hasGlyph = `(function(text)
+  for _, c in ipairs(vim.fn.str2list(text or '')) do
+    if c >= 0xE000 and c <= 0xF8FF or c >= 0xF0000 then return true end
+  end
+  return false
+end)`

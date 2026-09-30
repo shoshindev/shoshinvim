@@ -71,7 +71,7 @@ vim.api.nvim_create_user_command('ShoshinLint', function() run(vim.api.nvim_get_
 }
 
 // debugLua sets up nvim-dap for JavaScript and TypeScript with js-debug-adapter (the
-// VS Code debugger), and the chosen debugger view with icons that need no Nerd Font.
+// VS Code debugger), and the chosen debugger view.
 func debugLua(s State) string {
 	if !debugging(s) {
 		return ""
@@ -92,15 +92,31 @@ for _, ft in ipairs({ %s }) do
   }
 end
 `, quoted(scriptFiletypes))
+	nerd := nerdIcons(s)
+	if nerd {
+		// LazyVim's breakpoint signs.
+		b.WriteString(`local sign_hl = { Stopped = 'DiagnosticWarn', BreakpointRejected = 'DiagnosticError' }
+vim.api.nvim_set_hl(0, 'DapStoppedLine', { default = true, link = 'Visual' })
+for name, text in pairs(require('user_config.icons').dap) do
+  local line = name == 'Stopped' and 'DapStoppedLine' or nil
+  vim.fn.sign_define('Dap' .. name, { text = text, texthl = sign_hl[name] or 'DiagnosticInfo', linehl = line, numhl = line })
+end
+`)
+	}
 	switch Value(s, "coding.debug", "none") {
 	case "nvim-dap-ui":
-		// kickstart's debug.lua settings: icons that work in every terminal.
-		b.WriteString(`local ui_ok, dapui = pcall(require, 'dapui')
-if ui_ok then
-  dapui.setup({
+		// kickstart's debug.lua settings: icons that work in every terminal, or the
+		// plugin's own with a Nerd Font.
+		icons := `
     icons = { expanded = '▾', collapsed = '▸', current_frame = '*' },
     controls = { icons = { pause = '⏸', play = '▶', step_into = '⏎', step_over = '⏭', step_out = '⏮', step_back = 'b', run_last = '▶▶', terminate = '⏹', disconnect = '⏏' } },
-  })
+  `
+		if nerd {
+			icons = ""
+		}
+		b.WriteString(`local ui_ok, dapui = pcall(require, 'dapui')
+if ui_ok then
+  dapui.setup({` + icons + `})
   dap.listeners.after.event_initialized.shoshinvim = function() dapui.open() end
   dap.listeners.before.event_terminated.shoshinvim = function() dapui.close() end
   dap.listeners.before.event_exited.shoshinvim = function() dapui.close() end
@@ -108,12 +124,16 @@ if ui_ok then
 end
 `)
 	case "nvim-dap-view":
+		icons := `
+    icons = { collapsed = '▸ ', expanded = '▾ ', disabled = '○', enabled = '●', disconnect = '⏏', filter = 'f', negate = '! ',
+      pause = '⏸', play = '▶', run_last = '▶▶', step_back = 'b', step_into = '⏎', step_out = '⏮', step_over = '⏭', terminate = '⏹' },`
+		if nerd {
+			icons = ""
+		}
 		b.WriteString(`local view_ok, view = pcall(require, 'dap-view')
 if view_ok then
   view.setup({
-    auto_toggle = true,
-    icons = { collapsed = '▸ ', expanded = '▾ ', disabled = '○', enabled = '●', disconnect = '⏏', filter = 'f', negate = '! ',
-      pause = '⏸', play = '▶', run_last = '▶▶', step_back = 'b', step_into = '⏎', step_out = '⏮', step_over = '⏭', terminate = '⏹' },
+    auto_toggle = true,` + icons + `
   })
   vim.api.nvim_create_user_command('ShoshinDebugView', function() view.toggle() end, { desc = 'Toggle the debugger view' })
 end

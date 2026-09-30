@@ -407,6 +407,16 @@
       "description": "How messages and language server progress are shown."
     },
     {
+      "id": "appearance.icons",
+      "label": "Icons",
+      "type": "enum",
+      "choices": [
+        "plain",
+        "nerd"
+      ],
+      "description": "Nerd Font icons for files, Git, diagnostics and menus, or plain symbols that every font has."
+    },
+    {
       "id": "editor.detect_indent",
       "label": "Detect indentation",
       "type": "enum",

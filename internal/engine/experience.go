@@ -8,37 +8,51 @@ import (
 func appearanceLua(s State) string {
 	var b strings.Builder
 	b.WriteString(colorschemeLua(s))
+	nerd := nerdIcons(s)
 	if Value(s, "appearance.statusline", "native") == "lualine" {
-		b.WriteString(`if not vim.g.shoshinvim_probe then
+		// A space follows each Nerd Font icon; plain letters read as E:2 W:1.
+		gap, count := "''", "':'"
+		if nerd {
+			gap, count = "' '", "' '"
+		}
+		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
   local ok, line = pcall(require, 'lualine')
-  if ok then line.setup({
-    options = { theme = 'auto', icons_enabled = false, globalstatus = true,
-      component_separators = '|', section_separators = '', ignore_focus = { 'snacks_picker_list', 'snacks_picker_input' }, disabled_filetypes = { statusline = { 'snacks_dashboard' } } },
-    sections = {
-      lualine_a = { 'mode' }, lualine_b = { 'branch', 'diff' },
-      lualine_c = { { 'filename', path = 1 }, { 'diagnostics', symbols = { error = 'E:', warn = 'W:', info = 'I:', hint = 'H:' } } },
-      lualine_x = { function() return vim.lsp.status() end, 'filetype' },
-      lualine_y = { 'progress' }, lualine_z = { 'location' },
-    },
-    extensions = { 'quickfix', 'oil', 'neo-tree', 'nvim-tree' },
-  }) end
+  if ok then
+    local icons = require('user_config.icons')
+    line.setup({
+      options = { theme = 'auto', icons_enabled = %s, globalstatus = true,
+        component_separators = '|', section_separators = '', ignore_focus = { 'snacks_picker_list', 'snacks_picker_input' }, disabled_filetypes = { statusline = { 'snacks_dashboard' } } },
+      sections = {
+        lualine_a = { 'mode' },
+        lualine_b = { 'branch', { 'diff', symbols = { added = icons.git.added .. %[2]s, modified = icons.git.modified .. %[2]s, removed = icons.git.removed .. %[2]s } } },
+        lualine_c = { { 'filename', path = 1 }, { 'diagnostics', symbols = { error = icons.diagnostics.Error .. %[3]s, warn = icons.diagnostics.Warn .. %[3]s, info = icons.diagnostics.Info .. %[3]s, hint = icons.diagnostics.Hint .. %[3]s } } },
+        lualine_x = { function() return vim.lsp.status() end, 'filetype' },
+        lualine_y = { 'progress' }, lualine_z = { 'location' },
+      },
+      extensions = { 'quickfix', 'oil', 'neo-tree', 'nvim-tree' },
+    })
+  end
 end
-`)
+`, Lua(nerd), gap, count)
 	}
 	if Value(s, "appearance.statusline", "native") == "mini.statusline" {
-		b.WriteString(`if not vim.g.shoshinvim_probe then
+		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
   local ok, line = pcall(require, 'mini.statusline')
-  if ok then line.setup({ use_icons = false }) end
+  if ok then line.setup({ use_icons = %s }) end
 end
-`)
+`, Lua(nerd))
 	}
 	if Value(s, "appearance.buffers", "native") == "bufferline" {
-		b.WriteString(`if not vim.g.shoshinvim_probe then
+		markers := "" // bufferline's arrows and close buttons are Nerd Font glyphs by default.
+		if !nerd {
+			markers = "\n    left_trunc_marker = '<', right_trunc_marker = '>', buffer_close_icon = 'x', close_icon = 'x',"
+		}
+		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
   local ok, line = pcall(require, 'bufferline')
   if ok then line.setup({ options = {
-    diagnostics = 'nvim_lsp', separator_style = 'thin', show_buffer_icons = false,
+    diagnostics = 'nvim_lsp', separator_style = 'thin', show_buffer_icons = %s,
     always_show_bufferline = false,
-    show_buffer_close_icons = false, show_close_icon = false,
+    show_buffer_close_icons = false, show_close_icon = false,%s
     offsets = {
       { filetype = 'snacks_layout_box', text = 'PROJECT', text_align = 'left' },
       { filetype = 'neo-tree', text = 'PROJECT', text_align = 'left' },
@@ -46,39 +60,45 @@ end
     },
   } }) end
 end
-`)
+`, Lua(nerd), markers)
 	}
 	if Value(s, "appearance.buffers", "native") == "barbar" {
-		b.WriteString(`if not vim.g.shoshinvim_probe then
+		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
   local ok, bar = pcall(require, 'barbar')
   if ok then bar.setup({
     auto_hide = 1,
-    icons = { filetype = { enabled = false }, button = '', separator = { left = '▎', right = '' } },
+    icons = { filetype = { enabled = %s }, button = '', separator = { left = '▎', right = '' } },
     sidebar_filetypes = { NvimTree = true, ['neo-tree'] = true, snacks_layout_box = true },
   }) end
 end
-`)
+`, Lua(nerd))
 	}
 	if Value(s, "appearance.buffers", "native") == "mini.tabline" {
-		b.WriteString(`if not vim.g.shoshinvim_probe then
+		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
   local ok, line = pcall(require, 'mini.tabline')
-  if ok then line.setup({ show_icons = false }) end
+  if ok then line.setup({ show_icons = %s }) end
 end
-`)
+`, Lua(nerd))
 	}
 	groups := shortcutGroups(s)
 	switch Value(s, "navigation.shortcuts", "native") {
 	case "which-key":
+		// With a Nerd Font, which-key's own icons, chosen by the group or shortcut name;
+		// otherwise key names and plain symbols in place of its glyphs.
+		setup := "wk.setup({ preset = 'modern', delay = 300 })"
+		if !nerd {
+			setup = `local key_names = {}
+    for _, key in ipairs({ 'Up', 'Down', 'Left', 'Right', 'C', 'M', 'D', 'S', 'CR', 'Esc', 'ScrollWheelDown', 'ScrollWheelUp', 'NL', 'BS', 'Space', 'Tab', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12' }) do key_names[key] = key end
+    wk.setup({ preset = 'modern', delay = 300, icons = { mappings = false, keys = key_names, breadcrumb = '>', separator = '->', group = '+' } })`
+		}
 		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
   local ok, wk = pcall(require, 'which-key')
   if ok then
-    local key_names = {}
-    for _, key in ipairs({ 'Up', 'Down', 'Left', 'Right', 'C', 'M', 'D', 'S', 'CR', 'Esc', 'ScrollWheelDown', 'ScrollWheelUp', 'NL', 'BS', 'Space', 'Tab', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12' }) do key_names[key] = key end
-    wk.setup({ preset = 'modern', delay = 300, icons = { mappings = false, keys = key_names, breadcrumb = '>', separator = '->', group = '+' } })
+    %s
     wk.add({ %s })
   end
 end
-`, strings.Join(groups.whichKey, ", "))
+`, setup, strings.Join(groups.whichKey, ", "))
 	case "mini.clue":
 		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
   local ok, clue = pcall(require, 'mini.clue')
@@ -113,7 +133,11 @@ func shortcutGroups(s State) groupLists {
 		if !used {
 			continue
 		}
-		out.whichKey = append(out.whichKey, fmt.Sprintf("{ %s, group = %s }", LuaString(g[0]), LuaString(g[1])))
+		icon := ""
+		if nerdIcons(s) && g[1] == "Hunks" {
+			icon = ", icon = { cat = 'filetype', name = 'git' }" // No which-key rule matches this name.
+		}
+		out.whichKey = append(out.whichKey, fmt.Sprintf("{ %s, group = %s%s }", LuaString(g[0]), LuaString(g[1]), icon))
 		out.miniClue = append(out.miniClue, fmt.Sprintf("{ mode = 'n', keys = %s, desc = %s }", LuaString(strings.ReplaceAll(g[0], "<leader>", "<Leader>")), LuaString("+"+g[1])))
 	}
 	return out
@@ -123,17 +147,30 @@ func shortcutGroups(s State) groupLists {
 // never competes with another plugin for the same job.
 func snacksOptions(s State) string {
 	on := func(id, value string, fallback any) string { return Lua(Value(s, id, fallback) == value) }
+	nerd := nerdIcons(s)
 	var b strings.Builder
-	fmt.Fprintf(&b, "{ picker = { enabled = %s, prompt = '> ', icons = { files = { enabled = false } } },\n", on("navigation.picker", "snacks", "native"))
+	if nerd {
+		fmt.Fprintf(&b, "{ picker = { enabled = %s },\n", on("navigation.picker", "snacks", "native"))
+	} else {
+		fmt.Fprintf(&b, "{ picker = { enabled = %s, prompt = '> ', icons = %s },\n", on("navigation.picker", "snacks", "native"), snacksPlainIcons())
+	}
 	fmt.Fprintf(&b, " explorer = { enabled = %s }, indent = { enabled = %s },\n", on("navigation.explorer", "snacks", "native"), on("appearance.indent", "snacks", "none"))
 	notify := on("appearance.notifications", "snacks", "none")
-	fmt.Fprintf(&b, " input = { enabled = %s }, notifier = { enabled = %s, timeout = 3000 },\n", notify, notify)
+	if nerd {
+		fmt.Fprintf(&b, " input = { enabled = %s }, notifier = { enabled = %s, timeout = 3000 },\n", notify, notify)
+	} else {
+		fmt.Fprintf(&b, " input = { enabled = %s, icon = '' },\n notifier = { enabled = %s, timeout = 3000, icons = { error = 'E', warn = 'W', info = 'I', debug = 'D', trace = 'T' } },\n", notify, notify)
+	}
 	if Value(s, "workspace.start_screen", "none") == "snacks" {
 		b.WriteString(` dashboard = { enabled = true, preset = {
    keys = {
 `)
 		for _, item := range startItems(s) {
-			fmt.Fprintf(&b, "     { icon = '', key = %s, desc = %s, action = %s },\n", LuaString(item.key), LuaString(item.label), LuaString(":"+item.command))
+			icon := "''"
+			if nerd {
+				icon = "icons.start." + item.command + " .. ' '"
+			}
+			fmt.Fprintf(&b, "     { icon = %s, key = %s, desc = %s, action = %s },\n", icon, LuaString(item.key), LuaString(item.label), LuaString(":"+item.command))
 		}
 		b.WriteString(`   },
  }, sections = { function(self) return require('user_config.logo').sections(self:size().width) end, { section = 'keys', gap = 1, padding = 1 }, { text = 'Press your leader key in a file to discover shortcuts.', align = 'center', padding = 1 } } },
@@ -142,6 +179,29 @@ func snacksOptions(s State) string {
 	b.WriteString(" }")
 	return b.String()
 }
+
+// snacksPlainIcons replaces every Nerd Font glyph snacks.nvim's picker and explorer
+// show by default. Directory icons stay for the directory preview.
+func snacksPlainIcons() string {
+	kinds := make([]string, len(snacksKinds))
+	for i, k := range snacksKinds {
+		kinds[i] = k + " = ''"
+	}
+	return `{
+    files = { enabled = false, dir = '▸ ', dir_open = '▾ ', file = '  ' },
+    keymaps = { nowait = 'nowait ' }, undo = { saved = 'saved ' },
+    ui = { live = 'live ', selected = '* ', unselected = '  ' },
+    git = { commit = '', added = 'A', deleted = 'D', ignored = 'I', modified = 'M', renamed = 'R', unmerged = 'U', untracked = '?' },
+    diagnostics = { Error = 'E ', Warn = 'W ', Hint = 'H ', Info = 'I ' },
+    lsp = { unavailable = 'x ', enabled = '+ ', disabled = '- ', attached = '* ' },
+    kinds = { ` + strings.Join(kinds, ", ") + ` },
+  }`
+}
+
+// snacksKinds are the symbol kinds snacks.nvim draws an icon for.
+var snacksKinds = []string{"Array", "Boolean", "Class", "Color", "Control", "Collapsed", "Constant", "Constructor", "Copilot", "Enum", "EnumMember", "Event",
+	"Field", "File", "Folder", "Function", "Interface", "Key", "Keyword", "Method", "Module", "Namespace", "Null", "Number", "Object", "Operator",
+	"Package", "Property", "Reference", "Snippet", "String", "Struct", "Text", "TypeParameter", "Unit", "Unknown", "Value", "Variable"}
 
 type startItem struct{ key, label, command string }
 
