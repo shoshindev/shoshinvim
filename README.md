@@ -44,7 +44,7 @@ A guided setup in your terminal that writes plain Lua you own.
 
 Accepting every recommendation gives a cohesive workspace for Web and Lua development. Press Space and pause to see what each key does.
 
-<img alt="A TypeScript file in Neovim with the Tokyo Night theme, a project explorer, buffer tabs and a status line." src="docs/assets/rich-ide.png" width="49%"> <img alt="The same workspace with the Space key's shortcut popup open." src="docs/assets/shortcut-guide.png" width="49%">
+<img alt="A TypeScript file in Neovim with the Tokyo Night theme, file icons, a project explorer, buffer tabs, a status line and a type error shown on its line." src="docs/assets/rich-ide.png" width="49%"> <img alt="The same workspace with the Space key's shortcut popup open." src="docs/assets/shortcut-guide.png" width="49%">
 
 ## What you can choose
 
