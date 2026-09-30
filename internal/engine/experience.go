@@ -29,6 +29,10 @@ end
 		if nerd {
 			gap = "' '"
 		}
+		themeHighlights := "" // Some themes color bufferline themselves.
+		if h := bufferlineHighlights(s); h != "" {
+			themeHighlights = " highlights = " + h + ","
+		}
 		// LazyVim's settings: error and warning counts on each tab, and closing a tab
 		// keeps the window layout.
 		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then
@@ -39,7 +43,7 @@ end
       local has_snacks, snacks = pcall(require, 'snacks')
       if has_snacks then snacks.bufdelete(n) else vim.cmd.bdelete({ tostring(n), bang = true }) end
     end
-    line.setup({ options = {
+    line.setup({%[4]s options = {
       close_command = close, right_mouse_command = close,
       diagnostics = 'nvim_lsp',
       diagnostics_indicator = function(_, _, diag)
@@ -56,7 +60,7 @@ end
     } })
   end
 end
-`, Lua(nerd), markers, gap)
+`, Lua(nerd), markers, gap, themeHighlights)
 	}
 	if Value(s, "appearance.buffers", "native") == "barbar" {
 		fmt.Fprintf(&b, `if not vim.g.shoshinvim_probe then

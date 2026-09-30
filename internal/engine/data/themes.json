@@ -1,7 +1,7 @@
 {
   "themes": [
     {"id": "tokyonight", "label": "Tokyo Night", "plugin": "tokyonight", "detail": "Deep blues and purples with vivid, readable syntax", "variants": [
-      {"id": "tokyonight", "label": "Night", "colorscheme": "tokyonight-night", "background": "dark", "before": "require('tokyonight').setup({ style = 'night', styles = { sidebars = 'dark', floats = 'dark' } })"},
+      {"id": "tokyonight", "label": "Night", "colorscheme": "tokyonight-night", "background": "dark"},
       {"id": "tokyonight/storm", "label": "Storm", "colorscheme": "tokyonight-storm", "background": "dark"},
       {"id": "tokyonight/moon", "label": "Moon", "colorscheme": "tokyonight-moon", "background": "dark"},
       {"id": "tokyonight/day", "label": "Day", "colorscheme": "tokyonight-day", "background": "light"}]},
