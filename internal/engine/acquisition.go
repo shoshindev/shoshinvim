@@ -88,60 +88,96 @@ func run(ctx context.Context, dir string, name string, args ...string) error {
 	return nil
 }
 
-// acquire performs one approved action. nvim is the Neovim the user chose; Mason runs
-// inside it, so a different or older Neovim on PATH is never used.
-func acquire(ctx context.Context, base, nvim string, a Action) error {
+// head returns the commit checked out in a downloaded plugin, or "" when there is none.
+func head(ctx context.Context, dir string) string {
+	if _, err := os.Stat(filepath.Join(dir, ".git")); err != nil {
+		return ""
+	}
+	cmd := exec.CommandContext(ctx, "git", "-C", dir, "rev-parse", "HEAD")
+	boundProcess(cmd)
+	b, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
+// acquire performs one approved action and returns a note on anything besides the
+// download itself. nvim is the Neovim the user chose; Mason runs inside it, so a
+// different or older Neovim on PATH is never used.
+func acquire(ctx context.Context, base, nvim string, a Action) (string, error) {
 	rel, err := filepath.Rel(base, a.Destination)
 	if err != nil {
-		return err
+		return "", err
 	}
 	dest, err := safePath(base, filepath.ToSlash(rel))
 	if err != nil {
-		return err
+		return "", err
 	}
 	if a.Kind == "git" {
 		if _, err = os.Stat(dest); err == nil {
-			cmd := exec.CommandContext(ctx, "git", "-C", dest, "rev-parse", "HEAD")
-			boundProcess(cmd)
-			b, e := cmd.Output()
-			if e == nil && strings.TrimSpace(string(b)) == a.Revision {
-				return nil
+			if head(ctx, dest) == a.Revision {
+				return "", nil
 			}
-			return fmt.Errorf("existing plugin differs from reviewed pin; preserve it and review a separate migration: %s", dest)
+			return "", fmt.Errorf("existing plugin differs from reviewed pin; preserve it and review a separate migration: %s", dest)
 		} else if !os.IsNotExist(err) {
-			return err
+			return "", err
+		}
+		if a.ID == "lazy" {
+			// Earlier versions downloaded lazy.nvim to a folder where it does not count itself
+			// installed. That checkout moves when it is the pin, leaving a link so files those
+			// versions generated still find it; lazy.nvim ignores links in its folder. Any
+			// other checkout there is the user's and stays.
+			legacy := filepath.Join(filepath.Dir(dest), legacyLazyFolder)
+			if head(ctx, legacy) == a.Revision {
+				if err = os.Rename(legacy, dest); err != nil {
+					return "", err
+				}
+				if os.Symlink(lazyFolder, legacy) == nil {
+					return "moved from plugins/" + legacyLazyFolder + ", which now links to it", nil
+				}
+				// No links here (Windows without Developer Mode): download beside it instead.
+				if err = os.Rename(dest, legacy); err != nil {
+					return "", err
+				}
+			}
 		}
 		if err = os.MkdirAll(filepath.Dir(dest), 0700); err != nil {
-			return err
+			return "", err
 		}
 		staging, err := os.MkdirTemp(filepath.Dir(dest), ".download-")
 		if err != nil {
-			return err
+			return "", err
 		}
 		defer os.RemoveAll(staging)
 		if err = run(ctx, "", "git", "init", "--quiet", staging); err != nil {
-			return err
+			return "", err
 		}
 		if err = run(ctx, staging, "git", "remote", "add", "origin", a.Source); err != nil {
-			return err
+			return "", err
 		}
 		if err = run(ctx, staging, "git", "fetch", "--depth=1", "origin", a.Revision); err != nil {
-			return err
+			return "", err
 		}
 		if err = run(ctx, staging, "git", "-c", "advice.detachedHead=false", "checkout", "--detach", a.Revision); err != nil {
-			return err
+			return "", err
 		}
-		return os.Rename(staging, dest)
+		return "", os.Rename(staging, dest)
 	}
 	if a.Kind == "parsers" {
-		return compileParsers(ctx, base, nvim, dest, a.Parsers)
+		return "", compileParsers(ctx, base, nvim, dest, a.Parsers)
 	}
 	if a.Kind != "mason" {
-		return fmt.Errorf("unsupported external action")
+		return "", fmt.Errorf("unsupported external action")
 	}
 	if nvim == "" {
-		return fmt.Errorf("Mason needs a verified Neovim")
+		return "", fmt.Errorf("Mason needs a verified Neovim")
 	}
+	return "", installMason(ctx, base, dest, nvim, a.Package)
+}
+
+// installMason installs one Mason package with the pinned mason.nvim inside nvim.
+func installMason(ctx context.Context, base, dest, nvim, pkg string) error {
 	tmp, err := os.MkdirTemp("", "shoshinvim-mason-")
 	if err != nil {
 		return err
@@ -168,7 +204,7 @@ if registry.has_package(%s) then install(true) else registry.refresh(install) en
 if not vim.wait(240000, function() return finished end, 100) then failure = 'Package installation timed out' end
 if failure then io.stderr:write(failure); vim.cmd('cquit 1') end
 vim.cmd('qa!')
-`, LuaString(masonPath), LuaString(dest), LuaString(a.Package), LuaString(a.Package))
+`, LuaString(masonPath), LuaString(dest), LuaString(pkg), LuaString(pkg))
 	p := filepath.Join(tmp, "install.lua")
 	if err = os.WriteFile(p, []byte(script), 0600); err != nil {
 		return err
@@ -280,16 +316,16 @@ func RunActions(ctx context.Context, target, nvim string, actions []Action, prog
 				limit = 15 * time.Minute // Large grammars such as TypeScript take a while to compile.
 			}
 			child, cancel := context.WithTimeout(ctx, limit)
-			err := baseErr
+			note, err := "", baseErr
 			if err == nil {
-				err = acquire(child, base, nvim, a)
+				note, err = acquire(child, base, nvim, a)
 			}
 			cancel()
 			if err != nil {
 				r.Status = "failed"
 				r.Detail = err.Error()
 			} else {
-				r.Status = "installed"
+				r.Status, r.Detail = "installed", note
 			}
 		}
 		results[i] = r

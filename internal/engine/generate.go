@@ -201,8 +201,11 @@ func pluginLua(s State) string {
 	var b strings.Builder
 	b.WriteString(`if vim.g.shoshinvim_probe then return end
 local base = vim.fn.stdpath('data') .. '/shoshinvim'
-local lazy_path = base .. '/plugins/lazy'
-if not vim.uv.fs_stat(lazy_path .. '/lua/lazy/init.lua') then return end
+local lazy_path = base .. '/plugins/lazy.nvim'
+if not vim.uv.fs_stat(lazy_path .. '/lua/lazy/init.lua') then
+  lazy_path = base .. '/plugins/lazy' -- Earlier versions downloaded it here; downloading again moves it.
+  if not vim.uv.fs_stat(lazy_path .. '/lua/lazy/init.lua') then return end
+end
 vim.opt.rtp:prepend(lazy_path)
 local specs = {}
 local function installed(name, spec)
