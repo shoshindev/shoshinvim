@@ -1,0 +1,264 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1026" height="706" viewBox="0 0 1026 706" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace" font-size="15">
+<rect x="0.5" y="0.5" width="1025" height="705" rx="10" fill="#1F1F28" stroke="#363646"/>
+<path d="M1 30 H1025" stroke="#363646"/>
+<circle cx="20" cy="15" r="6" fill="#FF5F57"/>
+<circle cx="40" cy="15" r="6" fill="#FEBC2E"/>
+<circle cx="60" cy="15" r="6" fill="#28C840"/>
+<text x="513" y="20" fill="#727169" font-size="13" text-anchor="middle">shoshinvim</text>
+<g shape-rendering="crispEdges">
+<rect x="522" y="208" width="63" height="20" fill="#1A1B26"/>
+<rect x="522" y="288" width="63" height="20" fill="#1E1E2E"/>
+<rect x="522" y="308" width="63" height="20" fill="#1F1F28"/>
+<rect x="522" y="328" width="63" height="20" fill="#2D353B"/>
+<rect x="522" y="348" width="63" height="20" fill="#192330"/>
+<rect x="522" y="368" width="63" height="20" fill="#191724"/>
+<rect x="522" y="388" width="63" height="20" fill="#282828"/>
+<rect x="522" y="408" width="63" height="20" fill="#282828"/>
+<rect x="522" y="428" width="63" height="20" fill="#0D1117"/>
+<rect x="522" y="448" width="63" height="20" fill="#282C34"/>
+<rect x="522" y="468" width="63" height="20" fill="#2C2E34"/>
+<rect x="522" y="488" width="63" height="20" fill="#161616"/>
+<rect x="522" y="508" width="63" height="20" fill="#16181A"/>
+<rect x="522" y="528" width="63" height="20" fill="#080808"/>
+<rect x="522" y="548" width="63" height="20" fill="#141415"/>
+<rect x="522" y="568" width="63" height="20" fill="#282C34"/>
+<rect x="522" y="588" width="63" height="20" fill="#212121"/>
+<rect x="522" y="608" width="63" height="20" fill="#242933"/>
+<rect x="522" y="628" width="63" height="20" fill="#2C2E34"/>
+</g>
+<text x="36" y="63" fill="#D27E99" font-weight="bold">◯</text>
+<text x="54" y="63" fill="#D27E99" font-weight="bold">S</text>
+<text x="63" y="63" fill="#CC82A0" font-weight="bold">h</text>
+<text x="72" y="63" fill="#C485A7" font-weight="bold">o</text>
+<text x="81" y="63" fill="#BD89AE" font-weight="bold">s</text>
+<text x="90" y="63" fill="#B48CB5" font-weight="bold">h</text>
+<text x="99" y="63" fill="#AC90BC" font-weight="bold">i</text>
+<text x="108" y="63" fill="#A293C3" font-weight="bold">n</text>
+<text x="117" y="63" fill="#9796CA" font-weight="bold">V</text>
+<text x="126" y="63" fill="#8C99D1" font-weight="bold">i</text>
+<text x="135" y="63" fill="#7E9CD8" font-weight="bold">m</text>
+<text x="810 819 828 837 846 855 864 873 882 891 900 909 918 927" y="63" fill="#727169">~/.config/nvim</text>
+<text x="945" y="63" fill="#727169">·</text>
+<text x="963 972 981" y="63" fill="#7E9CD8">new</text>
+<text x="36" y="103" fill="#98BB6C">✓</text>
+<text x="54 63 72 81 90 99" y="103" fill="#DCD7BA">Editor</text>
+<text x="216 225 234 243 252 261 270 279 288 297" y="103" fill="#7E9CD8">Appearance</text>
+<text x="315" y="103" fill="#727169">·</text>
+<text x="333" y="103" fill="#727169">1</text>
+<text x="351 360" y="103" fill="#727169">of</text>
+<text x="378" y="103" fill="#727169">6</text>
+<text x="36" y="143" fill="#D27E99" font-weight="bold">●</text>
+<text x="54 63 72 81 90 99 108 117 126 135" y="143" fill="#D27E99" font-weight="bold">Appearance</text>
+<text x="216 225 234 243 252" y="143" fill="#DCD7BA" font-weight="bold">Color</text>
+<text x="270 279 288 297 306 315" y="143" fill="#DCD7BA" font-weight="bold">scheme</text>
+<text x="216 225 234" y="163" fill="#727169">The</text>
+<text x="252 261 270 279 288 297" y="163" fill="#727169">colors</text>
+<text x="315 324" y="163" fill="#727169">of</text>
+<text x="342 351 360" y="163" fill="#727169">the</text>
+<text x="378 387 396 405 414" y="163" fill="#727169">whole</text>
+<text x="432 441 450 459 468 477 486" y="163" fill="#727169">editor.</text>
+<text x="504 513 522 531 540 549 558 567" y="163" fill="#727169">Swatches</text>
+<text x="585 594 603 612" y="163" fill="#727169">show</text>
+<text x="630 639 648 657" y="163" fill="#727169">each</text>
+<text x="675 684 693 702 711 720 729" y="163" fill="#727169">theme's</text>
+<text x="747 756 765 774" y="163" fill="#727169">real</text>
+<text x="792 801 810 819 828 837 846" y="163" fill="#727169">colors.</text>
+<text x="36" y="183" fill="#727169">○</text>
+<text x="54 63 72 81 90 99 108 117 126" y="183" fill="#727169">Workspace</text>
+<text x="216 225 234 243 252" y="203" fill="#727169">THEME</text>
+<text x="270 279 288 297 306 315 324" y="203" fill="#727169">PLUGINS</text>
+<text x="342" y="203" fill="#727169">·</text>
+<text x="360 369 378 387 396 405 414 423 432 441" y="203" fill="#727169">DOWNLOADED</text>
+<text x="459 468 477" y="203" fill="#727169">AND</text>
+<text x="495 504 513 522 531 540" y="203" fill="#727169">PINNED</text>
+<text x="36" y="223" fill="#727169">○</text>
+<text x="54 63 72 81 90 99 108 117 126 135" y="223" fill="#727169">Navigation</text>
+<text x="216" y="223" fill="#D27E99" font-weight="bold">❯</text>
+<text x="243 252" y="223" fill="#D27E99" font-weight="bold">1.</text>
+<text x="270 279 288 297 306" y="223" fill="#D27E99" font-weight="bold">Tokyo</text>
+<text x="324 333 342 351 360" y="223" fill="#D27E99" font-weight="bold">Night</text>
+<text x="387" y="223" fill="#7E9CD8">◆</text>
+<text x="405 414 423 432 441 450 459 468 477 486 495" y="223" fill="#7E9CD8">recommended</text>
+<text x="531" y="223" fill="#7DCFFF">●</text>
+<text x="540" y="223" fill="#7AA2F7">●</text>
+<text x="549" y="223" fill="#9ECE6A">●</text>
+<text x="558" y="223" fill="#2AC3DE">●</text>
+<text x="567" y="223" fill="#FF9E64">●</text>
+<text x="270 279 288 297" y="243" fill="#727169">Deep</text>
+<text x="315 324 333 342 351" y="243" fill="#727169">blues</text>
+<text x="369 378 387" y="243" fill="#727169">and</text>
+<text x="405 414 423 432 441 450 459" y="243" fill="#727169">purples</text>
+<text x="477 486 495 504" y="243" fill="#727169">with</text>
+<text x="522 531 540 549 558 567" y="243" fill="#727169">vivid,</text>
+<text x="585 594 603 612 621 630 639 648" y="243" fill="#727169">readable</text>
+<text x="666 675 684 693 702 711" y="243" fill="#727169">syntax</text>
+<text x="729" y="243" fill="#727169">·</text>
+<text x="747" y="243" fill="#727169">4</text>
+<text x="765 774 783 792 801 810 819 828" y="243" fill="#727169">variants</text>
+<text x="36" y="263" fill="#727169">○</text>
+<text x="54 63 72 81 90 99 108 117 126" y="263" fill="#727169">Languages</text>
+<text x="270 279 288 297 306 315 324 333 342 351 360 369 378 387 396 405 414 423 432 441 450" y="263" fill="#7E9CD8">folke/tokyonight.nvim</text>
+<text x="468" y="263" fill="#7E9CD8">·</text>
+<text x="486" y="263" fill="#7E9CD8">★</text>
+<text x="504 513 522 531" y="263" fill="#7E9CD8">8.2k</text>
+<text x="549" y="263" fill="#7E9CD8">·</text>
+<text x="567 576 585 594 603 612 621" y="263" fill="#7E9CD8">updated</text>
+<text x="639 648 657" y="263" fill="#7E9CD8">Mar</text>
+<text x="675 684 693 702" y="263" fill="#7E9CD8">2026</text>
+<text x="720" y="263" fill="#7E9CD8">·</text>
+<text x="738 747 756 765 774 783 792 801 810 819" y="263" fill="#7E9CD8">Apache-2.0</text>
+<text x="837" y="263" fill="#7E9CD8">·</text>
+<text x="855 864 873 882" y="263" fill="#7E9CD8">used</text>
+<text x="900 909" y="263" fill="#7E9CD8">by</text>
+<text x="927 936 945 954 963 972 981 990" y="263" fill="#7E9CD8">LazyVim,</text>
+<text x="270 279 288 297 306 315 324 333 342" y="283" fill="#7E9CD8">kickstart</text>
+<text x="36" y="303" fill="#727169">○</text>
+<text x="54 63 72 81 90 99 108 117 126 135" y="303" fill="#727169">Formatting</text>
+<text x="243 252" y="303" fill="#727169">2.</text>
+<text x="270 279 288 297 306 315 324 333 342 351" y="303" fill="#DCD7BA">Catppuccin</text>
+<text x="531" y="303" fill="#CBA6F7">●</text>
+<text x="540" y="303" fill="#89B4FA">●</text>
+<text x="549" y="303" fill="#A6E3A1">●</text>
+<text x="558" y="303" fill="#F9E2AF">●</text>
+<text x="567" y="303" fill="#FAB387">●</text>
+<text x="243 252" y="323" fill="#727169">3.</text>
+<text x="270 279 288 297 306 315 324 333" y="323" fill="#DCD7BA">Kanagawa</text>
+<text x="531" y="323" fill="#957FB8">●</text>
+<text x="540" y="323" fill="#7E9CD8">●</text>
+<text x="549" y="323" fill="#98BB6C">●</text>
+<text x="558" y="323" fill="#7AA89F">●</text>
+<text x="567" y="323" fill="#FFA066">●</text>
+<text x="36" y="343" fill="#727169">○</text>
+<text x="54 63 72 81 90 99" y="343" fill="#727169">Coding</text>
+<text x="243 252" y="343" fill="#727169">4.</text>
+<text x="270 279 288 297 306 315 324 333 342 351" y="343" fill="#DCD7BA">Everforest</text>
+<text x="531" y="343" fill="#E67E80">●</text>
+<text x="540 549" y="343" fill="#A7C080">●●</text>
+<text x="558" y="343" fill="#DBBC7F">●</text>
+<text x="567" y="343" fill="#83C092">●</text>
+<text x="243 252" y="363" fill="#727169">5.</text>
+<text x="270 279 288 297 306 315 324 333" y="363" fill="#DCD7BA">Nightfox</text>
+<text x="531" y="363" fill="#9D79D6">●</text>
+<text x="540" y="363" fill="#86ABDC">●</text>
+<text x="549" y="363" fill="#81B29A">●</text>
+<text x="558" y="363" fill="#DBC074">●</text>
+<text x="567" y="363" fill="#F6B079">●</text>
+<text x="36" y="383" fill="#727169">○</text>
+<text x="54 63 72" y="383" fill="#727169">Git</text>
+<text x="243 252" y="383" fill="#727169">6.</text>
+<text x="270 279 288 297" y="383" fill="#DCD7BA">Rosé</text>
+<text x="315 324 333 342" y="383" fill="#DCD7BA">Pine</text>
+<text x="531" y="383" fill="#31748F">●</text>
+<text x="540" y="383" fill="#EBBCBA">●</text>
+<text x="549" y="383" fill="#F6C177">●</text>
+<text x="558" y="383" fill="#9CCFD8">●</text>
+<text x="567" y="383" fill="#F6C177">●</text>
+<text x="243 252" y="403" fill="#727169">7.</text>
+<text x="270 279 288 297 306 315 324" y="403" fill="#DCD7BA">Gruvbox</text>
+<text x="342 351 360 369 378 387 396 405" y="403" fill="#DCD7BA">Material</text>
+<text x="531" y="403" fill="#EA6962">●</text>
+<text x="540 549" y="403" fill="#A9B665">●●</text>
+<text x="558" y="403" fill="#D8A657">●</text>
+<text x="567" y="403" fill="#89B482">●</text>
+<text x="36" y="423" fill="#727169">○</text>
+<text x="54 63 72 81 90 99" y="423" fill="#727169">Review</text>
+<text x="243 252" y="423" fill="#727169">8.</text>
+<text x="270 279 288 297 306 315 324" y="423" fill="#DCD7BA">Gruvbox</text>
+<text x="531" y="423" fill="#FB4934">●</text>
+<text x="540 549" y="423" fill="#B8BB26">●●</text>
+<text x="558" y="423" fill="#FABD2F">●</text>
+<text x="567" y="423" fill="#D3869B">●</text>
+<text x="243 252" y="443" fill="#727169">9.</text>
+<text x="270 279 288 297 306 315" y="443" fill="#DCD7BA">GitHub</text>
+<text x="531" y="443" fill="#FF7B72">●</text>
+<text x="540" y="443" fill="#D2A8FF">●</text>
+<text x="549" y="443" fill="#A5D6FF">●</text>
+<text x="558" y="443" fill="#FFA657">●</text>
+<text x="567" y="443" fill="#79C0FF">●</text>
+<text x="234 243 252" y="463" fill="#727169">10.</text>
+<text x="270 279 288 297 306 315 324" y="463" fill="#DCD7BA">OneDark</text>
+<text x="531" y="463" fill="#C678DD">●</text>
+<text x="540" y="463" fill="#61AFEF">●</text>
+<text x="549" y="463" fill="#98C379">●</text>
+<text x="558" y="463" fill="#E5C07B">●</text>
+<text x="567" y="463" fill="#56B6C2">●</text>
+<text x="234 243 252" y="483" fill="#727169">11.</text>
+<text x="270 279 288 297 306 315 324" y="483" fill="#DCD7BA">Sonokai</text>
+<text x="531" y="483" fill="#FC5D7C">●</text>
+<text x="540" y="483" fill="#9ED072">●</text>
+<text x="549" y="483" fill="#E7C664">●</text>
+<text x="558" y="483" fill="#76CCE0">●</text>
+<text x="567" y="483" fill="#F39660">●</text>
+<text x="234 243 252" y="503" fill="#727169">12.</text>
+<text x="270 279 288 297 306 315 324 333 342" y="503" fill="#DCD7BA">Oxocarbon</text>
+<text x="531" y="503" fill="#78A9FF">●</text>
+<text x="540" y="503" fill="#3DDBD9">●</text>
+<text x="549" y="503" fill="#BE95FF">●</text>
+<text x="558" y="503" fill="#78A9FF">●</text>
+<text x="567" y="503" fill="#D0D0D0">●</text>
+<text x="234 243 252" y="523" fill="#727169">13.</text>
+<text x="270 279 288 297 306 315 324 333 342 351" y="523" fill="#DCD7BA">Cyberdream</text>
+<text x="531" y="523" fill="#FFBD5E">●</text>
+<text x="540" y="523" fill="#5EA1FF">●</text>
+<text x="549" y="523" fill="#5EFF6C">●</text>
+<text x="558" y="523" fill="#BD5EFF">●</text>
+<text x="567" y="523" fill="#FF5EA0">●</text>
+<text x="234 243 252" y="543" fill="#727169">14.</text>
+<text x="270 279 288 297 306 315 324" y="543" fill="#DCD7BA">Moonfly</text>
+<text x="531" y="543" fill="#CF87E8">●</text>
+<text x="540" y="543" fill="#74B2FF">●</text>
+<text x="549" y="543" fill="#C6C684">●</text>
+<text x="558" y="543" fill="#36C692">●</text>
+<text x="567" y="543" fill="#DE935F">●</text>
+<text x="234 243 252" y="563" fill="#727169">15.</text>
+<text x="270 279 288 297 306" y="563" fill="#DCD7BA">Vague</text>
+<text x="531" y="563" fill="#6E94B2">●</text>
+<text x="540" y="563" fill="#C48282">●</text>
+<text x="549" y="563" fill="#E8B589">●</text>
+<text x="558" y="563" fill="#9BB4BC">●</text>
+<text x="567" y="563" fill="#AEAED1">●</text>
+<text x="234 243 252" y="583" fill="#727169">16.</text>
+<text x="270 279 288 297 306 315 324" y="583" fill="#DCD7BA">OneDark</text>
+<text x="342 351 360" y="583" fill="#DCD7BA">Pro</text>
+<text x="531" y="583" fill="#C678DD">●</text>
+<text x="540" y="583" fill="#61AFEF">●</text>
+<text x="549" y="583" fill="#98C379">●</text>
+<text x="558" y="583" fill="#E5C07B">●</text>
+<text x="567" y="583" fill="#D19A66">●</text>
+<text x="234 243 252" y="603" fill="#727169">17.</text>
+<text x="270 279 288 297 306 315 324 333" y="603" fill="#DCD7BA">Material</text>
+<text x="531" y="603" fill="#C792EA">●</text>
+<text x="540" y="603" fill="#82AAFF">●</text>
+<text x="549" y="603" fill="#C3E88D">●</text>
+<text x="558" y="603" fill="#C792EA">●</text>
+<text x="567" y="603" fill="#FFCB6B">●</text>
+<text x="234 243 252" y="623" fill="#727169">18.</text>
+<text x="270 279 288 297 306 315" y="623" fill="#DCD7BA">Nordic</text>
+<text x="531" y="623" fill="#D08770">●</text>
+<text x="540" y="623" fill="#88C0D0">●</text>
+<text x="549" y="623" fill="#A3BE8C">●</text>
+<text x="558" y="623" fill="#EBCB8B">●</text>
+<text x="567" y="623" fill="#BE9DB8">●</text>
+<text x="234 243 252" y="643" fill="#727169">19.</text>
+<text x="270 279 288 297" y="643" fill="#DCD7BA">Edge</text>
+<text x="531" y="643" fill="#D38AEA">●</text>
+<text x="540" y="643" fill="#6CB6EB">●</text>
+<text x="549" y="643" fill="#A0C980">●</text>
+<text x="558" y="643" fill="#EC7279">●</text>
+<text x="567" y="643" fill="#DEB974">●</text>
+<text x="36 45" y="683" fill="#727169">↑↓</text>
+<text x="63 72 81 90" y="683" fill="#727169">move</text>
+<text x="108" y="683" fill="#727169">·</text>
+<text x="126 135 144 153 162" y="683" fill="#727169">enter</text>
+<text x="180 189 198 207 216 225" y="683" fill="#727169">choose</text>
+<text x="243" y="683" fill="#727169">·</text>
+<text x="261 270 279" y="683" fill="#727169">esc</text>
+<text x="297 306 315 324" y="683" fill="#727169">back</text>
+<text x="342" y="683" fill="#727169">·</text>
+<text x="360" y="683" fill="#727169">/</text>
+<text x="378 387 396 405 414 423 432 441" y="683" fill="#727169">commands</text>
+<text x="459" y="683" fill="#727169">·</text>
+<text x="477" y="683" fill="#727169">?</text>
+<text x="495 504 513 522" y="683" fill="#727169">help</text>
+<path d="M193.5 88V108M193.5 108V128M193.5 128V148M193.5 148V168M193.5 168V188M193.5 188V208M193.5 208V228M193.5 228V248M193.5 248V268M193.5 268V288M193.5 288V308M193.5 308V328M193.5 328V348M193.5 348V368M193.5 368V388M193.5 388V408M193.5 408V428M193.5 428V448M193.5 448V468M193.5 468V488M193.5 488V508M193.5 508V528M193.5 528V548M193.5 548V568M193.5 568V588M193.5 588V608M193.5 608V628M193.5 628V648" stroke="#727169" stroke-width="1.2" fill="none"/>
+</svg>
