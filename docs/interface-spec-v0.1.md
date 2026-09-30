@@ -113,7 +113,7 @@ Overlays replace the content area and keep the draft and screen underneath:
 - **Command palette** (`/`): a panel with a filter input and the command list (Preview generated Lua, See file changes, Plugins used, Check dependencies, Show all settings as JSON, Set any setting, Go to review, Retry failed downloads, Recovery & history, Keys & help, Quit).
 - **Set any setting**: an input accepting `setting value`, with up to six ID suggestions and Tab completion.
 
-Full-screen viewers show long content with a title, scroll percentage and `esc` to close: generated Lua, file diff (colored), dependencies, all settings as JSON, and keys & help.
+Full-screen viewers show long content with a title, scroll percentage and `esc` to close: file diff (colored), dependencies, all settings as JSON, and keys & help. **Preview generated Lua** opens Neovim instead: a read-only copy of every file in a temporary folder, one tab per file, started with `nvim --clean -R` so the user's configuration and plugins stay out of it and Neovim's own syntax colors apply. `:qa` returns to the setup and the copy is removed; without a usable Neovim, the Lua is shown in a viewer.
 
 ## 3. Setup structure
 
@@ -450,7 +450,7 @@ Before writing, ShoshinVim must:
 6. verify hashes and reload the generated core in isolation;
 7. write state and manifest, then report the local commit separately from downloads.
 
-The generated configuration is ordinary Lua that works without ShoshinVim. `lua/user_config/user.lua` is created once and never overwritten. Review, Preview and Check dependencies never write.
+The generated configuration is ordinary Lua that works without ShoshinVim. `lua/user_config/user.lua` is created once and never overwritten. Review, Preview and Check dependencies never write to the target; the preview's temporary copy is removed when Neovim closes.
 
 ### 9.2 Neovim selection
 
@@ -500,7 +500,7 @@ On Windows the data folder carries Neovim's `-data` suffix, and commands use Pow
 9. Progress log with spinner and download bar
 10. Notice line and footer hints
 11. Command palette and Set any setting input
-12. Full-screen viewer (Lua, diff, dependencies, JSON, help)
+12. Full-screen viewer (diff, dependencies, JSON, help) and the Lua preview in Neovim
 13. Resize screen
 14. Line-mode renderer
 

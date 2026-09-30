@@ -435,7 +435,7 @@ func (m *Model) reviewMenu() []menuItem {
 			recommendChange = true // Saved, complete and unchanged: the likely intent is to change something.
 		}
 	}
-	items = append(items, menuItem{"Preview the generated Lua", "Every file ShoshinVim would write", "lua", false})
+	items = append(items, menuItem{"Preview the generated Lua", "Every file ShoshinVim would write, read-only in Neovim", "lua", false})
 	items = append(items, menuItem{"See the plugins", "Each plugin, why it is included, and the exact commit", "plugins", false})
 	if changes > 0 {
 		items = append(items, menuItem{"See file changes", "A diff against what is on disk", "diff", false})
@@ -502,7 +502,7 @@ func (m *Model) activate(action string) tea.Cmd {
 	case action == "save", action == "save-download", action == "download":
 		return m.save(action != "save")
 	case action == "lua":
-		m.showLua()
+		return m.previewLua()
 	case action == "diff":
 		m.showDiff()
 	case action == "plugins":
@@ -562,6 +562,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.id == m.jobID {
 			return m, m.finishJob(msg)
 		}
+		return m, nil
+	case previewDoneMsg:
+		m.previewDone(msg)
 		return m, nil
 	case tea.KeyPressMsg:
 		return m, m.key(msg)
@@ -845,9 +848,10 @@ func (m *Model) paletteKey(msg tea.KeyPressMsg) tea.Cmd {
 
 func (m *Model) runCommand(action string) tea.Cmd {
 	cursor := m.cursor
+	var cmd tea.Cmd
 	switch action {
 	case "lua":
-		m.showLua()
+		cmd = m.previewLua()
 	case "diff":
 		m.showDiff()
 	case "plugins":
@@ -875,7 +879,7 @@ func (m *Model) runCommand(action string) tea.Cmd {
 	if m.screen == stepScreen || m.screen == welcomeScreen {
 		m.cursor = cursor
 	}
-	return nil
+	return cmd
 }
 
 func (m *Model) settingSuggestions() []engine.Setting {
