@@ -19,6 +19,9 @@ import (
 //	SHOSHINVIM_SCREENSHOTS=docs/assets go test ./internal/ui -run TestScreenshots -count=1
 //
 // A relative folder is taken from the repository root. The review screen needs Neovim.
+// Screens show a dark terminal, the usual default, so they look the same on GitHub's
+// light and dark pages; the wordmark uses the light-terminal accents, which keep enough
+// contrast on both.
 func TestScreenshots(t *testing.T) {
 	dir := os.Getenv("SHOSHINVIM_SCREENSHOTS")
 	if dir == "" {
@@ -35,66 +38,50 @@ func TestScreenshots(t *testing.T) {
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
-	_, err := exec.LookPath("nvim")
-	withNeovim := err == nil
-
-	for _, p := range []shotPalette{darkShot, lightShot} {
-		write := func(name string, data []byte) {
-			t.Helper()
-			if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
-				t.Fatal(err)
-			}
-		}
-		write("wordmark-"+p.name+".svg", wordmarkSVG(newTheme(p.dark, false)))
-
-		m, err := New(filepath.Join(home, ".config", "nvim"), "", false)
-		if err != nil {
+	write := func(name string, data []byte) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
 			t.Fatal(err)
 		}
-		m.setTheme(p.dark)
-		shoot := func(name string) {
-			t.Helper()
-			write(filepath.Join("screens", name+"-"+p.name+".svg"), screenSVG(m.View().Content, m.width, m.height, p))
-		}
-		advance := func(id string) {
-			t.Helper()
-			for i := 0; m.screen != stepScreen || m.question().id != id; i++ {
-				if i > 60 {
-					t.Fatalf("question %s not reached:\n%s", id, screenText(m))
-				}
-				press(m, "enter")
+	}
+	write("wordmark.svg", wordmarkSVG(newTheme(false, false)))
+
+	m, err := New(filepath.Join(home, ".config", "nvim"), "", false) // Dark palette.
+	if err != nil {
+		t.Fatal(err)
+	}
+	shoot := func(name string) {
+		t.Helper()
+		write(filepath.Join("screens", name+".svg"), screenSVG(m.View().Content, m.width, m.height))
+	}
+	advance := func(id string) {
+		t.Helper()
+		for i := 0; m.screen != stepScreen || m.question().id != id; i++ {
+			if i > 60 {
+				t.Fatalf("question %s not reached:\n%s", id, screenText(m))
 			}
-		}
-		// Wide enough for the section sidebar and the whole shortcut list.
-		m.Update(tea.WindowSizeMsg{Width: 110, Height: 32})
-		press(m, "enter", "enter") // Start, accept the Editor form.
-		advance("appearance.colorscheme")
-		shoot("colorscheme")
-		advance("keymaps-editor")
-		shoot("shortcuts")
-		advance("navigation.picker")
-		shoot("picker")
-		if withNeovim {
-			acceptAll(t, m)
-			shoot("review")
+			press(m, "enter")
 		}
 	}
-	if !withNeovim {
+	// Wide enough for the section sidebar and the whole shortcut list.
+	m.Update(tea.WindowSizeMsg{Width: 110, Height: 32})
+	press(m, "enter", "enter") // Start, accept the Editor form.
+	advance("appearance.colorscheme")
+	shoot("colorscheme")
+	advance("keymaps-editor")
+	shoot("shortcuts")
+	advance("navigation.picker")
+	shoot("picker")
+	if _, err := exec.LookPath("nvim"); err != nil {
 		t.Log("Neovim not found: the review screen was not drawn")
+		return
 	}
+	acceptAll(t, m)
+	shoot("review")
 }
 
-type shotPalette struct {
-	name                 string
-	dark                 bool
-	bg, fg, frame, title string
-}
-
-// Kanagawa's own background and text colors, which the interface palette follows.
-var (
-	darkShot  = shotPalette{name: "dark", dark: true, bg: "#1F1F28", fg: "#DCD7BA", frame: "#363646", title: "#727169"}
-	lightShot = shotPalette{name: "light", bg: "#F2ECBC", fg: "#545464", frame: "#DCD5AC", title: "#8A8980"}
-)
+// A dark terminal in Kanagawa's own colors, which the interface palette follows.
+const shotBg, shotFg, shotFrame, shotTitle = "#1F1F28", "#DCD7BA", "#363646", "#727169"
 
 const (
 	cellW, cellH = 9, 20 // One terminal cell, in pixels.
@@ -104,7 +91,7 @@ const (
 
 // screenSVG draws a rendered view as a terminal window. Every glyph is placed on its
 // cell, so wide characters and box drawing stay aligned whatever font the viewer has.
-func screenSVG(view string, w, h int, p shotPalette) []byte {
+func screenSVG(view string, w, h int) []byte {
 	buf := uv.NewScreenBuffer(w, h)
 	buf.Method = ansi.GraphemeWidth
 	uv.NewStyledString(view).Draw(buf, buf.Bounds())
@@ -112,12 +99,12 @@ func screenSVG(view string, w, h int, p shotPalette) []byte {
 	width, height := w*cellW+2*shotPad, h*cellH+2*shotPad+shotBar
 	var b strings.Builder
 	fmt.Fprintf(&b, `<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace" font-size="15">`+"\n", width, height, width, height)
-	fmt.Fprintf(&b, `<rect x="0.5" y="0.5" width="%d" height="%d" rx="10" fill="%s" stroke="%s"/>`+"\n", width-1, height-1, p.bg, p.frame)
-	fmt.Fprintf(&b, `<path d="M1 %d H%d" stroke="%s"/>`+"\n", shotBar, width-1, p.frame)
+	fmt.Fprintf(&b, `<rect x="0.5" y="0.5" width="%d" height="%d" rx="10" fill="%s" stroke="%s"/>`+"\n", width-1, height-1, shotBg, shotFrame)
+	fmt.Fprintf(&b, `<path d="M1 %d H%d" stroke="%s"/>`+"\n", shotBar, width-1, shotFrame)
 	for i, c := range []string{"#FF5F57", "#FEBC2E", "#28C840"} {
 		fmt.Fprintf(&b, `<circle cx="%d" cy="%d" r="6" fill="%s"/>`+"\n", 20+i*20, shotBar/2, c)
 	}
-	fmt.Fprintf(&b, `<text x="%d" y="%d" fill="%s" font-size="13" text-anchor="middle">shoshinvim</text>`+"\n", width/2, shotBar/2+5, p.title)
+	fmt.Fprintf(&b, `<text x="%d" y="%d" fill="%s" font-size="13" text-anchor="middle">shoshinvim</text>`+"\n", width/2, shotBar/2+5, shotTitle)
 
 	// Backgrounds first, merged along each row so no seams show between cells;
 	// then text; then box drawing, one path per color.
@@ -130,7 +117,7 @@ func screenSVG(view string, w, h int, p shotPalette) []byte {
 		var xs []int
 		flush := func() {
 			if len(run) > 0 {
-				writeRun(&texts, run, xs, top, p)
+				writeRun(&texts, run, xs, top)
 			}
 			run, xs = nil, nil
 		}
@@ -147,7 +134,7 @@ func screenSVG(view string, w, h int, p shotPalette) []byte {
 				continue
 			}
 			left := shotPad + x*cellW
-			fg, bg := cellColors(c, p)
+			fg, bg := cellColors(c)
 			if bg != fillColor {
 				fill(left, bg)
 			}
@@ -184,8 +171,8 @@ func screenSVG(view string, w, h int, p shotPalette) []byte {
 	return []byte(b.String())
 }
 
-func writeRun(b *strings.Builder, run []*uv.Cell, xs []int, top int, p shotPalette) {
-	fg, _ := cellColors(run[0], p)
+func writeRun(b *strings.Builder, run []*uv.Cell, xs []int, top int) {
+	fg, _ := cellColors(run[0])
 	pos := make([]string, len(xs))
 	for i, x := range xs {
 		pos[i] = fmt.Sprint(x)
@@ -208,14 +195,14 @@ func sameLook(a, c *uv.Cell) bool {
 	return a.Style.Attrs == c.Style.Attrs && hexColor(a.Style.Fg) == hexColor(c.Style.Fg) && hexColor(a.Style.Bg) == hexColor(c.Style.Bg)
 }
 
-func cellColors(c *uv.Cell, p shotPalette) (fg, bg string) {
+func cellColors(c *uv.Cell) (fg, bg string) {
 	fg, bg = hexColor(c.Style.Fg), hexColor(c.Style.Bg)
 	if fg == "" {
-		fg = p.fg
+		fg = shotFg
 	}
 	if c.Style.Attrs&uv.AttrReverse != 0 {
 		if bg == "" {
-			bg = p.bg
+			bg = shotBg
 		}
 		fg, bg = bg, fg
 	}

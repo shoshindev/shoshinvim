@@ -1,9 +1,6 @@
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/wordmark-dark.svg">
-  <img alt="ShoshinVim" src="docs/assets/wordmark-light.svg" width="512">
-</picture>
+<img alt="ShoshinVim" src="docs/assets/wordmark.svg" width="512">
 
 **Build a Neovim you understand, one decision at a time.**
 
@@ -20,10 +17,7 @@ A guided setup in your terminal that writes plain Lua you own.
 
 <br>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screens/picker-dark.svg">
-  <img alt="ShoshinVim asking which finder to use. Telescope is recommended; Snacks picker, fzf-lua, mini.pick and the built-in finder are the alternatives, each with its repository, stars, last update, license and which starter configurations use it." src="docs/assets/screens/picker-light.svg">
-</picture>
+<img alt="ShoshinVim asking which finder to use. Telescope is recommended; Snacks picker, fzf-lua, mini.pick and the built-in finder are the alternatives, each with its repository, stars, last update, license and which starter configurations use it." src="docs/assets/screens/picker.svg">
 
 ## Why ShoshinVim
 
@@ -36,24 +30,15 @@ A guided setup in your terminal that writes plain Lua you own.
 
 **Appearance.** 26 theme plugins with their variants, Neovim's built-in themes, or any theme from GitHub. Swatches show each theme's real colors.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screens/colorscheme-dark.svg">
-  <img alt="The color scheme question: Tokyo Night is recommended, followed by Catppuccin, Kanagawa, Everforest and other themes, each with a strip of its colors." src="docs/assets/screens/colorscheme-light.svg">
-</picture>
+<img alt="The color scheme question: Tokyo Night is recommended, followed by Catppuccin, Kanagawa, Everforest and other themes, each with a strip of its colors." src="docs/assets/screens/colorscheme.svg">
 
 **Your shortcuts.** kickstart.nvim's or LazyVim's keymaps, copied from their source and credited. Change any key, turn one off, or add your own before saving.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screens/shortcuts-dark.svg">
-  <img alt="The shortcut list: every key grouped under Find and Files, such as Space sf for Find files, each labeled kickstart.nvim." src="docs/assets/screens/shortcuts-light.svg">
-</picture>
+<img alt="The shortcut list: every key grouped under Find and Files, such as Space sf for Find files, each labeled kickstart.nvim." src="docs/assets/screens/shortcuts.svg">
 
 **Review.** A summary of every section, the files that would be written, and every plugin, language tool and parser that would be downloaded.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screens/review-dark.svg">
-  <img alt="The review: a line per section, 17 new files in ~/.config/nvim, 22 plugins, 8 language tools and 18 syntax parsers to download, and Save and download as the recommended action." src="docs/assets/screens/review-light.svg">
-</picture>
+<img alt="The review: a line per section, 17 new files in ~/.config/nvim, 22 plugins, 8 language tools and 18 syntax parsers to download, and Save and download as the recommended action." src="docs/assets/screens/review.svg">
 
 ## What you get
 
