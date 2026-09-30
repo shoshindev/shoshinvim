@@ -387,6 +387,40 @@ func TestLayoutsFitTheTerminal(t *testing.T) {
 	}
 }
 
+func TestShortcutRowsFitTheTerminal(t *testing.T) {
+	m := newModel(t)
+	press(m, "enter", "enter") // Start, accept the Editor form.
+	for m.question().id != "keymaps-editor" {
+		press(m, "enter")
+	}
+	for _, width := range []int{92, 100, 120} {
+		m.Update(tea.WindowSizeMsg{Width: width, Height: 30})
+		for i, r := range m.shortcutRows() {
+			if r.kind != "key" {
+				continue
+			}
+			m.cursor = i
+			marker := "❯ " + engine.KeyLabel(m.draft, r.key.Key)
+			var row string
+			for _, line := range strings.Split(m.View().Content, "\n") {
+				if strings.Contains(ansi.Strip(line), marker) {
+					row = line
+				}
+			}
+			text := strings.TrimRight(ansi.Strip(row), " ")
+			if row == "" {
+				t.Fatalf("width %d: row for %s not shown", width, r.key.Label)
+			}
+			if w := ansi.StringWidth(row); w > width {
+				t.Fatalf("width %d: row of width %d: %q", width, w, text)
+			}
+			if !strings.HasSuffix(text, " "+r.key.Source) {
+				t.Fatalf("width %d: row does not end with %q: %q", width, r.key.Source, text)
+			}
+		}
+	}
+}
+
 func TestSaveWithoutDownloadingWritesTarget(t *testing.T) {
 	needNeovim(t)
 	m := newModel(t)

@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/shoshindev/shoshinvim/internal/engine"
 )
 
@@ -178,6 +180,11 @@ func (m *Model) shortcutContent(cw, h int) []string {
 		return append(append(lines, "", m.th.Bold("What should the shortcut do?")), m.optionLines(q, cw, h-2)...)
 	}
 	rows := m.shortcutRows()
+	// The label column gives way first, so that the key and the whole source fit.
+	sourceW := 0
+	for _, r := range rows {
+		sourceW = max(sourceW, lipgloss.Width(r.key.Source))
+	}
 	focus := 0
 	var body []string
 	for i, r := range rows {
@@ -209,7 +216,8 @@ func (m *Model) shortcutContent(cw, h int) []string {
 			if mode := engine.ModeLabel(r.key.Mode); mode != "" {
 				label += m.th.Dim(" · " + mode)
 			}
-			body = append(body, pointer+key+padRight(label, 46)+m.th.Dim(r.key.Source))
+			w := max(2, min(46, cw-2-lipgloss.Width(key)-sourceW))
+			body = append(body, pointer+key+padRight(ansi.Truncate(label, w-1, "…"), w)+m.th.Dim(r.key.Source))
 		}
 	}
 	var notes []string
