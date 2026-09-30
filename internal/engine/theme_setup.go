@@ -76,12 +76,14 @@ func themeSetup(s State, t Theme, v ThemeVariant) string {
 		return "require('kanagawa').setup({ colors = { theme = { all = { ui = { bg_gutter = 'none' } } } } })"
 	}
 	if prefix, ok := sainnheThemes[t.ID]; ok {
-		// Inline diagnostics in their severity's color rather than grey.
-		colored := "vim.g." + prefix + "_diagnostic_virtual_text = 'colored'"
+		// Inline diagnostics in their severity's color rather than grey, and popups a
+		// shade darker than the text, as in LazyVim and NvChad ('blend' would need a
+		// border on every popup).
+		settings := "vim.g." + prefix + "_diagnostic_virtual_text = 'colored'\n    vim.g." + prefix + "_float_style = 'dim'"
 		if v.Before == "" {
-			return colored
+			return settings
 		}
-		return v.Before + "\n    " + colored
+		return v.Before + "\n    " + settings
 	}
 	return v.Before
 }

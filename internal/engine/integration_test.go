@@ -337,9 +337,15 @@ assert(#require('lint').get_running() == 0 and #vim.diagnostic.get(0) == 0, 'ESL
   assert(hl.link == nil and (hl.fg or hl.bg), group .. ' is not styled by the theme: ' .. vim.inspect(hl))
 end`})
 	}
+	// sainnhe's themes draw popups a shade darker than the text (their light variants
+	// already do).
+	dimPopups := `local function lightness(c) return math.floor(c / 65536) + math.floor(c / 256) % 256 + c % 256 end
+local text, popup = vim.api.nvim_get_hl(0, { name = 'Normal' }).bg, vim.api.nvim_get_hl(0, { name = 'NormalFloat', link = false }).bg
+assert(text and popup and lightness(popup) < lightness(text), 'popups are not darker than the text')`
 	cases = append(cases,
 		choice{"theme kanagawa gutter", map[string]any{"appearance.colorscheme": "kanagawa/wave"}, "assert(vim.api.nvim_get_hl(0, { name = 'SignColumn' }).bg == nil, 'the sign column has its own background')"},
-		choice{"theme everforest diagnostics", map[string]any{"appearance.colorscheme": "everforest/dark-hard"}, "assert(vim.g.everforest_diagnostic_virtual_text == 'colored', 'grey inline diagnostics')"},
+		choice{"theme everforest diagnostics", map[string]any{"appearance.colorscheme": "everforest/dark-hard"}, "assert(vim.g.everforest_diagnostic_virtual_text == 'colored', 'grey inline diagnostics')\n" + dimPopups},
+		choice{"theme gruvbox-material popups", map[string]any{"appearance.colorscheme": "gruvbox-material/dark"}, dimPopups},
 		choice{"theme catppuccin tabs", map[string]any{"appearance.colorscheme": "catppuccin/mocha", "appearance.buffers": "bufferline"}, "assert(vim.api.nvim_get_hl(0, { name = 'BufferLineBufferSelected' }).italic, 'bufferline lacks catppuccin colors')"},
 		choice{"theme rose-pine tabs", map[string]any{"appearance.colorscheme": "rose-pine/main", "appearance.buffers": "bufferline"}, "assert(package.loaded['rose-pine.plugins.bufferline'], 'bufferline lacks rose-pine colors')"},
 	)
