@@ -325,6 +325,10 @@ var sections = []section{
 			{label: "fidget.nvim", short: "fidget", plugin: "fidget", detail: "Language server progress in a corner; kickstart's choice", values: is("appearance.notifications", "fidget")},
 			{label: "Built in", short: "built-in messages", detail: "Messages in the command line", values: is("appearance.notifications", "none")},
 		}},
+		{id: "appearance.cmdline", title: "Command line", help: "Where : commands, searches and messages appear.", options: []option{
+			{label: "noice.nvim", short: "floating command line", plugin: "noice", detail: "Commands in a popup near the top, searches at the bottom, messages in a corner; LazyVim's choice", values: is("appearance.cmdline", "noice"), recommended: true},
+			{label: "Built in", short: "built-in command line", detail: "Neovim's command line at the bottom of the screen", values: is("appearance.cmdline", "native")},
+		}},
 		{id: "options.winborder", title: "Popup borders", help: "Borders around hover docs, signature help and other floating windows.", options: []option{
 			{label: "Rounded", short: "rounded borders", detail: "Soft corners that separate popups from code", values: is("options.winborder", "rounded"), recommended: true},
 			{label: "Square", short: "square borders", detail: "Thin straight lines", values: is("options.winborder", "single")},

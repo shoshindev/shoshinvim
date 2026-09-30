@@ -2,6 +2,7 @@ package engine
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -72,5 +73,30 @@ func TestPluginBordersFollowTheChoice(t *testing.T) {
 		if got := guideBorder(s); got != guide {
 			t.Errorf("winborder %v: guide border %q, want %q", winborder, got, guide)
 		}
+	}
+}
+
+// noice takes the command line and messages, but not the jobs another choice owns.
+func TestNoiceLeavesEachJobWithItsPlugin(t *testing.T) {
+	s := polishedState()
+	s.Values["appearance.cmdline"] = "noice"
+	s.Values["appearance.notifications"] = "fidget"
+	s.Values["completion.engine"] = "blink.cmp"
+	got := noiceLua(s)
+	for _, want := range []string{"progress = { enabled = false }", "signature = { enabled = false }", "['cmp.entry.get_documentation'] = false"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("noice setup lacks %s:\n%s", want, got)
+		}
+	}
+	regex := false
+	for _, p := range Parsers(s) {
+		regex = regex || p.Language == "regex"
+	}
+	if !regex {
+		t.Error("noice colors searches with the regex parser")
+	}
+	s.Values["appearance.cmdline"] = "native"
+	if noiceLua(s) != "" || slices.Contains(Plugins(s), "noice") {
+		t.Error("the built-in command line needs no noice")
 	}
 }

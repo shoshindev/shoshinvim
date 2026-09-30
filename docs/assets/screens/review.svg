@@ -60,157 +60,157 @@
 <text x="504 513 522 531 540 549" y="183" fill="#DCD7BA">Snacks</text>
 <text x="567 576 585 594 603 612 621 630 639 648 657 666 675" y="183" fill="#DCD7BA">notifications</text>
 <text x="693" y="183" fill="#DCD7BA">·</text>
-<text x="711 720 729 738 747 756 765" y="183" fill="#DCD7BA">rounded</text>
-<text x="783 792 801 810 819 828 837" y="183" fill="#DCD7BA">borders</text>
-<text x="216 225 234 243 252 261 270 279 288" y="203" fill="#727169">Workspace</text>
-<text x="333 342 351 360 369 378 387 396 405 414 423 432 441 450" y="203" fill="#DCD7BA">kickstart.nvim</text>
-<text x="468 477 486 495 504 513 522 531 540" y="203" fill="#DCD7BA">shortcuts</text>
-<text x="558" y="203" fill="#DCD7BA">·</text>
-<text x="576 585 594 603 612" y="203" fill="#DCD7BA">Space</text>
-<text x="630 639 648 657 666 675" y="203" fill="#DCD7BA">leader</text>
-<text x="693" y="203" fill="#DCD7BA">·</text>
-<text x="711 720 729 738 747 756 765 774 783" y="203" fill="#DCD7BA">which-key</text>
-<text x="801" y="203" fill="#DCD7BA">·</text>
-<text x="819 828 837 846 855 864" y="203" fill="#DCD7BA">Snacks</text>
-<text x="882 891 900 909 918 927 936 945 954" y="203" fill="#DCD7BA">dashboard</text>
+<text x="711 720 729 738 747 756 765 774" y="183" fill="#DCD7BA">floating</text>
+<text x="792 801 810 819 828 837 846" y="183" fill="#DCD7BA">command</text>
+<text x="864 873 882 891" y="183" fill="#DCD7BA">line</text>
+<text x="909" y="183" fill="#DCD7BA">·</text>
+<text x="927 936 945 954 963 972 981" y="183" fill="#DCD7BA">rounded</text>
+<text x="333 342 351 360 369 378 387" y="203" fill="#DCD7BA">borders</text>
 <text x="36" y="223" fill="#98BB6C">✓</text>
 <text x="54 63 72 81 90 99 108 117 126 135" y="223" fill="#DCD7BA">Navigation</text>
-<text x="216 225 234 243 252 261 270 279 288 297" y="223" fill="#727169">Navigation</text>
-<text x="333 342 351 360 369 378 387 396 405" y="223" fill="#DCD7BA">Telescope</text>
-<text x="423" y="223" fill="#DCD7BA">·</text>
-<text x="441 450 459 468 477 486 495 504" y="223" fill="#DCD7BA">neo-tree</text>
-<text x="216 225 234 243 252 261 270 279 288" y="243" fill="#727169">Languages</text>
-<text x="333 342 351 360 369" y="243" fill="#DCD7BA">Mason</text>
-<text x="387 396 405 414 423 432 441 450" y="243" fill="#DCD7BA">installs</text>
-<text x="468 477 486 495 504" y="243" fill="#DCD7BA">tools</text>
-<text x="522" y="243" fill="#DCD7BA">·</text>
-<text x="540 549 558 567 576 585 594 603 612 621 630" y="243" fill="#DCD7BA">TypeScript,</text>
-<text x="648 657 666 675 684" y="243" fill="#DCD7BA">HTML,</text>
-<text x="702 711 720 729" y="243" fill="#DCD7BA">CSS,</text>
-<text x="747 756 765 774 783" y="243" fill="#DCD7BA">JSON,</text>
-<text x="801 810 819" y="243" fill="#DCD7BA">Lua</text>
-<text x="837" y="243" fill="#DCD7BA">·</text>
-<text x="855 864 873 882 891 900 909 918 927 936 945" y="243" fill="#DCD7BA">Tree-sitter</text>
-<text x="963" y="243" fill="#DCD7BA">·</text>
+<text x="216 225 234 243 252 261 270 279 288" y="223" fill="#727169">Workspace</text>
+<text x="333 342 351 360 369 378 387 396 405 414 423 432 441 450" y="223" fill="#DCD7BA">kickstart.nvim</text>
+<text x="468 477 486 495 504 513 522 531 540" y="223" fill="#DCD7BA">shortcuts</text>
+<text x="558" y="223" fill="#DCD7BA">·</text>
+<text x="576 585 594 603 612" y="223" fill="#DCD7BA">Space</text>
+<text x="630 639 648 657 666 675" y="223" fill="#DCD7BA">leader</text>
+<text x="693" y="223" fill="#DCD7BA">·</text>
+<text x="711 720 729 738 747 756 765 774 783" y="223" fill="#DCD7BA">which-key</text>
+<text x="801" y="223" fill="#DCD7BA">·</text>
+<text x="819 828 837 846 855 864" y="223" fill="#DCD7BA">Snacks</text>
+<text x="882 891 900 909 918 927 936 945 954" y="223" fill="#DCD7BA">dashboard</text>
+<text x="216 225 234 243 252 261 270 279 288 297" y="243" fill="#727169">Navigation</text>
+<text x="333 342 351 360 369 378 387 396 405" y="243" fill="#DCD7BA">Telescope</text>
+<text x="423" y="243" fill="#DCD7BA">·</text>
+<text x="441 450 459 468 477 486 495 504" y="243" fill="#DCD7BA">neo-tree</text>
 <text x="36" y="263" fill="#98BB6C">✓</text>
 <text x="54 63 72 81 90 99 108 117 126" y="263" fill="#DCD7BA">Languages</text>
-<text x="333 342 351 360 369 378 387 396 405" y="263" fill="#DCD7BA">blink.cmp</text>
-<text x="423" y="263" fill="#DCD7BA">·</text>
-<text x="441 450 459 468 477 486" y="263" fill="#DCD7BA">inline</text>
-<text x="504 513 522 531 540 549 558 567 576 585 594" y="263" fill="#DCD7BA">diagnostics</text>
-<text x="612" y="263" fill="#DCD7BA">·</text>
-<text x="630 639 648 657 666 675 684 693 702 711 720 729 738 747" y="263" fill="#DCD7BA">nvim-lspconfig</text>
-<text x="765 774 783 792 801 810 819" y="263" fill="#DCD7BA">recipes</text>
-<text x="216 225 234 243 252 261 270 279 288 297" y="283" fill="#727169">Formatting</text>
-<text x="333 342 351 360 369 378 387" y="283" fill="#DCD7BA">conform</text>
-<text x="405 414 423 432 441 450 459 468 477 486" y="283" fill="#DCD7BA">(Prettier,</text>
-<text x="504 513 522 531 540 549 558" y="283" fill="#DCD7BA">StyLua)</text>
-<text x="576" y="283" fill="#DCD7BA">·</text>
-<text x="594 603 612 621 630 639" y="283" fill="#DCD7BA">format</text>
-<text x="657 666" y="283" fill="#DCD7BA">on</text>
-<text x="684 693 702 711 720 729 738" y="283" fill="#DCD7BA">request</text>
+<text x="216 225 234 243 252 261 270 279 288" y="263" fill="#727169">Languages</text>
+<text x="333 342 351 360 369" y="263" fill="#DCD7BA">Mason</text>
+<text x="387 396 405 414 423 432 441 450" y="263" fill="#DCD7BA">installs</text>
+<text x="468 477 486 495 504" y="263" fill="#DCD7BA">tools</text>
+<text x="522" y="263" fill="#DCD7BA">·</text>
+<text x="540 549 558 567 576 585 594 603 612 621 630" y="263" fill="#DCD7BA">TypeScript,</text>
+<text x="648 657 666 675 684" y="263" fill="#DCD7BA">HTML,</text>
+<text x="702 711 720 729" y="263" fill="#DCD7BA">CSS,</text>
+<text x="747 756 765 774 783" y="263" fill="#DCD7BA">JSON,</text>
+<text x="801 810 819" y="263" fill="#DCD7BA">Lua</text>
+<text x="837" y="263" fill="#DCD7BA">·</text>
+<text x="855 864 873 882 891 900 909 918 927 936 945" y="263" fill="#DCD7BA">Tree-sitter</text>
+<text x="963" y="263" fill="#DCD7BA">·</text>
+<text x="333 342 351 360 369 378 387 396 405" y="283" fill="#DCD7BA">blink.cmp</text>
+<text x="423" y="283" fill="#DCD7BA">·</text>
+<text x="441 450 459 468 477 486" y="283" fill="#DCD7BA">inline</text>
+<text x="504 513 522 531 540 549 558 567 576 585 594" y="283" fill="#DCD7BA">diagnostics</text>
+<text x="612" y="283" fill="#DCD7BA">·</text>
+<text x="630 639 648 657 666 675 684 693 702 711 720 729 738 747" y="283" fill="#DCD7BA">nvim-lspconfig</text>
+<text x="765 774 783 792 801 810 819" y="283" fill="#DCD7BA">recipes</text>
 <text x="36" y="303" fill="#98BB6C">✓</text>
 <text x="54 63 72 81 90 99 108 117 126 135" y="303" fill="#DCD7BA">Formatting</text>
-<text x="216 225 234 243 252 261" y="303" fill="#727169">Coding</text>
-<text x="333 342 351 360 369 378 387 396 405 414 423 432 441 450" y="303" fill="#DCD7BA">nvim-autopairs</text>
-<text x="468" y="303" fill="#DCD7BA">·</text>
-<text x="486 495 504 513 522 531 540 549 558 567 576 585 594" y="303" fill="#DCD7BA">mini.surround</text>
-<text x="612" y="303" fill="#DCD7BA">·</text>
-<text x="630 639 648 657 666 675 684" y="303" fill="#DCD7BA">mini.ai</text>
-<text x="702" y="303" fill="#DCD7BA">·</text>
-<text x="720 729 738 747 756 765 774 783 792 801 810 819 828" y="303" fill="#DCD7BA">todo-comments</text>
-<text x="846" y="303" fill="#DCD7BA">·</text>
-<text x="864 873" y="303" fill="#DCD7BA">no</text>
-<text x="891 900 909 918 927 936 945" y="303" fill="#DCD7BA">linters</text>
-<text x="963" y="303" fill="#DCD7BA">·</text>
-<text x="981 990" y="303" fill="#DCD7BA">no</text>
-<text x="333 342 351 360 369 378 387 396" y="323" fill="#DCD7BA">debugger</text>
+<text x="216 225 234 243 252 261 270 279 288 297" y="303" fill="#727169">Formatting</text>
+<text x="333 342 351 360 369 378 387" y="303" fill="#DCD7BA">conform</text>
+<text x="405 414 423 432 441 450 459 468 477 486" y="303" fill="#DCD7BA">(Prettier,</text>
+<text x="504 513 522 531 540 549 558" y="303" fill="#DCD7BA">StyLua)</text>
+<text x="576" y="303" fill="#DCD7BA">·</text>
+<text x="594 603 612 621 630 639" y="303" fill="#DCD7BA">format</text>
+<text x="657 666" y="303" fill="#DCD7BA">on</text>
+<text x="684 693 702 711 720 729 738" y="303" fill="#DCD7BA">request</text>
+<text x="216 225 234 243 252 261" y="323" fill="#727169">Coding</text>
+<text x="333 342 351 360 369 378 387 396 405 414 423 432 441 450" y="323" fill="#DCD7BA">nvim-autopairs</text>
+<text x="468" y="323" fill="#DCD7BA">·</text>
+<text x="486 495 504 513 522 531 540 549 558 567 576 585 594" y="323" fill="#DCD7BA">mini.surround</text>
+<text x="612" y="323" fill="#DCD7BA">·</text>
+<text x="630 639 648 657 666 675 684" y="323" fill="#DCD7BA">mini.ai</text>
+<text x="702" y="323" fill="#DCD7BA">·</text>
+<text x="720 729 738 747 756 765 774 783 792 801 810 819 828" y="323" fill="#DCD7BA">todo-comments</text>
+<text x="846" y="323" fill="#DCD7BA">·</text>
+<text x="864 873" y="323" fill="#DCD7BA">no</text>
+<text x="891 900 909 918 927 936 945" y="323" fill="#DCD7BA">linters</text>
+<text x="963" y="323" fill="#DCD7BA">·</text>
+<text x="981 990" y="323" fill="#DCD7BA">no</text>
 <text x="36" y="343" fill="#98BB6C">✓</text>
 <text x="54 63 72 81 90 99" y="343" fill="#DCD7BA">Coding</text>
-<text x="216 225 234" y="343" fill="#727169">Git</text>
-<text x="333 342 351 360 369 378 387 396" y="343" fill="#DCD7BA">gitsigns</text>
+<text x="333 342 351 360 369 378 387 396" y="343" fill="#DCD7BA">debugger</text>
+<text x="216 225 234" y="363" fill="#727169">Git</text>
+<text x="333 342 351 360 369 378 387 396" y="363" fill="#DCD7BA">gitsigns</text>
 <text x="36" y="383" fill="#98BB6C">✓</text>
 <text x="54 63 72" y="383" fill="#DCD7BA">Git</text>
-<text x="216 225 234 243 252" y="383" fill="#727169">Files</text>
-<text x="333 342" y="383" fill="#DCD7BA">19</text>
-<text x="360 369 378" y="383" fill="#DCD7BA">new</text>
-<text x="396 405" y="383" fill="#DCD7BA">in</text>
-<text x="423 432 441 450 459 468 477 486 495 504 513 522 531 540" y="383" fill="#DCD7BA">~/.config/nvim</text>
-<text x="216 225 234 243 252 261 270 279 288" y="403" fill="#727169">Downloads</text>
-<text x="333 342" y="403" fill="#DCD7BA">22</text>
-<text x="360 369 378 387 396 405 414 423" y="403" fill="#DCD7BA">plugins,</text>
-<text x="441" y="403" fill="#DCD7BA">8</text>
-<text x="459 468 477 486 495 504 513 522" y="403" fill="#DCD7BA">language</text>
-<text x="540 549 558 567 576" y="403" fill="#DCD7BA">tools</text>
-<text x="594 603 612" y="403" fill="#DCD7BA">and</text>
-<text x="630 639" y="403" fill="#DCD7BA">18</text>
-<text x="657 666 675 684 693 702" y="403" fill="#DCD7BA">syntax</text>
-<text x="720 729 738 747 756 765 774" y="403" fill="#DCD7BA">parsers</text>
+<text x="216 225 234 243 252" y="403" fill="#727169">Files</text>
+<text x="333 342" y="403" fill="#DCD7BA">19</text>
+<text x="360 369 378" y="403" fill="#DCD7BA">new</text>
+<text x="396 405" y="403" fill="#DCD7BA">in</text>
+<text x="423 432 441 450 459 468 477 486 495 504 513 522 531 540" y="403" fill="#DCD7BA">~/.config/nvim</text>
 <text x="36" y="423" fill="#D27E99" font-weight="bold">●</text>
 <text x="54 63 72 81 90 99" y="423" fill="#D27E99" font-weight="bold">Review</text>
-<text x="216 225 234 243 252 261 270" y="423" fill="#727169">Plugins</text>
-<text x="333 342 351 360 369 378 387 396 405 414" y="423" fill="#DCD7BA">lazy.nvim,</text>
-<text x="432 441 450 459 468 477 486 495 504 513" y="423" fill="#DCD7BA">blink.cmp,</text>
-<text x="531 540 549 558 567 576 585 594 603 612 621 630 639 648 657 666" y="423" fill="#DCD7BA">bufferline.nvim,</text>
-<text x="684 693 702 711 720 729 738 747 756 765 774 783 792" y="423" fill="#DCD7BA">conform.nvim,</text>
-<text x="810 819 828 837 846 855 864 873 882 891 900 909 918 927" y="423" fill="#DCD7BA">gitsigns.nvim,</text>
-<text x="945 954 963 972 981 990" y="423" fill="#DCD7BA">guess-</text>
-<text x="333 342 351 360 369 378 387 396 405 414 423 432" y="443" fill="#DCD7BA">indent.nvim,</text>
-<text x="450 459 468 477 486 495 504 513 522 531 540 549 558 567 576 585 594 603 612 621 630 639" y="443" fill="#DCD7BA">indent-blankline.nvim,</text>
-<text x="657 666 675 684 693 702 711 720 729 738 747 756 765 774 783" y="443" fill="#DCD7BA">nvim-lspconfig,</text>
-<text x="801 810 819 828 837 846 855 864 873 882 891 900 909" y="443" fill="#DCD7BA">lualine.nvim,</text>
-<text x="333 342 351 360 369 378 387 396 405 414 423" y="463" fill="#DCD7BA">mason.nvim,</text>
-<text x="441 450 459 468 477 486 495 504" y="463" fill="#DCD7BA">mini.ai,</text>
-<text x="522 531 540 549 558 567 576 585 594 603 612 621 630 639" y="463" fill="#DCD7BA">mini.surround,</text>
-<text x="657 666 675 684 693 702 711 720 729 738 747 756 765 774" y="463" fill="#DCD7BA">neo-tree.nvim,</text>
-<text x="792 801 810 819 828 837 846 855 864" y="463" fill="#DCD7BA">nui.nvim,</text>
-<text x="882 891 900 909 918" y="463" fill="#DCD7BA">nvim-</text>
-<text x="333 342 351 360 369 378 387 396 405 414" y="483" fill="#DCD7BA">autopairs,</text>
-<text x="432 441 450 459 468 477 486 495 504 513 522 531 540 549 558 567" y="483" fill="#DCD7BA">nvim-treesitter,</text>
-<text x="585 594 603 612 621 630 639 648 657 666 675 684 693" y="483" fill="#DCD7BA">plenary.nvim,</text>
-<text x="711 720 729 738 747 756 765 774 783 792 801 810" y="483" fill="#DCD7BA">snacks.nvim,</text>
-<text x="828 837 846 855 864 873 882 891 900 909 918 927 936 945 954" y="483" fill="#DCD7BA">telescope.nvim,</text>
-<text x="333 342 351 360 369 378 387 396 405 414 423 432 441 450 459 468 477 486 495" y="503" fill="#DCD7BA">todo-comments.nvim,</text>
-<text x="513 522 531 540 549 558 567 576 585 594 603 612 621 630 639 648" y="503" fill="#DCD7BA">tokyonight.nvim,</text>
-<text x="666 675 684 693 702 711 720 729 738 747 756 765 774 783" y="503" fill="#DCD7BA">which-key.nvim</text>
-<text x="216" y="543" fill="#D27E99" font-weight="bold">❯</text>
-<text x="234 243" y="543" fill="#D27E99" font-weight="bold">1.</text>
-<text x="261 270 279 288" y="543" fill="#D27E99" font-weight="bold">Save</text>
-<text x="306 315 324" y="543" fill="#D27E99" font-weight="bold">and</text>
-<text x="342 351 360 369 378 387 396 405" y="543" fill="#D27E99" font-weight="bold">download</text>
-<text x="432" y="543" fill="#7E9CD8">◆</text>
-<text x="450 459 468 477 486 495 504 513 522 531 540" y="543" fill="#7E9CD8">recommended</text>
-<text x="261 270 279 288 297" y="563" fill="#727169">Write</text>
-<text x="315 324" y="563" fill="#727169">19</text>
-<text x="342 351 360 369 378 387" y="563" fill="#727169">files,</text>
-<text x="405 414 423 432" y="563" fill="#727169">then</text>
-<text x="450 459 468 477 486 495 504 513" y="563" fill="#727169">download</text>
-<text x="531 540" y="563" fill="#727169">22</text>
-<text x="558 567 576 585 594 603 612 621" y="563" fill="#727169">plugins,</text>
-<text x="639" y="563" fill="#727169">8</text>
-<text x="657 666 675 684 693 702 711 720" y="563" fill="#727169">language</text>
-<text x="738 747 756 765 774" y="563" fill="#727169">tools</text>
-<text x="792 801 810" y="563" fill="#727169">and</text>
-<text x="828 837" y="563" fill="#727169">18</text>
-<text x="855 864 873 882 891 900" y="563" fill="#727169">syntax</text>
-<text x="918 927 936 945 954 963 972" y="563" fill="#727169">parsers</text>
-<text x="234 243" y="583" fill="#727169">2.</text>
-<text x="261 270 279 288" y="583" fill="#DCD7BA">Save</text>
-<text x="306 315 324 333 342 351 360" y="583" fill="#DCD7BA">without</text>
-<text x="378 387 396 405 414 423 432 441 450 459 468" y="583" fill="#DCD7BA">downloading</text>
-<text x="234 243" y="603" fill="#727169">3.</text>
-<text x="261 270 279 288 297 306 315" y="603" fill="#DCD7BA">Preview</text>
-<text x="333 342 351" y="603" fill="#DCD7BA">the</text>
-<text x="369 378 387 396 405 414 423 432 441" y="603" fill="#DCD7BA">generated</text>
-<text x="459 468 477" y="603" fill="#DCD7BA">Lua</text>
-<text x="234 243" y="623" fill="#727169">4.</text>
-<text x="261 270 279" y="623" fill="#DCD7BA">See</text>
-<text x="297 306 315" y="623" fill="#DCD7BA">the</text>
-<text x="333 342 351 360 369 378 387" y="623" fill="#DCD7BA">plugins</text>
-<text x="234 243" y="643" fill="#727169">5.</text>
+<text x="216 225 234 243 252 261 270 279 288" y="423" fill="#727169">Downloads</text>
+<text x="333 342" y="423" fill="#DCD7BA">23</text>
+<text x="360 369 378 387 396 405 414 423" y="423" fill="#DCD7BA">plugins,</text>
+<text x="441" y="423" fill="#DCD7BA">8</text>
+<text x="459 468 477 486 495 504 513 522" y="423" fill="#DCD7BA">language</text>
+<text x="540 549 558 567 576" y="423" fill="#DCD7BA">tools</text>
+<text x="594 603 612" y="423" fill="#DCD7BA">and</text>
+<text x="630 639" y="423" fill="#DCD7BA">19</text>
+<text x="657 666 675 684 693 702" y="423" fill="#DCD7BA">syntax</text>
+<text x="720 729 738 747 756 765 774" y="423" fill="#DCD7BA">parsers</text>
+<text x="216 225 234 243 252 261 270" y="443" fill="#727169">Plugins</text>
+<text x="333 342 351 360 369 378 387 396 405 414" y="443" fill="#DCD7BA">lazy.nvim,</text>
+<text x="432 441 450 459 468 477 486 495 504 513" y="443" fill="#DCD7BA">blink.cmp,</text>
+<text x="531 540 549 558 567 576 585 594 603 612 621 630 639 648 657 666" y="443" fill="#DCD7BA">bufferline.nvim,</text>
+<text x="684 693 702 711 720 729 738 747 756 765 774 783 792" y="443" fill="#DCD7BA">conform.nvim,</text>
+<text x="810 819 828 837 846 855 864 873 882 891 900 909 918 927" y="443" fill="#DCD7BA">gitsigns.nvim,</text>
+<text x="945 954 963 972 981 990" y="443" fill="#DCD7BA">guess-</text>
+<text x="333 342 351 360 369 378 387 396 405 414 423 432" y="463" fill="#DCD7BA">indent.nvim,</text>
+<text x="450 459 468 477 486 495 504 513 522 531 540 549 558 567 576 585 594 603 612 621 630 639" y="463" fill="#DCD7BA">indent-blankline.nvim,</text>
+<text x="657 666 675 684 693 702 711 720 729 738 747 756 765 774 783" y="463" fill="#DCD7BA">nvim-lspconfig,</text>
+<text x="801 810 819 828 837 846 855 864 873 882 891 900 909" y="463" fill="#DCD7BA">lualine.nvim,</text>
+<text x="333 342 351 360 369 378 387 396 405 414 423" y="483" fill="#DCD7BA">mason.nvim,</text>
+<text x="441 450 459 468 477 486 495 504" y="483" fill="#DCD7BA">mini.ai,</text>
+<text x="522 531 540 549 558 567 576 585 594 603 612 621 630 639" y="483" fill="#DCD7BA">mini.surround,</text>
+<text x="657 666 675 684 693 702 711 720 729 738 747 756 765 774" y="483" fill="#DCD7BA">neo-tree.nvim,</text>
+<text x="792 801 810 819 828 837 846 855 864 873 882" y="483" fill="#DCD7BA">noice.nvim,</text>
+<text x="900 909 918 927 936 945 954 963 972" y="483" fill="#DCD7BA">nui.nvim,</text>
+<text x="333 342 351 360 369 378 387 396 405 414 423 432 441 450 459" y="503" fill="#DCD7BA">nvim-autopairs,</text>
+<text x="477 486 495 504 513 522 531 540 549 558 567 576 585 594 603 612" y="503" fill="#DCD7BA">nvim-treesitter,</text>
+<text x="630 639 648 657 666 675 684 693 702 711 720 729 738" y="503" fill="#DCD7BA">plenary.nvim,</text>
+<text x="756 765 774 783 792 801 810 819 828 837 846 855" y="503" fill="#DCD7BA">snacks.nvim,</text>
+<text x="333 342 351 360 369 378 387 396 405 414 423 432 441 450 459" y="523" fill="#DCD7BA">telescope.nvim,</text>
+<text x="477 486 495 504 513 522 531 540 549 558 567 576 585 594 603 612 621 630 639" y="523" fill="#DCD7BA">todo-comments.nvim,</text>
+<text x="657 666 675 684 693 702 711 720 729 738 747 756 765 774 783 792" y="523" fill="#DCD7BA">tokyonight.nvim,</text>
+<text x="810 819 828 837 846 855 864 873 882 891 900 909 918 927" y="523" fill="#DCD7BA">which-key.nvim</text>
+<text x="216" y="563" fill="#D27E99" font-weight="bold">❯</text>
+<text x="234 243" y="563" fill="#D27E99" font-weight="bold">1.</text>
+<text x="261 270 279 288" y="563" fill="#D27E99" font-weight="bold">Save</text>
+<text x="306 315 324" y="563" fill="#D27E99" font-weight="bold">and</text>
+<text x="342 351 360 369 378 387 396 405" y="563" fill="#D27E99" font-weight="bold">download</text>
+<text x="432" y="563" fill="#7E9CD8">◆</text>
+<text x="450 459 468 477 486 495 504 513 522 531 540" y="563" fill="#7E9CD8">recommended</text>
+<text x="261 270 279 288 297" y="583" fill="#727169">Write</text>
+<text x="315 324" y="583" fill="#727169">19</text>
+<text x="342 351 360 369 378 387" y="583" fill="#727169">files,</text>
+<text x="405 414 423 432" y="583" fill="#727169">then</text>
+<text x="450 459 468 477 486 495 504 513" y="583" fill="#727169">download</text>
+<text x="531 540" y="583" fill="#727169">23</text>
+<text x="558 567 576 585 594 603 612 621" y="583" fill="#727169">plugins,</text>
+<text x="639" y="583" fill="#727169">8</text>
+<text x="657 666 675 684 693 702 711 720" y="583" fill="#727169">language</text>
+<text x="738 747 756 765 774" y="583" fill="#727169">tools</text>
+<text x="792 801 810" y="583" fill="#727169">and</text>
+<text x="828 837" y="583" fill="#727169">19</text>
+<text x="855 864 873 882 891 900" y="583" fill="#727169">syntax</text>
+<text x="918 927 936 945 954 963 972" y="583" fill="#727169">parsers</text>
+<text x="234 243" y="603" fill="#727169">2.</text>
+<text x="261 270 279 288" y="603" fill="#DCD7BA">Save</text>
+<text x="306 315 324 333 342 351 360" y="603" fill="#DCD7BA">without</text>
+<text x="378 387 396 405 414 423 432 441 450 459 468" y="603" fill="#DCD7BA">downloading</text>
+<text x="234 243" y="623" fill="#727169">3.</text>
+<text x="261 270 279 288 297 306 315" y="623" fill="#DCD7BA">Preview</text>
+<text x="333 342 351" y="623" fill="#DCD7BA">the</text>
+<text x="369 378 387 396 405 414 423 432 441" y="623" fill="#DCD7BA">generated</text>
+<text x="459 468 477" y="623" fill="#DCD7BA">Lua</text>
+<text x="234 243" y="643" fill="#727169">4.</text>
 <text x="261 270 279" y="643" fill="#DCD7BA">See</text>
-<text x="297 306 315 324" y="643" fill="#DCD7BA">file</text>
-<text x="342 351 360 369 378 387 396" y="643" fill="#DCD7BA">changes</text>
+<text x="297 306 315" y="643" fill="#DCD7BA">the</text>
+<text x="333 342 351 360 369 378 387" y="643" fill="#DCD7BA">plugins</text>
 <text x="36 45" y="683" fill="#727169">↑↓</text>
 <text x="63 72 81 90" y="683" fill="#727169">move</text>
 <text x="108" y="683" fill="#727169">·</text>

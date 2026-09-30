@@ -38,7 +38,7 @@ A guided setup in your terminal that writes plain Lua you own.
 
 **Review.** A summary of every section, the files that would be written, and every plugin, language tool and parser that would be downloaded.
 
-<img alt="The review: a line per section, 19 new files in ~/.config/nvim, 22 plugins, 8 language tools and 18 syntax parsers to download, and Save and download as the recommended action." src="docs/assets/screens/review.svg">
+<img alt="The review: a line per section, 19 new files in ~/.config/nvim, 23 plugins, 8 language tools and 19 syntax parsers to download, and Save and download as the recommended action." src="docs/assets/screens/review.svg">
 
 ## What you get
 
@@ -51,7 +51,7 @@ Accepting every recommendation gives a cohesive workspace for Web and Lua develo
 | Section | Choices |
 |---|---|
 | Editor | 27 settings in one form, including indentation detection, highlight on copy, restore cursor, trim on save and spell check for prose |
-| Appearance | 26 theme plugins, Neovim's built-in themes or any theme from GitHub · Nerd Font icons (mini.icons) or plain symbols, after a quick glyph test · lualine, mini.statusline or the built-in status line · bufferline, barbar, mini.tabline or no tabs · indent-blankline, Snacks or mini.indentscope guides · Snacks, fidget or built-in notifications |
+| Appearance | 26 theme plugins, Neovim's built-in themes or any theme from GitHub · Nerd Font icons (mini.icons) or plain symbols, after a quick glyph test · lualine, mini.statusline or the built-in status line · bufferline, barbar, mini.tabline or no tabs · indent-blankline, Snacks or mini.indentscope guides · Snacks, fidget or built-in notifications · noice.nvim's floating command line or the built-in one |
 | Workspace | kickstart.nvim or LazyVim shortcuts, or Neovim's defaults only, with any key changed, turned off or added · which-key or mini.clue hints · the Snacks dashboard or mini.starter |
 | Navigation | Telescope, Snacks, fzf-lua, mini.pick or built-in search · neo-tree, nvim-tree, Snacks, oil, mini.files or netrw |
 | Languages | 24 languages, each with its language server, formatter where one is common, and syntax parsers, installed by Mason or by you · nvim-treesitter parsers or built-in syntax · blink.cmp, nvim-cmp or built-in completion |

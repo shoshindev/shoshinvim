@@ -12,6 +12,10 @@ func completionEngineLua(s State) string {
 		if nerdIcons(s) {
 			menu = "\n      menu = { draw = { treesitter = { 'lsp' } } },"
 		}
+		cmdline := "" // Under noice's command popup, : commands get LazyVim's dropdown.
+		if Value(s, "appearance.cmdline", "native") == "noice" {
+			cmdline = "\n    cmdline = { completion = { list = { selection = { preselect = false } }, menu = { auto_show = function() return vim.fn.getcmdtype() == ':' end }, ghost_text = { enabled = true } } },"
+		}
 		return `if not vim.g.shoshinvim_probe then
   local ok, blink = pcall(require, 'blink.cmp')
   if ok then blink.setup({
@@ -22,7 +26,7 @@ func completionEngineLua(s State) string {
     },
     sources = { default = { 'lsp', 'path', 'snippets', 'buffer' } },
     fuzzy = { implementation = 'lua' },
-    signature = { enabled = true },
+    signature = { enabled = true },` + cmdline + `
   }) end
 end
 `

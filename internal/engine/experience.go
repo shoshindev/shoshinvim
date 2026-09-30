@@ -9,6 +9,7 @@ func appearanceLua(s State) string {
 	var b strings.Builder
 	b.WriteString(colorschemeLua(s))
 	nerd := nerdIcons(s)
+	b.WriteString(noiceLua(s))
 	if Value(s, "appearance.statusline", "native") == "lualine" {
 		b.WriteString(lualineLua(s))
 	}
@@ -116,6 +117,54 @@ end
 	return b.String()
 }
 
+// noiceLua sets noice.nvim up as LazyVim does: commands in a popup near the top,
+// searches at the bottom, long messages in a split, and written-lines and undo
+// messages in a small corner view. Each job stays with the plugin chosen for it:
+// fidget keeps language server progress and blink.cmp keeps signature help.
+func noiceLua(s State) string {
+	if Value(s, "appearance.cmdline", "native") != "noice" {
+		return ""
+	}
+	fidget := Value(s, "appearance.notifications", "none") == "fidget"
+	blink := Value(s, "completion.engine", "native") == "blink.cmp"
+	nvimCmp := Value(s, "completion.engine", "native") == "nvim-cmp"
+	var extra []string
+	if b := borderStyle(s); b != "" {
+		extra = append(extra, "views = { hover = { border = { style = "+LuaString(b)+" }, position = { row = 2, col = 2 } } }, -- Framed documentation popups.")
+	}
+	if !nerdIcons(s) {
+		extra = append(extra, `cmdline = { format = { cmdline = { icon = '>' }, search_down = { icon = '/' }, search_up = { icon = '?' }, filter = { icon = '$' },
+        lua = { icon = 'lua' }, help = { icon = '?' }, calculator = { icon = '=' }, input = { icon = '>' } } },
+      format = { level = { icons = { error = 'E ', warn = 'W ', info = 'I ' } } },
+      popupmenu = { kind_icons = false },`)
+	}
+	tail := ""
+	if len(extra) > 0 {
+		tail = "\n      " + strings.Join(extra, "\n      ")
+	}
+	return fmt.Sprintf(`if not vim.g.shoshinvim_probe then
+  local ok, noice = pcall(require, 'noice')
+  if ok then
+    noice.setup({
+      lsp = {
+        override = {
+          ['vim.lsp.util.convert_input_to_markdown_lines'] = true,
+          ['vim.lsp.util.stylize_markdown'] = true,
+          ['cmp.entry.get_documentation'] = %s,
+        },
+        progress = { enabled = %s },
+        signature = { enabled = %s },
+      },
+      routes = {
+        { filter = { event = 'msg_show', any = { { find = '%%d+L, %%d+B' }, { find = '; after #%%d+' }, { find = '; before #%%d+' } } }, view = 'mini' },
+      },
+      presets = { bottom_search = true, command_palette = true, long_message_to_split = true },%s
+    })
+  end
+end
+`, Lua(nvimCmp), Lua(!fidget), Lua(!blink), tail)
+}
+
 // lualineLua lays the status line out as LazyVim does: mode · branch · diagnostics and
 // file · language server progress and Git changes · position · time.
 func lualineLua(s State) string {
@@ -131,6 +180,12 @@ func lualineLua(s State) string {
 	}
 	c := "{ 'diagnostics', symbols = { error = icons.diagnostics.Error .. %[3]s, warn = icons.diagnostics.Warn .. %[3]s, info = icons.diagnostics.Info .. %[3]s, hint = icons.diagnostics.Hint .. %[3]s } }," +
 		fileType + "\n          { 'filename', path = 1, symbols = { modified = icons.ui.modified, readonly = icons.ui.readonly } }"
+	// noice shows language server progress itself; the bar shows its mode instead, such
+	// as "recording @q".
+	progress := "function() return vim.lsp.status() end,"
+	if Value(s, "appearance.cmdline", "native") == "noice" {
+		progress = "{ function() return require('noice').api.status.mode.get() end, cond = function() return package.loaded['noice'] and require('noice').api.status.mode.has() end, color = 'Constant' },"
+	}
 	// Git change counts come live from the chosen Git plugin.
 	source := ""
 	switch Value(s, "git.hunks", "native") {
@@ -155,7 +210,7 @@ func lualineLua(s State) string {
           `+c+`,
         },
         lualine_x = {
-          function() return vim.lsp.status() end,
+          `+progress+`
           { 'diff', symbols = { added = icons.git.added .. %[2]s, modified = icons.git.modified .. %[2]s, removed = icons.git.removed .. %[2]s }%[4]s }%[5]s,
         },
         lualine_y = { { 'progress', separator = ' ', padding = { left = 1, right = 0 } }, { 'location', padding = { left = 0, right = 1 } } },

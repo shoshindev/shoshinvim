@@ -155,7 +155,7 @@ assert(found, 'no ` + filetype + ` window')`})
 		choice{"hints which-key", map[string]any{"navigation.shortcuts": "which-key", "keymaps.style": "lazyvim"}, "assert(package.loaded['which-key'], 'which-key not loaded')"},
 		choice{"icons nerd", map[string]any{"appearance.icons": "nerd", "appearance.statusline": "lualine", "appearance.buffers": "bufferline", "navigation.explorer": "neo-tree",
 			"navigation.shortcuts": "which-key", "keymaps.style": "lazyvim", "workspace.start_screen": "snacks"}, nerdIconsCheck},
-		choice{"icons plain", map[string]any{"appearance.icons": "plain", "appearance.statusline": "lualine", "appearance.buffers": "bufferline", "navigation.explorer": "neo-tree",
+		choice{"icons plain", map[string]any{"appearance.icons": "plain", "appearance.cmdline": "noice", "appearance.statusline": "lualine", "appearance.buffers": "bufferline", "navigation.explorer": "neo-tree",
 			"navigation.picker": "snacks", "appearance.notifications": "snacks", "navigation.shortcuts": "which-key", "keymaps.style": "lazyvim",
 			"completion.engine": "blink.cmp", "language.lua.lsp": true}, plainIconsCheck},
 		choice{"polish rounded", map[string]any{"options.winborder": "rounded", "options.fillchars": "eob: ", "navigation.shortcuts": "which-key", "keymaps.style": "lazyvim",
@@ -187,6 +187,24 @@ vim.fn.writefile({ 'local function f()', '  return 1', 'end' }, file)
 vim.cmd.edit(file)
 vim.treesitter.get_parser(0):parse()
 assert(vim.fn.foldlevel(2) > 0, 'a function is not a fold')`},
+		choice{"noice snacks", map[string]any{"appearance.cmdline": "noice", "appearance.notifications": "snacks", "appearance.statusline": "lualine",
+			"completion.engine": "blink.cmp", "language.lua.lsp": true}, `local config = require('noice.config')
+assert(vim.wait(2000, config.is_running), 'noice is not running')
+assert(config.options.lsp.signature.enabled == false, 'blink.cmp keeps signature help')
+assert(config.options.lsp.progress.enabled, 'noice shows language server progress')
+assert(require('blink.cmp.config').cmdline.completion.menu.auto_show, 'no command dropdown')
+vim.notify('from noice', vim.log.levels.WARN)
+assert(vim.wait(2000, function()
+  for _, w in ipairs(vim.api.nvim_list_wins()) do
+    if vim.bo[vim.api.nvim_win_get_buf(w)].filetype == 'snacks_notif' then return true end
+  end
+end, 50), 'noice did not hand the notification to snacks')`},
+		choice{"noice fidget", map[string]any{"appearance.cmdline": "noice", "appearance.notifications": "fidget", "completion.engine": "nvim-cmp", "language.lua.lsp": true},
+			`local config = require('noice.config')
+assert(vim.wait(2000, config.is_running), 'noice is not running')
+assert(config.options.lsp.progress.enabled == false, 'fidget keeps language server progress')
+assert(config.options.lsp.signature.enabled, 'noice shows signature help')
+assert(config.options.lsp.override['cmp.entry.get_documentation'], 'nvim-cmp documentation')`},
 		choice{"detect indent", map[string]any{"editor.detect_indent": "guess-indent"}, "assert(package.loaded['guess-indent'], 'guess-indent not loaded')"},
 		choice{"editor behaviors", map[string]any{"editor.highlight_yank": true, "editor.trim_whitespace": true, "editor.restore_cursor": true, "editor.spell_prose": true},
 			"local events = {}; for _, a in ipairs(vim.api.nvim_get_autocmds({ group = 'ShoshinEditor' })) do events[a.event] = true end; for _, e in ipairs({ 'TextYankPost', 'BufWritePre', 'BufReadPost', 'FileType' }) do assert(events[e], 'missing ' .. e) end"},
@@ -291,7 +309,7 @@ assert(#require('lint').get_running() == 0 and #vim.diagnostic.get(0) == 0, 'ESL
 	)
 	// Each interface choice also works with Nerd Font icons, which changes its setup.
 	for _, c := range slices.Clone(cases) {
-		for _, prefix := range []string{"statusline ", "tabs ", "finder ", "explorer ", "completion ", "start ", "hints ", "debug nvim-dap-view", "polish "} {
+		for _, prefix := range []string{"statusline ", "tabs ", "finder ", "explorer ", "completion ", "start ", "hints ", "debug nvim-dap-view", "polish ", "noice "} {
 			if strings.HasPrefix(c.name, prefix) {
 				values := maps.Clone(c.values)
 				values["appearance.icons"] = "nerd"
@@ -602,6 +620,9 @@ local wk = require('which-key.config').options.icons -- Its name rules apply onl
 glyphs('which-key', { wk.keys, wk.breadcrumb, wk.separator, wk.group })
 glyphs('neo-tree', require('neo-tree').ensure_config().default_component_configs)
 glyphs('bufferline', require('bufferline.config').get().options)
+assert(vim.wait(2000, require('noice.config').is_running), 'noice is not running')
+local noice = require('noice.config').options
+glyphs('noice', { noice.cmdline.format, noice.format.level.icons, noice.popupmenu.kind_icons })
 local columns = require('blink.cmp.config').completion.menu.draw.columns
 if type(columns) == 'function' then columns = columns() end -- blink picks columns by mode.
 for _, column in ipairs(columns) do

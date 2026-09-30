@@ -407,6 +407,16 @@
       "description": "How messages and language server progress are shown."
     },
     {
+      "id": "appearance.cmdline",
+      "label": "Command line",
+      "type": "enum",
+      "choices": [
+        "native",
+        "noice"
+      ],
+      "description": "Where commands, searches and messages appear: Neovim's command line, or noice.nvim's floating popups."
+    },
+    {
       "id": "appearance.icons",
       "label": "Icons",
       "type": "enum",

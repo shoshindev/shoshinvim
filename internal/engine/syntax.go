@@ -59,6 +59,9 @@ func Parsers(s State) []ParserSource {
 			set[p] = true
 		}
 	}
+	if Value(s, "appearance.cmdline", "native") == "noice" {
+		set["regex"] = true // noice colors searches with it.
+	}
 	var out []ParserSource
 	for _, lang := range sorted(set) {
 		out = append(out, parserTable()[lang])

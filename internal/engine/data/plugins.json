@@ -749,6 +749,20 @@
       "LazyVim (extra)"
     ]
   },
+  "noice": {
+    "repository": "folke/noice.nvim",
+    "revision": "7bfd942445fb63089b59f97ca487d605e715f155",
+    "reviewed": "2026-09-30",
+    "stars": 5817,
+    "updated": "2025-11",
+    "license": "Apache-2.0",
+    "used_by": [
+      "LazyVim"
+    ],
+    "requires": [
+      "nui"
+    ]
+  },
   "mini.icons": {
     "repository": "nvim-mini/mini.icons",
     "revision": "f642e3ba8c12afbc8f32f6d77ef6597eac56786f",

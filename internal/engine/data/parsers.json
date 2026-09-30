@@ -119,6 +119,10 @@
     "repository": "tree-sitter-grammars/tree-sitter-query",
     "revision": "8e9e223812ff30854fbc912adbec696ba5f0e023"
   },
+  "regex": {
+    "repository": "tree-sitter/tree-sitter-regex",
+    "revision": "b2ac15e27fce703d2f37a79ccd94a5c0cbe9720b"
+  },
   "ruby": {
     "repository": "tree-sitter/tree-sitter-ruby",
     "revision": "ad907a69da0c8a4f7a943a7fe012712208da6dee"
