@@ -2,12 +2,14 @@
 """Real Neovim UI smoke test. Requires msgpack; Pillow is optional for screenshots.
 Run only against an isolated, already-installed Rich IDE configuration:
   python3 scripts/editor-smoke.py --root /tmp/shoshinvim-test --screenshots /tmp/screens
+Screenshots of a configuration with Nerd Font icons need a Nerd Font: pass --font.
 """
 import argparse, os, pathlib, select, subprocess, time
 import msgpack
 
 class Editor:
-    def __init__(self, root):
+    def __init__(self, root, font):
+        self.font=font
         env = os.environ.copy()
         for key, directory in [('XDG_CONFIG_HOME','config'),('XDG_DATA_HOME','data'),('XDG_STATE_HOME','state'),('XDG_CACHE_HOME','cache')]:
             env[key] = str(root / directory)
@@ -65,7 +67,7 @@ class Editor:
         self.call('nvim_command',['redraw!']);self.pump(.2)
         path.with_suffix('.txt').write_text('\n'.join(''.join(c for c,h in row) for row in self.grid))
         from PIL import Image,ImageDraw,ImageFont
-        font=ImageFont.truetype('/System/Library/Fonts/Menlo.ttc',16)
+        font=ImageFont.truetype(self.font,16)
         im=Image.new('RGB',(len(self.grid[0])*10,len(self.grid)*22),self.bg);draw=ImageDraw.Draw(im)
         for y,row in enumerate(self.grid):
             for x,(c,h) in enumerate(row):
@@ -82,12 +84,13 @@ class Editor:
         self.stderr.close()
 
 p=argparse.ArgumentParser();p.add_argument('--root',type=pathlib.Path,required=True);p.add_argument('--screenshots',type=pathlib.Path,required=True)
+p.add_argument('--font',default='/System/Library/Fonts/Menlo.ttc',help='monospace font file for the screenshots')
 a=p.parse_args();a.screenshots.mkdir(parents=True,exist_ok=True)
 project=a.root/'sample-project';project.mkdir(exist_ok=True)
 (project/'package.json').write_text('{"name":"shoshin-preview","private":true}\n')
 (project/'main.ts').write_text('interface Project {\n  name: string;\n  ready: boolean;\n}\n\nconst project: Project = {\n  name: "ShoshinVim",\n  ready: true,\n};\n\nexport function welcome(name: string): string {\n  return `Welcome to ${name}`;\n}\n\nconsole.log(welcome(project.name));\n')
 (project/'init.lua').write_text('local greeting = "Hello, Shoshin"\nprint(greeting)\n')
-e=Editor(a.root)
+e=Editor(a.root,a.font)
 try:
     assert e.lua('return vim.g.colors_name')=='tokyonight-night'
     assert not e.lua('return vim.v.errmsg'),e.lua('return vim.v.errmsg')

@@ -302,6 +302,7 @@ var sections = []section{
 			skip: func(s engine.State) bool { return notCustomTheme(s) || len(customSchemeOptions(s)) == 0 }},
 		{id: "custom-theme-name", title: "Colorscheme name", help: "GitHub did not list this repository's colorschemes; type the name used with :colorscheme.",
 			input: &inputSpec{setting: "appearance.custom_theme.colorscheme", placeholder: "name"}, skip: func(s engine.State) bool { return notCustomTheme(s) || len(customSchemeOptions(s)) > 0 }},
+		{id: "appearance.icons", title: "Icons", help: "Do these look like icons?   " + iconSample + "   Nerd Font icons need a Nerd Font in your terminal.", dynamic: iconOptions},
 		{id: "appearance.statusline", title: "Status line", help: "The bar at the bottom of the screen.", options: []option{
 			{label: "lualine.nvim", short: "lualine", plugin: "lualine", detail: "Mode, Git branch, diagnostics and file details in one configurable bar", values: is("appearance.statusline", "lualine"), recommended: true},
 			{label: "mini.statusline", short: "mini.statusline", plugin: "mini.statusline", detail: "A small, fast statusline from mini.nvim; kickstart's choice", values: is("appearance.statusline", "mini.statusline")},

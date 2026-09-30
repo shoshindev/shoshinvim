@@ -748,5 +748,16 @@
     "used_by": [
       "LazyVim (extra)"
     ]
+  },
+  "mini.icons": {
+    "repository": "nvim-mini/mini.icons",
+    "revision": "f642e3ba8c12afbc8f32f6d77ef6597eac56786f",
+    "reviewed": "2026-09-30",
+    "stars": 411,
+    "updated": "2026-09",
+    "license": "MIT",
+    "used_by": [
+      "LazyVim"
+    ]
   }
 }
