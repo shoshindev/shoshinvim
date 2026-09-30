@@ -37,6 +37,7 @@ end
   local ok, line = pcall(require, 'bufferline')
   if ok then line.setup({ options = {
     diagnostics = 'nvim_lsp', separator_style = 'thin', show_buffer_icons = false,
+    always_show_bufferline = false,
     show_buffer_close_icons = false, show_close_icon = false,
     offsets = {
       { filetype = 'snacks_layout_box', text = 'PROJECT', text_align = 'left' },
@@ -51,6 +52,7 @@ end
 		b.WriteString(`if not vim.g.shoshinvim_probe then
   local ok, bar = pcall(require, 'barbar')
   if ok then bar.setup({
+    auto_hide = 1,
     icons = { filetype = { enabled = false }, button = '', separator = { left = '▎', right = '' } },
     sidebar_filetypes = { NvimTree = true, ['neo-tree'] = true, snacks_layout_box = true },
   }) end
@@ -128,14 +130,13 @@ func snacksOptions(s State) string {
 	fmt.Fprintf(&b, " input = { enabled = %s }, notifier = { enabled = %s, timeout = 3000 },\n", notify, notify)
 	if Value(s, "workspace.start_screen", "none") == "snacks" {
 		b.WriteString(` dashboard = { enabled = true, preset = {
-   header = 'S H O S H I N\n\nA fresh mind. A focused workspace.',
    keys = {
 `)
 		for _, item := range startItems(s) {
 			fmt.Fprintf(&b, "     { icon = '', key = %s, desc = %s, action = %s },\n", LuaString(item.key), LuaString(item.label), LuaString(":"+item.command))
 		}
 		b.WriteString(`   },
- }, sections = { { section = 'header' }, { section = 'keys', gap = 1, padding = 1 }, { text = 'Press your leader key in a file to discover shortcuts.', align = 'center', padding = 1 } } },
+ }, sections = { function(self) return require('user_config.logo').sections(self:size().width) end, { section = 'keys', gap = 1, padding = 1 }, { text = 'Press your leader key in a file to discover shortcuts.', align = 'center', padding = 1 } } },
 `)
 	}
 	b.WriteString(" }")
@@ -165,7 +166,7 @@ func interfaceLua(s State) string {
 		for _, item := range startItems(s) {
 			items = append(items, fmt.Sprintf("{ name = %s, action = %s, section = 'Start' }", LuaString(item.label), LuaString(item.command)))
 		}
-		setup("mini.starter", "m.setup({ header = 'S H O S H I N\\n\\nA fresh mind. A focused workspace.', items = { "+strings.Join(items, ", ")+" }, footer = 'Press your leader key in a file to discover shortcuts.' })")
+		setup("mini.starter", "local logo = require('user_config.logo')\n  m.setup({ header = logo.header, items = { "+strings.Join(items, ", ")+" }, footer = 'Press your leader key in a file to discover shortcuts.',\n    content_hooks = { logo.paint, m.gen_hook.adding_bullet(), m.gen_hook.aligning('center', 'center') } })")
 	}
 	switch Value(s, "appearance.indent", "none") {
 	case "indent-blankline":
@@ -176,5 +177,114 @@ func interfaceLua(s State) string {
 	if Value(s, "appearance.notifications", "none") == "fidget" {
 		setup("fidget", "m.setup({})")
 	}
+	return b.String()
+}
+
+// logoLua is the start screen's wordmark module: the setup's block logo in its row
+// colors, with a one-line mark for windows too narrow for it.
+func logoLua(s State) string {
+	start := Value(s, "workspace.start_screen", "none")
+	if start != "snacks" && start != "mini.starter" {
+		return ""
+	}
+	quote := func(list []string) string {
+		parts := make([]string, len(list))
+		for i, v := range list {
+			parts[i] = LuaString(v)
+		}
+		return strings.Join(parts, ", ")
+	}
+	var b strings.Builder
+	b.WriteString("-- The ShoshinVim wordmark on the start screen. In pixels, # is a filled cell.\nlocal M = {\n  pixels = {\n")
+	for _, row := range LogoPixels() {
+		fmt.Fprintf(&b, "    %s,\n", LuaString(row))
+	}
+	fmt.Fprintf(&b, `  },
+  colors = {
+    dark = { %s },
+    light = { %s },
+  },
+  mark = %s, -- for windows narrower than min_width
+  tagline = %s,
+  min_width = %d,
+}
+
+-- Filled cells are painted as background color, so the rows join without seams.
+function M.highlight()
+  for i, color in ipairs(M.colors[vim.o.background == 'light' and 'light' or 'dark']) do
+    vim.api.nvim_set_hl(0, 'ShoshinLogo' .. i, { bg = color })
+  end
+end
+
+-- runs splits a row into runs of filled and empty cells: { { width, filled }, ... }.
+function M.runs(row)
+  local runs, i = {}, 1
+  while i <= #row do
+    local j = i
+    while row:sub(j, j) == row:sub(i, i) do j = j + 1 end
+    runs[#runs + 1] = { j - i, row:sub(i, i) == '#' }
+    i = j
+  end
+  return runs
+end
+`, quote(LogoColors(true)), quote(LogoColors(false)), LuaString(LogoMark), LuaString("A fresh mind. A focused workspace."), len(LogoPixels()[0])+4)
+	if start == "snacks" {
+		b.WriteString(`
+-- sections is the snacks.nvim dashboard header for a window this wide.
+function M.sections(width)
+  local tagline = { text = { M.tagline, hl = 'SnacksDashboardHeader' }, align = 'center', padding = 2 }
+  if width < M.min_width then
+    return { { text = { M.mark, hl = 'SnacksDashboardHeader' }, align = 'center', padding = 1 }, tagline }
+  end
+  local sections = {}
+  for y, row in ipairs(M.pixels) do
+    local text = {}
+    for _, run in ipairs(M.runs(row)) do
+      text[#text + 1] = { (' '):rep(run[1]), hl = run[2] and ('ShoshinLogo' .. y) or nil }
+    end
+    sections[#sections + 1] = { text = text, align = 'center', padding = y == #M.pixels and 1 or 0 }
+  end
+  sections[#sections + 1] = tagline
+  return sections
+end
+`)
+	} else {
+		b.WriteString(`
+-- header is mini.starter's header: blank wordmark rows, which paint() fills in.
+function M.header()
+  M.wide = vim.api.nvim_win_get_width(0) >= M.min_width
+  if not M.wide then return M.mark .. '\n\n' .. M.tagline end
+  local lines = {}
+  for _, row in ipairs(M.pixels) do lines[#lines + 1] = (' '):rep(#row) end
+  return table.concat(lines, '\n') .. '\n\n' .. M.tagline
+end
+
+-- paint is a mini.starter content hook that colors the wordmark rows.
+function M.paint(content)
+  local y = 0
+  for _, line in ipairs(content) do
+    if M.wide and y < #M.pixels and #line == 1 and line[1].type == 'header' then
+      y = y + 1
+      local units = {}
+      for _, run in ipairs(M.runs(M.pixels[y])) do
+        units[#units + 1] = { string = (' '):rep(run[1]), type = 'header', hl = run[2] and ('ShoshinLogo' .. y) or 'MiniStarterHeader' }
+      end
+      for k in pairs(line) do line[k] = nil end
+      for k, unit in ipairs(units) do line[k] = unit end
+    end
+  end
+  return content
+end
+`)
+	}
+	b.WriteString(`
+if not vim.g.shoshinvim_probe then
+  M.highlight()
+  local group = vim.api.nvim_create_augroup('ShoshinLogo', { clear = true })
+  vim.api.nvim_create_autocmd('ColorScheme', { group = group, callback = M.highlight })
+  vim.api.nvim_create_autocmd('OptionSet', { group = group, pattern = 'background', callback = M.highlight })
+end
+return M
+`)
 	return b.String()
 }

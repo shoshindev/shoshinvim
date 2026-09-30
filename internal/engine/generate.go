@@ -140,6 +140,7 @@ end })
 	}
 	add("lint", lintLua(s))
 	add("debug", debugLua(s))
+	add("logo", logoLua(s))
 	add("interface", interfaceLua(s))
 	add("keymaps", keymapsLua(s))
 	var init strings.Builder

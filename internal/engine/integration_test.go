@@ -58,8 +58,8 @@ func TestChoicesInRealNeovim(t *testing.T) {
 		choice{"git gitsigns", map[string]any{"git.hunks": "gitsigns"}, "assert(package.loaded['gitsigns'], 'gitsigns not loaded')"},
 		choice{"statusline lualine", map[string]any{"appearance.statusline": "lualine"}, "assert(package.loaded['lualine'] and vim.o.statusline:find('lualine'), vim.o.statusline)"},
 		choice{"statusline mini", map[string]any{"appearance.statusline": "mini.statusline"}, "assert(_G.MiniStatusline and vim.o.statusline:find('MiniStatusline'), vim.o.statusline)"},
-		choice{"tabs bufferline", map[string]any{"appearance.buffers": "bufferline"}, "assert(package.loaded['bufferline'] and vim.o.showtabline == 2)"},
-		choice{"tabs barbar", map[string]any{"appearance.buffers": "barbar"}, "assert(package.loaded['barbar'] and vim.o.showtabline == 2, 'showtabline ' .. vim.o.showtabline)"},
+		choice{"tabs bufferline", map[string]any{"appearance.buffers": "bufferline"}, "assert(package.loaded['bufferline'], 'bufferline not loaded')\n" + tabsCheck},
+		choice{"tabs barbar", map[string]any{"appearance.buffers": "barbar"}, "assert(package.loaded['barbar'], 'barbar not loaded')\n" + tabsCheck},
 		choice{"tabs mini", map[string]any{"appearance.buffers": "mini.tabline"}, "assert(_G.MiniTabline and vim.o.tabline:find('MiniTabline'), vim.o.tabline)"},
 		choice{"completion blink", map[string]any{"completion.engine": "blink.cmp", "language.lua.lsp": true},
 			"assert(package.loaded['blink.cmp']); local c = vim.lsp.config['*']; assert(c and c.capabilities and c.capabilities.textDocument.completion.completionItem.snippetSupport, 'capabilities')"},
@@ -141,8 +141,9 @@ assert(found, 'no ` + filetype + ` window')`})
 	}
 	cases = append(cases,
 		choice{"shortcut command", map[string]any{"keymaps.style": "none"}, "assert(vim.fn.maparg('<leader>L', 'n'):find('Lazy'), 'custom command shortcut')"},
-		choice{"start snacks", map[string]any{"workspace.start_screen": "snacks"}, "assert(require('snacks').config.dashboard.enabled, 'dashboard off')"},
-		choice{"start mini.starter", map[string]any{"workspace.start_screen": "mini.starter"}, "assert(_G.MiniStarter, 'mini.starter not set up')"},
+		choice{"start snacks", map[string]any{"workspace.start_screen": "snacks"}, "assert(require('snacks').config.dashboard.enabled, 'dashboard off')\n" +
+			"Snacks.dashboard.open({ win = vim.api.nvim_get_current_win(), buf = vim.api.nvim_get_current_buf() })\n" + logoCheck},
+		choice{"start mini.starter", map[string]any{"workspace.start_screen": "mini.starter"}, "assert(_G.MiniStarter, 'mini.starter not set up')\nMiniStarter.open()\n" + logoCheck},
 		choice{"indent blankline", map[string]any{"appearance.indent": "indent-blankline"}, "assert(package.loaded['ibl'], 'ibl not loaded')"},
 		choice{"indent snacks", map[string]any{"appearance.indent": "snacks"}, "assert(require('snacks').config.indent.enabled, 'snacks indent off')"},
 		choice{"indent mini", map[string]any{"appearance.indent": "mini.indentscope"}, "assert(_G.MiniIndentscope, 'mini.indentscope not set up')"},
@@ -481,3 +482,17 @@ vim.cmd('qa!')`
 		}
 	}
 }
+
+// tabsCheck: the tab row stays hidden until two files are open, so an empty start
+// screen gets no blank bar.
+const tabsCheck = `assert(vim.wait(1000, function() return vim.o.showtabline < 2 end), 'tab row shown without files')
+vim.cmd('edit one.txt | edit two.txt')
+assert(vim.wait(1000, function() return vim.o.showtabline == 2 end), 'tab row hidden with two files')`
+
+// logoCheck: the open start screen paints the wordmark in its row colors.
+const logoCheck = `local cells = 0
+for _, m in ipairs(vim.api.nvim_buf_get_extmarks(0, -1, 0, -1, { details = true })) do
+  if (m[4].hl_group or ''):match('^ShoshinLogo') then cells = cells + 1 end
+end
+assert(cells > 0, 'no wordmark on the start screen')
+assert(vim.api.nvim_get_hl(0, { name = 'ShoshinLogo1' }).bg, 'wordmark has no color')`

@@ -589,3 +589,62 @@ func TestOptionDefaultsAreNotMachineSpecific(t *testing.T) {
 		}
 	}
 }
+
+func TestLogoGlyphsAreWellFormed(t *testing.T) {
+	height := len(logoGlyphs['S'])
+	for _, r := range logoWord {
+		g, ok := logoGlyphs[r]
+		if !ok || len(g) != height {
+			t.Fatalf("glyph %q missing or not %d rows tall", r, height)
+		}
+		for _, row := range g {
+			if len(row) != len(g[0]) || strings.Trim(row, "#.") != "" {
+				t.Fatalf("glyph %q has a ragged or invalid row %q", r, row)
+			}
+		}
+	}
+	for _, dark := range []bool{true, false} {
+		if len(LogoColors(dark)) != height {
+			t.Fatalf("LogoColors(%v) has %d colors for %d rows", dark, len(LogoColors(dark)), height)
+		}
+	}
+}
+
+// Both start screens head with the wordmark module; without one nothing is written.
+func TestStartScreensShowTheWordmark(t *testing.T) {
+	for _, start := range []string{"snacks", "mini.starter", "none"} {
+		s, err := LoadCatalog().Profile(NewState(), "rich-ide")
+		if err != nil {
+			t.Fatal(err)
+		}
+		s.Values["workspace.start_screen"] = start
+		files, err := Generate(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		logo, ok := files["lua/user_config/logo.lua"]
+		if start == "none" {
+			if ok || strings.Contains(files["init.lua"], "load('logo')") {
+				t.Fatal("wordmark module written without a start screen")
+			}
+			continue
+		}
+		if !ok || !strings.Contains(files["init.lua"], "load('logo')") {
+			t.Fatalf("%s: no wordmark module", start)
+		}
+		for _, row := range LogoPixels() {
+			if !strings.Contains(logo, LuaString(row)) {
+				t.Fatalf("%s: wordmark row %s missing", start, row)
+			}
+		}
+		uses := map[string]string{"snacks": "require('user_config.logo').sections(", "mini.starter": "header = logo.header"}
+		if !strings.Contains(files["lua/user_config/plugins.lua"]+files["lua/user_config/interface.lua"], uses[start]) {
+			t.Fatalf("%s start screen does not use the wordmark", start)
+		}
+		if nvim, err := exec.LookPath("nvim"); err == nil {
+			if err := Probe(context.Background(), nvim, files); err != nil {
+				t.Fatalf("%s: %v", start, err)
+			}
+		}
+	}
+}
