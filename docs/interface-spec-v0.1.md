@@ -170,6 +170,7 @@ Implementation details follow from decisions and are never asked:
 - Configurations saved before the Workspace choices existed keep their behavior: the earlier "Space shortcuts" layout maps to the LazyVim style with Space as leader, the Snacks start screen, indent guides and notifier.
 - Editor behaviors (highlight on copy, trim, reopen at last position, spell check) are autocommands in one `ShoshinEditor` group in `autocmds.lua`.
 - Each plugin's setup runs after lazy.nvim has loaded every plugin, and lazy.nvim keeps the configuration folder on the runtime path, so configurations started with `nvim -u` load completely.
+- lazy.nvim is downloaded to `plugins/lazy.nvim`, the folder name it looks for, so `:Lazy` lists it as installed and nothing to clean. Configurations that earlier versions downloaded to `plugins/lazy` keep loading from there. The next download moves that folder when it holds the pinned commit and leaves a link in its place, so files an earlier version generated, such as ones restored from history, still find lazy.nvim; lazy.nvim ignores links in its folder. Where links cannot be made, or the folder holds another commit, it stays as it is and lazy.nvim is downloaded anew.
 - `termguicolors` is left to Neovim's own terminal detection.
 
 ### 3.6 Summaries
