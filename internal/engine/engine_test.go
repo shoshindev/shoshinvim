@@ -476,6 +476,90 @@ func TestMasonUsesTheChosenNeovim(t *testing.T) {
 	}
 }
 
+// commit adds an empty commit to the repository in dir, creating it, and returns the commit.
+func commit(t *testing.T, dir, message string) string {
+	t.Helper()
+	for _, args := range [][]string{{"init", "--quiet", dir},
+		{"-C", dir, "-c", "user.name=test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false", "commit", "--quiet", "--allow-empty", "-m", message}} {
+		if out, err := exec.Command("git", args...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v %s", args, err, out)
+		}
+	}
+	return head(context.Background(), dir)
+}
+
+func TestLazyMovesFromItsEarlierFolder(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("requires Git")
+	}
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	target := filepath.Join(t.TempDir(), "nvim")
+	s := NewState()
+	s.Values["plugins.manager"] = "lazy"
+	actions, err := Actions(s, target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lazy := actions[0]
+	// lazy.nvim counts itself installed only in a folder with its repository's name.
+	if lazy.ID != "lazy" || filepath.Base(lazy.Destination) != "lazy.nvim" {
+		t.Fatalf("lazy.nvim downloads to %s", lazy.Destination)
+	}
+	earlier := filepath.Join(filepath.Dir(lazy.Destination), "lazy")
+	upstream := filepath.Join(t.TempDir(), "lazy.nvim") // Stands in for GitHub.
+	lazy.Revision, lazy.Source = commit(t, upstream, "pinned"), upstream
+	notes := func(dir string) {
+		t.Helper()
+		if b, err := os.ReadFile(filepath.Join(dir, "notes.txt")); err != nil || string(b) != "mine" {
+			t.Fatalf("user file not in %s: %q %v", dir, b, err)
+		}
+	}
+
+	// The earlier folder holds the pin and a file of the user's.
+	if out, err := exec.Command("git", "clone", "--quiet", upstream, earlier).CombinedOutput(); err != nil {
+		t.Fatalf("%v %s", err, out)
+	}
+	if err := os.WriteFile(filepath.Join(earlier, "notes.txt"), []byte("mine"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	canLink := os.Symlink(".", filepath.Join(t.TempDir(), "link")) == nil
+	r := RunActions(context.Background(), target, "", []Action{lazy}, nil)
+	if len(r) != 1 || r[0].Status != "installed" {
+		t.Fatalf("%+v", r)
+	}
+	if got := head(context.Background(), lazy.Destination); got != lazy.Revision {
+		t.Fatalf("lazy.nvim is at %q", got)
+	}
+	if canLink {
+		// It moves, and a link keeps files generated earlier finding it.
+		if fi, err := os.Lstat(earlier); err != nil || fi.Mode()&os.ModeSymlink == 0 || !strings.Contains(r[0].Detail, "moved") {
+			t.Fatalf("not moved and linked: %v %+v", err, r)
+		}
+		notes(lazy.Destination)
+	} else if r[0].Detail != "" {
+		t.Fatalf("moved without a link for files generated earlier: %+v", r)
+	}
+	notes(earlier)
+
+	// Any other checkout there is the user's: it stays, and the pin is downloaded anew.
+	for _, dir := range []string{lazy.Destination, earlier} {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Fatal(err)
+		}
+	}
+	other := commit(t, earlier, "changed by the user")
+	r = RunActions(context.Background(), target, "", []Action{lazy}, nil)
+	if len(r) != 1 || r[0].Status != "installed" || r[0].Detail != "" {
+		t.Fatalf("%+v", r)
+	}
+	if got := head(context.Background(), earlier); got != other {
+		t.Fatalf("earlier folder changed to %q", got)
+	}
+	if got := head(context.Background(), lazy.Destination); got != lazy.Revision {
+		t.Fatalf("downloaded checkout is at %q", got)
+	}
+}
+
 func TestDataDirectoryFollowsTheTarget(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(root, "config"))

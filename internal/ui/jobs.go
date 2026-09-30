@@ -124,7 +124,11 @@ func (m *Model) onProgress(text string) {
 		m.actionsDone++
 		switch status {
 		case "INSTALLED":
-			m.addLog("", "ok", "Downloaded "+name)
+			if detail != "" {
+				m.addLog("", "ok", name+" · "+firstLine(detail)) // Installed some other way, such as moved.
+			} else {
+				m.addLog("", "ok", "Downloaded "+name)
+			}
 		case "FAILED":
 			m.addLog("", "bad", name+" failed · "+firstLine(detail))
 		default:
