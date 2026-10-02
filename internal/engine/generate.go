@@ -294,8 +294,9 @@ end
 			config = ", opts = { PATH = 'prepend', install_root_dir = base .. '/mason', ui = { icons = { package_installed = '✓', package_pending = '➜', package_uninstalled = '✗' } } }"
 		case id == "lualine", id == "mini.statusline":
 			// LazyVim's: until the status line loads, files get an empty bar and the start
-			// screen none, instead of Neovim's own for a moment. Its setup restores it.
-			config = ", init = function()\n  -- Until it loads: an empty bar in files and none on the start screen (LazyVim's).\n  vim.g.shoshinvim_laststatus = vim.o.laststatus\n  if vim.fn.argc(-1) > 0 then vim.o.statusline = ' ' else vim.o.laststatus = 0 end\nend"
+			// screen none, instead of Neovim's own for a moment. Its setup restores it
+			// (restoreLaststatus), unless user.lua has set one meanwhile.
+			config = ", init = function()\n  -- Until it loads: an empty bar in files and none on the start screen (LazyVim's).\n  if vim.fn.argc(-1) > 0 then vim.o.statusline = ' ' else vim.g.shoshinvim_laststatus, vim.o.laststatus = vim.o.laststatus, 0 end\nend"
 		}
 		// lazy.nvim expects a plugin inside its root to live at root/<name>.
 		fmt.Fprintf(&b, "installed(%s, { name = %s, %s%s })\n", LuaString(dir), LuaString(dir), loadFields(s, id), config)

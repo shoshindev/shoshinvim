@@ -11,7 +11,8 @@ type loadRule struct {
 	startup bool     // Loaded when Neovim starts.
 	events  []string // Autocommand events that load it.
 	cmds    []string // Commands that load it.
-	// A plugin with none of these loads the first time Lua code requires it.
+	deps    []string // Plugins loaded just before it, whatever loads it.
+	// A plugin without startup, events or cmds loads the first time Lua code requires it.
 }
 
 // fileEvents are LazyVim's LazyFile: a file is read, created or about to be written.
@@ -46,8 +47,9 @@ var loadRules = map[string]loadRule{
 	"mini.ai": veryLazy, "mini.surround": veryLazy, "nvim-surround": veryLazy, "mini.pairs": veryLazy, "mini.diff": veryLazy,
 
 	// Helpers for the text of a file load with the first file.
-	"gitsigns": onFile, "indent-blankline": onFile, "mini.indentscope": onFile, "mini.hipatterns": onFile,
-	"todo-comments": onFile, "guess-indent": onFile,
+	"gitsigns": onFile, "indent-blankline": onFile, "mini.indentscope": onFile, "mini.hipatterns": onFile, "guess-indent": onFile,
+	// Its own commands load it too (as in LazyVim), so they work before a file is open.
+	"todo-comments": {events: fileEvents, cmds: []string{"TodoQuickFix", "TodoLocList", "TodoTelescope", "TodoFzfLua", "TodoTrouble"}},
 
 	"blink.cmp":    {events: completionEvents},
 	"cmp-nvim-lsp": {events: completionEvents},
@@ -61,9 +63,15 @@ var loadRules = map[string]loadRule{
 	"nvim-dap": {cmds: []string{"DapSetLogLevel", "DapShowLog", "DapContinue", "DapToggleBreakpoint", "DapClearBreakpoints", "DapToggleRepl",
 		"DapStepOver", "DapStepInto", "DapStepOut", "DapPause", "DapTerminate", "DapDisconnect", "DapRestartFrame", "DapNew", "DapEval"}},
 
-	// Loaded by the code that uses them: the debugger views by nvim-dap's setup, nvim-lint
-	// by the file types it lints, and libraries by their plugins.
-	"nvim-dap-ui": onRequire, "nvim-dap-view": onRequire, "nvim-lint": onRequire,
+	// nvim-dap-view's own commands load it too. nvim-dap loads just before it, as its setup
+	// sets the view up; nvim-dap loaded from inside the view's module would require that
+	// module again while it is still loading.
+	"nvim-dap-view": {cmds: []string{"DapViewOpen", "DapViewClose", "DapViewToggle", "DapViewHover", "DapViewWatch", "DapViewJump", "DapViewShow",
+		"DapViewNavigate", "DapViewVirtualTextEnable", "DapViewVirtualTextDisable", "DapViewVirtualTextToggle"}, deps: []string{"nvim-dap"}},
+
+	// Loaded by the code that uses them: nvim-dap-ui by nvim-dap's setup, nvim-lint by the
+	// file types it lints, and libraries by their plugins.
+	"nvim-dap-ui": onRequire, "nvim-lint": onRequire,
 	"mini.icons": onRequire, "plenary": onRequire, "nui": onRequire, "nvim-nio": onRequire,
 }
 
@@ -87,12 +95,18 @@ func loadFields(s State, id string) string {
 	if len(fields) == 0 {
 		fields = append(fields, "lazy = true")
 	}
+	if len(rule.deps) > 0 { // Named, they refer to the specs of those plugins.
+		fields = append(fields, "dependencies = { "+quoted(rule.deps)+" }")
+	}
 	return strings.Join(fields, ", ")
 }
 
 // onLoad is Lua that runs body (written unindented) once lazy.nvim has loaded the
 // plugin: at startup if it already has, otherwise when the plugin first loads.
-// Validation probes skip it.
+// init.lua loads the plugins module before every module that uses this. If that one
+// failed (init.lua reports it, and leaves a marker that is not the module's table),
+// only body is skipped, not the rest of the module: requiring it again would fail
+// again, or set lazy.nvim up twice. Validation probes skip it.
 func onLoad(plugin, body string) string {
 	lines := strings.Split(strings.TrimRight(body, "\n"), "\n")
 	for i, line := range lines {
@@ -100,6 +114,6 @@ func onLoad(plugin, body string) string {
 			lines[i] = "    " + line
 		}
 	}
-	return fmt.Sprintf("if not vim.g.shoshinvim_probe then\n  require('user_config.plugins').on_load(%s, function()\n%s\n  end)\nend\n",
+	return fmt.Sprintf("if not vim.g.shoshinvim_probe and type(package.loaded['user_config.plugins']) == 'table' then\n  package.loaded['user_config.plugins'].on_load(%s, function()\n%s\n  end)\nend\n",
 		LuaString(plugin), strings.Join(lines, "\n"))
 }

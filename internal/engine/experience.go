@@ -135,8 +135,9 @@ func noiceLua(s State) string {
 })`, Lua(nvimCmp), Lua(!fidget), Lua(!blink), tail))
 }
 
-// restoreLaststatus brings back the status line its plugin's spec hid until it loaded.
-const restoreLaststatus = "vim.o.laststatus = vim.g.shoshinvim_laststatus or vim.o.laststatus"
+// restoreLaststatus brings back the status line its plugin's spec hid on the start
+// screen until it loaded, unless one has been set since, as user.lua can.
+const restoreLaststatus = "if vim.g.shoshinvim_laststatus and vim.o.laststatus == 0 then vim.o.laststatus = vim.g.shoshinvim_laststatus end"
 
 // lualineLua lays the status line out as LazyVim does: mode · branch · diagnostics and
 // file · language server progress and Git changes · position · time.

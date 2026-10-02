@@ -137,9 +137,15 @@ func TestEveryPluginHasALoadingRule(t *testing.T) {
 			t.Errorf("%s has no loading rule", id)
 		}
 	}
-	for id := range loadRules {
-		if _, ok := PluginInfo(id); !ok {
+	for id, rule := range loadRules {
+		info, ok := PluginInfo(id)
+		if !ok {
 			t.Errorf("a loading rule names %s, which is not offered", id)
+		}
+		for _, dep := range rule.deps { // Required plugins are always downloaded with it.
+			if !slices.Contains(info.Requires, dep) {
+				t.Errorf("%s loads %s first but does not require it", id, dep)
+			}
 		}
 	}
 }

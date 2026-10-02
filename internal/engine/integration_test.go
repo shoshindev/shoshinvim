@@ -60,6 +60,19 @@ func TestChoicesInRealNeovim(t *testing.T) {
 		choice{"git gitsigns", map[string]any{"git.hunks": "gitsigns"}, openFile + "assert(package.loaded['gitsigns'], 'gitsigns not loaded')"},
 		choice{"statusline lualine", map[string]any{"appearance.statusline": "lualine"}, "assert(package.loaded['lualine'] and vim.o.statusline:find('lualine'), vim.o.statusline)"},
 		choice{"statusline mini", map[string]any{"appearance.statusline": "mini.statusline"}, "assert(_G.MiniStatusline and vim.o.statusline:find('MiniStatusline'), vim.o.statusline)"},
+		// Until it loads, the start screen has no status line; then it comes back,
+		choice{"startup status line", map[string]any{"appearance.statusline": "mini.statusline"}, `assert(vim.o.laststatus == 0, 'a status line before mini.statusline loaded')
+` + firstScreenDrawn + `
+assert(_G.MiniStatusline and vim.o.laststatus == 2, 'laststatus is ' .. vim.o.laststatus .. ' once mini.statusline loaded')`},
+		// unless user.lua has chosen one meanwhile.
+		choice{"status line from user.lua", map[string]any{"appearance.statusline": "mini.statusline"}, "assert(_G.MiniStatusline and vim.o.laststatus == 3, 'user.lua chose 3, now ' .. vim.o.laststatus)"},
+		// A plugin module that fails leaves the other modules working, as init.lua promises.
+		choice{"broken plugin module", map[string]any{"navigation.picker": "telescope", "navigation.explorer": "neo-tree", "completion.engine": "blink.cmp",
+			"language.lua.lsp": true, "formatting.provider": "conform"}, `for _, name in ipairs({ 'ShoshinFiles', 'ShoshinExplore', 'ShoshinFormat' }) do
+  assert(vim.fn.exists(':' .. name) == 2, name .. ' went missing with the plugin module')
+end
+local ok, attach = pcall(vim.api.nvim_get_autocmds, { group = 'ShoshinLspAttach' })
+assert(ok and #attach > 0, 'language servers went missing with the plugin module')`},
 		choice{"tabs bufferline", map[string]any{"appearance.buffers": "bufferline"}, "assert(package.loaded['bufferline'], 'bufferline not loaded')\n" + tabsCheck},
 		choice{"tabs barbar", map[string]any{"appearance.buffers": "barbar"}, "assert(package.loaded['barbar'], 'barbar not loaded')\n" + tabsCheck},
 		choice{"tabs mini", map[string]any{"appearance.buffers": "mini.tabline"}, "assert(_G.MiniTabline and vim.o.tabline:find('MiniTabline'), vim.o.tabline)"},
@@ -319,6 +332,13 @@ assert(#require('lint').get_running() == 0 and #vim.diagnostic.get(0) == 0, 'ESL
 			debugSession + "\nassert(vim.fn.maparg('<F5>', 'n') ~= '', 'F5 is not mapped')"},
 		choice{"debug nvim-dap-view", map[string]any{"coding.debug": "nvim-dap-view", "tools.provider": "mason", "language.typescript.lsp": true, "keymaps.style": "lazyvim"},
 			debugSession + "\nassert(vim.fn.maparg('<leader>db', 'n') ~= '', 'Space db is not mapped')"},
+		// A plugin's own commands load it before any file is open, set up first.
+		choice{"todo command before a file", map[string]any{"coding.todo": "todo-comments"}, `assert(not package.loaded['todo-comments'], 'todo-comments loaded before a file was opened')
+vim.cmd('TodoQuickFix')
+assert(require('todo-comments.config').options.signs == false, 'TodoQuickFix ran before todo-comments was set up')`},
+		choice{"debug view command", map[string]any{"coding.debug": "nvim-dap-view"}, `assert(not package.loaded['dap'], 'nvim-dap loaded before it was needed')
+vim.cmd('DapViewToggle')
+assert(require('dap-view.setup').config.auto_toggle, 'DapViewToggle opened the view before it was set up')`},
 	)
 	// Plugins load when first needed: at startup only those that must, then with the first
 	// screen, the first file, the first typing and the first search.
@@ -584,6 +604,16 @@ assert(vim.lsp.config.lua_ls.settings.Lua.workspace.library[1] == vim.env.VIMRUN
 				if files["lua/user_config/plugins.lua"] == lua {
 					t.Fatal("plugins.lua no longer names the lazy.nvim folder")
 				}
+			}
+			if c.name == "broken plugin module" {
+				lua := files["lua/user_config/plugins.lua"]
+				files["lua/user_config/plugins.lua"] = strings.Replace(lua, "local specs = {}\n", "error('broken on purpose')\nlocal specs = {}\n", 1)
+				if files["lua/user_config/plugins.lua"] == lua {
+					t.Fatal("plugins.lua no longer starts its specs with local specs = {}")
+				}
+			}
+			if c.name == "status line from user.lua" {
+				files[userPath] = "vim.o.laststatus = 3\n"
 			}
 			for name, content := range files {
 				p := filepath.Join(target, filepath.FromSlash(name))
