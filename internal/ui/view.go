@@ -377,8 +377,8 @@ func (m *Model) questionContent(cw, h int) []string {
 // It compresses in steps when the list does not fit, keeping the cursor visible.
 func (m *Model) optionLines(q question, cw, h int) []string {
 	type block struct {
-		heading, label, detail string
-		plugin                 []string
+		heading, label string
+		detail, plugin []string
 	}
 	blocks := make([]block, len(q.options))
 	swatchColumn := 0
@@ -413,15 +413,17 @@ func (m *Model) optionLines(q question, cw, h int) []string {
 		if i == 0 || o.group != q.options[i-1].group {
 			b.heading = o.group
 		}
+		// Descriptions and where an option comes from are never cut off; long lines wrap.
 		if o.detail != "" {
-			b.detail = pad + m.th.Dim(ansi.Truncate(o.detail, max(10, cw-len(pad)), "…"))
+			for _, part := range wrap(o.detail, cw-len(pad)) {
+				b.detail = append(b.detail, pad+m.th.Dim(part))
+			}
 		}
 		line := pluginLine(o.plugin)
 		if line == "" {
 			line = sourceLine(o.source)
 		}
 		if line != "" {
-			// Where an option comes from is never cut off; long lines wrap instead.
 			for _, part := range wrap(line, cw-len(pad)) {
 				b.plugin = append(b.plugin, pad+m.th.Blue(part))
 			}
@@ -443,9 +445,7 @@ func (m *Model) optionLines(q question, cw, h int) []string {
 			}
 			lines = append(lines, b.label)
 			if mode < 2 || i == m.cursor {
-				if b.detail != "" {
-					lines = append(lines, b.detail)
-				}
+				lines = append(lines, b.detail...)
 				lines = append(lines, b.plugin...)
 			}
 			if mode == 0 && i < len(blocks)-1 {
@@ -795,7 +795,9 @@ func (m *Model) menuLines(items []menuItem, cw, h int) []string {
 			}
 			lines = append(lines, pointer+num+label)
 			if item.detail != "" && (all || selected) {
-				lines = append(lines, "     "+m.th.Dim(ansi.Truncate(item.detail, max(10, cw-5), "…")))
+				for _, part := range wrap(item.detail, cw-5) {
+					lines = append(lines, "     "+m.th.Dim(part))
+				}
 			}
 		}
 		return lines, focus

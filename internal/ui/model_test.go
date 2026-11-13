@@ -424,6 +424,35 @@ func TestShortcutRowsFitTheTerminal(t *testing.T) {
 	}
 }
 
+func TestOptionDescriptionsWrapInsteadOfCutting(t *testing.T) {
+	m := newModel(t)
+	press(m, "enter", "enter") // Start, accept the Editor form.
+	for m.question().id != "coding.pairs" {
+		press(m, "enter")
+	}
+	for _, width := range []int{72, 80, 100} {
+		m.Update(tea.WindowSizeMsg{Width: width, Height: 36})
+		text := screenText(m)
+		if strings.Contains(text, "…") {
+			t.Fatalf("width %d: something is cut off:\n%s", width, text)
+		}
+		for _, line := range strings.Split(m.View().Content, "\n") {
+			if w := ansi.StringWidth(line); w > width {
+				t.Fatalf("width %d: line of width %d: %q", width, w, ansi.Strip(line))
+			}
+		}
+		if width > 80 {
+			continue // The section list shares these lines.
+		}
+		joined := strings.Join(strings.Fields(text), " ")
+		for _, o := range m.question().options {
+			if !strings.Contains(joined, o.detail) {
+				t.Fatalf("width %d: description of %s is not shown whole:\n%s", width, o.label, text)
+			}
+		}
+	}
+}
+
 func TestDependenciesReportTheChosenNeovim(t *testing.T) {
 	m := newModel(t)
 	// PATH has a Neovim, but --nvim names one that does not exist.
