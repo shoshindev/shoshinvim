@@ -415,15 +415,21 @@ func TestGoldenProfiles(t *testing.T) {
 	}
 }
 
-// fakeNeovim is an executable that records each invocation and claims to be Neovim.
+// fakeNeovim is an executable that records each invocation and claims to be Neovim,
+// with the version of the Neovim on PATH when there is one, so a plan reviewed with
+// that Neovim does not go stale just because the versions differ.
 func fakeNeovim(t *testing.T) (bin, marker string) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
 		t.Skip("uses a POSIX shell script as a stand-in executable")
 	}
+	version := "NVIM v0.12.5"
+	if _, v, err := Neovim(context.Background(), ""); err == nil {
+		version = v
+	}
 	dir := t.TempDir()
 	bin, marker = filepath.Join(dir, "nvim"), filepath.Join(dir, "invocations")
-	script := "#!/bin/sh\necho \"$@\" >> '" + marker + "'\necho 'NVIM v0.12.5'\n"
+	script := "#!/bin/sh\necho \"$@\" >> '" + marker + "'\necho '" + version + "'\n"
 	if err := os.WriteFile(bin, []byte(script), 0755); err != nil {
 		t.Fatal(err)
 	}
