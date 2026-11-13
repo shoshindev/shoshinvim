@@ -1021,8 +1021,15 @@ func padRight(s string, w int) string {
 	return s + strings.Repeat(" ", max(0, w-lipgloss.Width(s)))
 }
 
+// wrap breaks s into lines at most w columns wide. Each line starts with the
+// color in effect where the previous one ended, so a dimmed sentence stays
+// dimmed after a break even when other columns are drawn between the lines.
 func wrap(s string, w int) []string {
-	return strings.Split(ansi.Wordwrap(s, max(10, w), " "), "\n")
+	var b strings.Builder
+	ww := lipgloss.NewWrapWriter(&b)
+	_, _ = ww.Write([]byte(ansi.Wordwrap(s, max(10, w), " ")))
+	_ = ww.Close()
+	return strings.Split(b.String(), "\n")
 }
 
 func wrapAll(lines []string, w int) []string {

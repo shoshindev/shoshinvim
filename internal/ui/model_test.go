@@ -574,6 +574,25 @@ func TestDoneScreenWrapsAtEightyColumns(t *testing.T) {
 	}
 }
 
+func TestWrappedLinesKeepTheirColor(t *testing.T) {
+	th := newTheme(true, false)
+	text := "Each language server needs a recipe: the program to run, its file types and how to find your project."
+	lines := wrap(th.Dim(text), 30)
+	if len(lines) < 3 {
+		t.Fatalf("expected the text to wrap, got %d lines", len(lines))
+	}
+	var words []string
+	for i, line := range lines {
+		if !strings.HasPrefix(line, "\x1b[") || !strings.HasSuffix(line, "\x1b[m") {
+			t.Fatalf("line %d does not set and reset its own color: %q", i+1, line)
+		}
+		words = append(words, strings.Fields(ansi.Strip(line))...)
+	}
+	if strings.Join(words, " ") != text {
+		t.Fatalf("wrapping changed the text: %q", strings.Join(words, " "))
+	}
+}
+
 func TestAppNameCommandUsesThePlatformShell(t *testing.T) {
 	if got := withAppName("darwin", "work", "nvim"); got != "NVIM_APPNAME=work nvim" {
 		t.Fatal(got)
