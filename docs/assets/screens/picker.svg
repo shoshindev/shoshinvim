@@ -67,8 +67,8 @@
 <text x="882" y="183" fill="#727169">·</text>
 <text x="900 909 918 927 936" y="183" fill="#727169">Space</text>
 <text x="954 963 972 981 990" y="183" fill="#727169">Space</text>
-<text x="216 225 234 243" y="203" fill="#DCD7BA">open</text>
-<text x="261 270 279 288 297 306 315" y="203" fill="#DCD7BA">buffers</text>
+<text x="216 225 234 243" y="203" fill="#727169">open</text>
+<text x="261 270 279 288 297 306 315" y="203" fill="#727169">buffers</text>
 <text x="36" y="223" fill="#D27E99" font-weight="bold">●</text>
 <text x="54 63 72 81 90 99 108 117 126 135" y="223" fill="#D27E99" font-weight="bold">Navigation</text>
 <text x="216" y="243" fill="#D27E99" font-weight="bold">❯</text>

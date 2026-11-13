@@ -483,7 +483,9 @@ assert(text and popup and lightness(popup) < lightness(text), 'popups are not da
 		"docker":     {map[string]string{"Dockerfile": "FROM alpine"}, "Dockerfile", ""},
 		"terraform":  {map[string]string{"main.tf": "variable \"x\" {}"}, "main.tf", ""},
 	}
-	languageCheck := func(server string, conform bool, smp sample) string {
+	// openSample writes the sample's project to a new folder, opens its file as buf and
+	// waits for the server to attach.
+	openSample := func(server string, smp sample) string {
 		var writes []string
 		names := map[string]bool{}
 		for name := range smp.files {
@@ -491,10 +493,6 @@ assert(text and popup and lightness(popup) < lightness(text), 'popups are not da
 		}
 		for _, name := range sortedKeys(names) {
 			writes = append(writes, fmt.Sprintf("vim.fn.mkdir(vim.fs.dirname(dir .. '/' .. %[1]s), 'p'); vim.fn.writefile(vim.split(%[2]s, '\\n'), dir .. '/' .. %[1]s)", LuaString(name), LuaString(smp.files[name])))
-		}
-		formatter := "vim.lsp.buf.format({ bufnr = buf, async = false, timeout_ms = 20000 })"
-		if conform {
-			formatter = "require('conform').format({ bufnr = buf, async = false, timeout_ms = 20000 })"
 		}
 		return fmt.Sprintf(`local dir = vim.fn.resolve(vim.fn.tempname())
 %s
@@ -505,21 +503,53 @@ if not vim.wait(60000, function() return #vim.lsp.get_clients({ bufnr = buf, nam
   local log = table.concat(vim.fn.readfile(vim.lsp.log.get_filename()), '\n')
   error(%[3]s .. ' did not attach; LSP log: ' .. log:sub(-2500))
 end
-pcall(function() vim.treesitter.get_parser(buf):parse(true) end)
+`, strings.Join(writes, "\n"), LuaString(smp.open), LuaString(server))
+	}
+	languageCheck := func(server string, conform bool, smp sample) string {
+		formatter := "vim.lsp.buf.format({ bufnr = buf, async = false, timeout_ms = 20000 })"
+		if conform {
+			formatter = "require('conform').format({ bufnr = buf, async = false, timeout_ms = 20000 })"
+		}
+		return openSample(server, smp) + fmt.Sprintf(`pcall(function() vim.treesitter.get_parser(buf):parse(true) end)
 assert(vim.treesitter.highlighter.active[buf], 'Tree-sitter did not start for ' .. vim.bo.filetype)
-local want = %[4]s
+local want = %[1]s
 if want ~= '' then
   vim.wait(3000, function() return false end)
   local before = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n')
-  %[5]s
+  %[2]s
   local got = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n')
   if want == '*' then
     assert(got ~= before, 'the server did not format: ' .. vim.inspect(got))
   else
     assert(got == want, 'formatted to ' .. vim.inspect(got))
   end
-end`, strings.Join(writes, "\n"), LuaString(smp.open), LuaString(server), LuaString(smp.format), formatter)
+end`, LuaString(smp.format), formatter)
 	}
+	// Formatting on save, the recommended choice: the first write of a session formats
+	// the file on disk, though with conform that same write is what loads conform.
+	saveCheck := func(server string, conform bool, smp sample) string {
+		loaded := ""
+		if conform {
+			loaded = "assert(not package.loaded['conform'], 'conform loaded before the first write')\n"
+		}
+		return openSample(server, smp) + loaded + fmt.Sprintf(`vim.wait(3000, function() return false end)
+local before = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n')
+vim.cmd.write()
+local got = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n')
+local want = %s
+if want == '*' then
+  assert(got ~= before, 'saving did not format: ' .. vim.inspect(got))
+else
+  assert(got == want, 'saving formatted to ' .. vim.inspect(got))
+end
+assert(table.concat(vim.fn.readfile(vim.api.nvim_buf_get_name(buf)), '\n') == got, 'the file on disk is not the formatted text')`, LuaString(smp.format))
+	}
+	cases = append(cases,
+		choice{"format on save conform", map[string]any{"language.lua.lsp": true, "tools.provider": "mason", "lsp.provider": "lspconfig",
+			"formatting.provider": "conform", "formatting.on_save": true}, saveCheck("lua_ls", true, samples["lua"])},
+		choice{"format on save server", map[string]any{"language.json.lsp": true, "tools.provider": "mason", "lsp.provider": "lspconfig",
+			"formatting.provider": "native", "formatting.on_save": true}, saveCheck("jsonls", false, sample{samples["json"].files, samples["json"].open, "*"})},
+	)
 	for _, l := range Languages() {
 		smp, ok := samples[l.ID]
 		if !ok {
@@ -641,7 +671,7 @@ assert(vim.lsp.config.lua_ls.settings.Lua.workspace.library[1] == vim.env.VIMRUN
 				}
 			}
 			for _, a := range actions {
-				if a.Kind == "mason" && !strings.HasPrefix(c.name, "language ") && !strings.HasPrefix(c.name, "basic server") && a.Package != "tree-sitter-cli" && a.Package != "markdownlint" && a.Package != "js-debug-adapter" {
+				if a.Kind == "mason" && !strings.HasPrefix(c.name, "language ") && !strings.HasPrefix(c.name, "basic server") && !strings.HasPrefix(c.name, "format on save") && a.Package != "tree-sitter-cli" && a.Package != "markdownlint" && a.Package != "js-debug-adapter" {
 					continue // Only the language cases and the tools a case exercises are installed.
 				}
 				if a.ID == "lazy" && c.name == "plugin manager in earlier folder" {

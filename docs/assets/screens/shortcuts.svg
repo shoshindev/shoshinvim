@@ -51,9 +51,9 @@
 <text x="963 972" y="163" fill="#727169">or</text>
 <text x="36" y="183" fill="#D27E99" font-weight="bold">●</text>
 <text x="54 63 72 81 90 99 108 117 126" y="183" fill="#D27E99" font-weight="bold">Workspace</text>
-<text x="216 225 234" y="183" fill="#DCD7BA">add</text>
-<text x="252 261 270 279" y="183" fill="#DCD7BA">your</text>
-<text x="297 306 315 324" y="183" fill="#DCD7BA">own.</text>
+<text x="216 225 234" y="183" fill="#727169">add</text>
+<text x="252 261 270 279" y="183" fill="#727169">your</text>
+<text x="297 306 315 324" y="183" fill="#727169">own.</text>
 <text x="216" y="203" fill="#D27E99" font-weight="bold">❯</text>
 <text x="234 243 252 261" y="203" fill="#D27E99" font-weight="bold">Keep</text>
 <text x="279 288 297 306 315" y="203" fill="#D27E99" font-weight="bold">these</text>
@@ -171,17 +171,17 @@
 <text x="801 810 819 828 837 846 855 864 873 882" y="603" fill="#727169">references</text>
 <text x="900" y="603" fill="#727169">·</text>
 <text x="918 927 936" y="603" fill="#727169">gri</text>
-<text x="216 225 234 243 252 261 270 279 288 297 306 315 324 333" y="623" fill="#DCD7BA">implementation</text>
-<text x="351" y="623" fill="#DCD7BA">·</text>
-<text x="369 378" y="623" fill="#DCD7BA">gO</text>
-<text x="396 405 414 423 432 441 450" y="623" fill="#DCD7BA">symbols</text>
-<text x="468" y="623" fill="#DCD7BA">·</text>
-<text x="486" y="623" fill="#DCD7BA">K</text>
-<text x="504 513 522 531 540 549 558 567 576 585 594 603 612" y="623" fill="#DCD7BA">documentation</text>
-<text x="630" y="623" fill="#DCD7BA">·</text>
-<text x="648 657" y="623" fill="#DCD7BA">[d</text>
-<text x="675 684" y="623" fill="#DCD7BA">]d</text>
-<text x="702 711 720 729 738 747 756 765 774 783 792" y="623" fill="#DCD7BA">diagnostics</text>
+<text x="216 225 234 243 252 261 270 279 288 297 306 315 324 333" y="623" fill="#727169">implementation</text>
+<text x="351" y="623" fill="#727169">·</text>
+<text x="369 378" y="623" fill="#727169">gO</text>
+<text x="396 405 414 423 432 441 450" y="623" fill="#727169">symbols</text>
+<text x="468" y="623" fill="#727169">·</text>
+<text x="486" y="623" fill="#727169">K</text>
+<text x="504 513 522 531 540 549 558 567 576 585 594 603 612" y="623" fill="#727169">documentation</text>
+<text x="630" y="623" fill="#727169">·</text>
+<text x="648 657" y="623" fill="#727169">[d</text>
+<text x="675 684" y="623" fill="#727169">]d</text>
+<text x="702 711 720 729 738 747 756 765 774 783 792" y="623" fill="#727169">diagnostics</text>
 <text x="36 45" y="683" fill="#727169">↑↓</text>
 <text x="63 72 81 90" y="683" fill="#727169">move</text>
 <text x="108" y="683" fill="#727169">·</text>

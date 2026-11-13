@@ -402,9 +402,9 @@ var sections = []section{
 	}},
 	{id: "formatting", title: "Formatting", intro: "Keeping code tidy.", questions: []question{
 		{id: "formatting.provider", title: "Formatter", help: "The tool that rewrites code into a consistent style.", skip: noLanguages, dynamic: formatterOptions},
-		{id: "formatting.on_save", title: "When to format", help: "Formatting on request avoids surprise changes in shared projects.", skip: noLanguages, actions: []string{"code.format"}, options: []option{
-			{label: "When I ask", short: "format on request", detail: "Run :ShoshinFormat or its shortcut", values: off("formatting.on_save"), recommended: true},
-			{label: "Every save", short: "format on save", detail: "Format automatically before writing the file", values: on("formatting.on_save")},
+		{id: "formatting.on_save", title: "When to format", help: "In a project that uses a different style, formatting on save can rewrite whole files.", skip: noLanguages, actions: []string{"code.format"}, options: []option{
+			{label: "Every save", short: "format on save", detail: "Format before writing the file; LazyVim's and AstroNvim's choice", values: on("formatting.on_save"), recommended: true},
+			{label: "When I ask", short: "format on request", detail: "Run :ShoshinFormat or its shortcut; kickstart's and NvChad's choice", values: off("formatting.on_save")},
 		}},
 	}},
 	{id: "coding", title: "Coding", intro: "Helpers for writing, checking and debugging code.", questions: []question{
