@@ -61,7 +61,7 @@ func (l Language) Name() string {
 
 // RuntimeName is how the interface names a runtime a language needs.
 func RuntimeName(id string) string {
-	names := map[string]string{"node": "Node.js", "python3": "Python", "go": "Go", "cargo": "Rust (rustup)", "java": "Java 21+", "dotnet": ".NET SDK", "ruby": "Ruby", "elixir": "Elixir", "zig": "Zig", "terraform": "Terraform"}
+	names := map[string]string{"node": "Node.js", "python3": "Python", "go": "Go", "cargo": "Rust (rustup)", "java": "Java 25+", "dotnet": ".NET SDK", "ruby": "Ruby", "elixir": "Elixir", "zig": "Zig", "terraform": "Terraform"}
 	if n, ok := names[id]; ok {
 		return n
 	}
@@ -74,7 +74,7 @@ var runtimes = map[string]Dependency{
 	"python3":   {ID: "python3", Purpose: "Run Python-based language tools", Instruction: "Install Python 3 with your package manager."},
 	"go":        {ID: "go", Purpose: "Go toolchain; gopls and goimports are built with it", Instruction: "Install Go from https://go.dev/dl or your package manager."},
 	"cargo":     {ID: "cargo", Purpose: "Rust toolchain for rust-analyzer and rustfmt", Instruction: "Install Rust with rustup (https://rustup.rs); it also provides rustfmt."},
-	"java":      {ID: "java", Purpose: "Java 21 or later for Java and Kotlin tools", Instruction: "Install a JDK 21 or later (for example: brew install openjdk)."},
+	"java":      {ID: "java", Purpose: "Java 25 or later for Java and Kotlin tools", Instruction: "Install a JDK 25 or later (for example: brew install openjdk)."},
 	"dotnet":    {ID: "dotnet", Purpose: ".NET SDK for csharp-ls", Instruction: "Install the .NET SDK from https://dotnet.microsoft.com/download."},
 	"ruby":      {ID: "ruby", Purpose: "Ruby for ruby-lsp", Instruction: "Install Ruby 3 or later (for example with rbenv or your package manager)."},
 	"elixir":    {ID: "elixir", Purpose: "Elixir for ElixirLS", Instruction: "Install Elixir from https://elixir-lang.org/install.html."},
