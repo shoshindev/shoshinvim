@@ -21,8 +21,8 @@ A guided setup in your terminal that writes plain Lua you own.
 
 ## Why ShoshinVim
 
-- **One decision at a time.** Eight short sections — Editor, Appearance, Workspace, Navigation, Languages, Formatting, Coding and Git — each ask a few questions. Every question marks one answer as recommended, following what kickstart.nvim, LazyVim, NvChad and AstroNvim ship, so Enter accepts it.
-- **Plain Lua you own.** The result is an ordinary `init.lua` with modules under `lua/user_config/`, and it runs without ShoshinVim. Your own Lua goes in `user.lua`, which is never overwritten.
+- **One decision at a time.** Eight short sections each ask a few questions: Editor, Appearance, Workspace, Navigation, Languages, Formatting, Coding and Git. Every question marks one answer as recommended, following what kickstart.nvim, LazyVim, NvChad and AstroNvim ship, so Enter accepts it.
+- **Plain Lua you own.** The result is an ordinary `init.lua` with modules under `lua/user_config/`, and it runs without ShoshinVim. Your own Lua goes in `user.lua`, which ShoshinVim never overwrites.
 - **Nothing happens before review.** The review checks the configuration in an isolated Neovim and lists every file it would write and everything it would download. Saving backs up what it changes and can be rolled back.
 - **Every plugin explained.** Each option names its repository, stars, last update, license and which starter configurations use it. Every plugin is pinned to an exact commit.
 
@@ -61,15 +61,53 @@ Accepting every recommendation gives a cohesive workspace for Web and Lua develo
 
 The languages are TypeScript and JavaScript, HTML, CSS, JSON, Svelte, Lua, Python, Ruby, PHP, Bash, Elixir, Go, Rust, C and C++, Zig, Swift, Java, Kotlin, C#, YAML, TOML, Markdown, Dockerfile and Terraform.
 
-## Try it
+## Install
 
-ShoshinVim is a development alpha. It runs on macOS (Apple Silicon and Intel) and on Linux with glibc (x86_64 and ARM64), and it needs Neovim 0.12 or later.
+ShoshinVim is a development alpha. It runs on macOS (Apple Silicon and Intel) and on Linux with glibc (x86_64 and ARM64).
+
+You need Neovim 0.12 or later and Git. Some choices need more programs, and the review lists any that are missing before you save:
+
+- Node.js and npm for web language tools, linters and the JavaScript debugger
+- ripgrep for searching text across a project
+- tree-sitter-cli 0.26.1 or later (Mason can download it), a C compiler, curl and tar for syntax parsers
+
+ShoshinVim doesn't install these programs. To install ShoshinVim, run:
 
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/shoshindev/shoshinvim/releases/latest/download/shoshinvim-installer.sh | sh
 ```
 
-The installer puts one executable in `~/.local/bin` (or `$XDG_BIN_HOME`) after checking it against the release's `SHA256SUMS`. It doesn't use sudo, edit your shell profile or start anything. [Read the installer](scripts/shoshinvim-installer.sh) before you run it. To pin a version or choose the folder:
+The installer puts one executable in `~/.local/bin` (or `$XDG_BIN_HOME`) after checking it against the release's `SHA256SUMS`. It doesn't use sudo, edit your shell profile or start anything. If that folder isn't on your PATH, the installer says so, and you add it yourself. [Read the installer](scripts/shoshinvim-installer.sh) before you run it.
+
+## Get started
+
+```sh
+shoshinvim   # answer the questions, then review and save
+nvim
+```
+
+ShoshinVim writes to `~/.config/nvim`. Arrow keys move, Enter chooses, Esc goes back and `/` opens the command menu. Nothing is written or downloaded until you save in the review.
+
+If `~/.config/nvim` already holds a LazyVim, NvChad or personal configuration, ShoshinVim only reads it and never changes it. Build a separate configuration next to it with `NVIM_APPNAME`, the environment variable that tells Neovim which folder under `~/.config` to use. Use the same name for both commands:
+
+```sh
+NVIM_APPNAME=shoshin shoshinvim   # writes ~/.config/shoshin
+NVIM_APPNAME=shoshin nvim
+```
+
+## Change it later
+
+Run `shoshinvim` again, with the same `NVIM_APPNAME` if you used one. It opens your saved choices, so you can change any section, see which files change and save. Each save backs up the files it changes, and **Recovery & history** in the `/` menu restores an earlier version.
+
+Put your own Lua in `lua/user_config/user.lua`. ShoshinVim creates it once and never overwrites it. Don't edit the other generated files. If you do, ShoshinVim won't save again until you move your change into `user.lua` and restore the generated version, as [Using ShoshinVim](docs/usage.md#your-files) shows.
+
+## Update or uninstall
+
+If you used the installer, `shoshinvim update` installs a newer release after showing its notes, and `shoshinvim uninstall` removes the executable. Neither touches your Neovim configuration, plugins or tools, and the configuration keeps working without ShoshinVim. ShoshinVim can't update plugins yet, so they stay at the commits it downloaded.
+
+## Other ways to install
+
+To pin a version or choose the folder:
 
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/shoshindev/shoshinvim/releases/download/v0.1.0/shoshinvim-installer.sh \
@@ -86,8 +124,6 @@ xattr -d com.apple.quarantine shoshinvim   # macOS only: lets an archive downloa
 
 With the GitHub CLI, `gh attestation verify <archive> --repo shoshindev/shoshinvim` confirms that this repository's release workflow built the archive.
 
-If you used the installer, `shoshinvim update` installs a newer release after showing its notes, and `shoshinvim uninstall` removes the executable. Neither touches your Neovim configuration, plugins or tools.
-
 Windows is not in the release yet because it hasn't been tested on a real Windows machine. There, or to build from source, use Go 1.27.1:
 
 ```sh
@@ -96,22 +132,16 @@ cd shoshinvim
 go build -trimpath -o bin/shoshinvim ./cmd/shoshinvim
 ```
 
-To try it next to an existing LazyVim, NvChad or personal configuration, give it its own name:
-
-```sh
-NVIM_APPNAME=shoshin-demo shoshinvim   # walk through the sections, then review and save
-NVIM_APPNAME=shoshin-demo nvim
-```
-
-Arrow keys move, Enter chooses, Esc goes back and `/` opens the command menu. An existing configuration that ShoshinVim did not create is only read, never changed.
-
-Installing plugins needs Git. Web language tools, linters and the JavaScript debugger need Node.js and npm, and project text search uses ripgrep. Syntax parsers are compiled with tree-sitter-cli 0.26.1 or later (Mason can download it), a C compiler, curl and tar. The review lists anything missing; installing these runtimes is up to you.
-
 ## Documentation
 
-- [Using ShoshinVim](docs/usage.md): the setup, where it writes, the command-line interface and your files
+For users:
+
+- [Using ShoshinVim](docs/usage.md): the setup, where it writes, your files, changing your configuration later, troubleshooting and the command line
+
+For contributors:
+
 - [Implementation status](docs/implementation-status.md): what works today and what must be verified before a release
-- [Configuration catalog](docs/configuration-catalog.md): the full roadmap
+- [Configuration catalog](docs/configuration-catalog.md): the full planned scope, including features that aren't built yet
 - [Interface specification](docs/interface-spec-v0.1.md) and [distribution specification](docs/distribution-spec.md)
 - [Develop and verify](docs/development.md): tests, the real-Neovim suite and release tooling
 

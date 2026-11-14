@@ -71,7 +71,7 @@ func owned(path string) (Receipt, error) {
 	return r, nil
 }
 func ownerAdvice(path string, out io.Writer) {
-	fmt.Fprintf(out, "This executable is manually, source, or package-manager installed: %s\nUse its original installation owner. Releases: https://github.com/%s/releases\nSource update: go install github.com/%s/cmd/shoshinvim@<release-tag>\n", path, Repository, Repository)
+	fmt.Fprintf(out, "The ShoshinVim installer did not install this shoshinvim, so update and uninstall leave it alone: %s\nReplace or remove it the way you installed it. Releases: https://github.com/%s/releases\nFrom source: go install github.com/%s/cmd/shoshinvim@<release-tag>\n", path, Repository, Repository)
 }
 func Uninstall(confirm func(string) error, out io.Writer) error {
 	path, err := executable()

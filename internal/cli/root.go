@@ -74,12 +74,12 @@ func New(version string) *cobra.Command {
 	var target, bin, output string
 	var plain, noColor, noProgress bool
 	root := &cobra.Command{Use: "shoshinvim", Short: "Build your Neovim from the terminal", Version: version, SilenceUsage: true, SilenceErrors: true}
-	root.PersistentFlags().StringVar(&target, "config-dir", engine.DefaultTarget(), "Neovim configuration target")
-	root.PersistentFlags().StringVar(&bin, "nvim", "", "Neovim executable (default: PATH)")
+	root.PersistentFlags().StringVar(&target, "config-dir", engine.DefaultTarget(), "Neovim configuration folder")
+	root.PersistentFlags().StringVar(&bin, "nvim", "", "Neovim to use (default: the first nvim on PATH)")
 	root.PersistentFlags().StringVar(&output, "output", "text", "text or json")
-	root.PersistentFlags().BoolVar(&plain, "no-alt-screen", false, "Use plain terminal history")
+	root.PersistentFlags().BoolVar(&plain, "no-alt-screen", false, "Ask questions in ordinary terminal output instead of full screen")
 	root.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable color")
-	root.PersistentFlags().BoolVar(&noProgress, "no-progress", false, "Suppress progress output")
+	root.PersistentFlags().BoolVar(&noProgress, "no-progress", false, "Hide progress output")
 	root.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if output != "text" && output != "json" {
 			return fmt.Errorf("output must be text or json")
@@ -112,14 +112,14 @@ func New(version string) *cobra.Command {
 		_, err := fmt.Fprintln(cmd.OutOrStdout(), text)
 		return err
 	}
-	inspect := &cobra.Command{Use: "inspect", Short: "Inspect target and ownership without writing", RunE: func(cmd *cobra.Command, args []string) error {
+	inspect := &cobra.Command{Use: "inspect", Short: "Show the configuration folder and whether ShoshinVim created it", RunE: func(cmd *cobra.Command, args []string) error {
 		r, err := engine.Inspect(target)
 		if err != nil {
 			return err
 		}
 		return printResult(cmd, r, inspectionText(r))
 	}}
-	doctor := &cobra.Command{Use: "doctor", Short: "Check dependencies and safe generated configuration", RunE: func(cmd *cobra.Command, args []string) error {
+	doctor := &cobra.Command{Use: "doctor", Short: "Check the programs your configuration needs and test its generated Lua", RunE: func(cmd *cobra.Command, args []string) error {
 		ins, err := engine.Inspect(target)
 		if err != nil {
 			return err
@@ -153,7 +153,7 @@ func New(version string) *cobra.Command {
 	}}
 	var stateFile, outFile, profile string
 	var external bool
-	plan := &cobra.Command{Use: "plan", Short: "Validate and export an exact file/action plan", RunE: func(cmd *cobra.Command, args []string) error {
+	plan := &cobra.Command{Use: "plan", Short: "Check a configuration and list its files and downloads, for scripts", RunE: func(cmd *cobra.Command, args []string) error {
 		s := engine.NewState()
 		if stateFile != "" {
 			if err := engine.DecodeFile(stateFile, &s); err != nil {
@@ -186,13 +186,13 @@ func New(version string) *cobra.Command {
 		}
 		return printResult(cmd, p, engine.Summary(p))
 	}}
-	plan.Flags().StringVar(&stateFile, "state", "", "Declarative state JSON")
-	plan.Flags().StringVar(&outFile, "out", "", "Export to a new plan file")
-	plan.Flags().StringVar(&profile, "profile", "", "Propose rich-ide, custom, minimal, web or lua")
-	plan.Flags().BoolVar(&external, "include-external", false, "Authorize listed external actions when this exact plan is applied")
+	plan.Flags().StringVar(&stateFile, "state", "", "Read your choices from this JSON file")
+	plan.Flags().StringVar(&outFile, "out", "", "Save the plan to this new file")
+	plan.Flags().StringVar(&profile, "profile", "", "Start from a preset: rich-ide, custom, minimal, web or lua")
+	plan.Flags().BoolVar(&external, "include-external", false, "Allow the downloads this plan lists when it is applied")
 	var planFile string
 	var yes bool
-	apply := &cobra.Command{Use: "apply --plan <file>", Short: "Apply an exact reviewed plan", RunE: func(cmd *cobra.Command, args []string) error {
+	apply := &cobra.Command{Use: "apply --plan <file>", Short: "Save a configuration from a plan made by plan --out", RunE: func(cmd *cobra.Command, args []string) error {
 		if planFile == "" {
 			return fmt.Errorf("--plan is required")
 		}
@@ -235,11 +235,11 @@ func New(version string) *cobra.Command {
 		}
 		return nil
 	}}
-	apply.Flags().StringVar(&planFile, "plan", "", "Exact exported plan")
-	apply.Flags().BoolVar(&yes, "yes", false, "Confirm this exact plan; safety checks remain mandatory")
+	apply.Flags().StringVar(&planFile, "plan", "", "Plan file made by plan --out")
+	apply.Flags().BoolVar(&yes, "yes", false, "Skip the confirmation; the safety checks still run")
 	var txn string
 	var generated bool
-	rollback := &cobra.Command{Use: "rollback", Short: "Review and confirm recovery", RunE: func(cmd *cobra.Command, args []string) error {
+	rollback := &cobra.Command{Use: "rollback", Short: "List earlier saves, or restore one", RunE: func(cmd *cobra.Command, args []string) error {
 		t, err := engine.Canonical(target)
 		if err != nil {
 			return err
@@ -269,19 +269,19 @@ func New(version string) *cobra.Command {
 		}
 		return fmt.Errorf("unknown transaction")
 	}}
-	rollback.Flags().StringVar(&txn, "transaction", "", "Transaction ID; requires confirmation")
-	rollback.Flags().BoolVar(&generated, "generated", false, "Archive drift and restore the last generated version")
-	retry := &cobra.Command{Use: "retry", Short: "Retry previously approved failed acquisitions only", RunE: func(cmd *cobra.Command, args []string) error {
+	rollback.Flags().StringVar(&txn, "transaction", "", "ID of the save to restore; asks before restoring")
+	rollback.Flags().BoolVar(&generated, "generated", false, "Restore the files that save wrote, moving hand edits to .shoshinvim/recovery first")
+	retry := &cobra.Command{Use: "retry", Short: "Retry downloads that failed", RunE: func(cmd *cobra.Command, args []string) error {
 		r, err := engine.Retry(cmd.Context(), target, bin, nil)
 		if err != nil {
 			return err
 		}
 		return printResult(cmd, r, actionsText(r))
 	}}
-	update := &cobra.Command{Use: "update", Short: "Update using the installation owner", RunE: func(cmd *cobra.Command, args []string) error {
+	update := &cobra.Command{Use: "update", Short: "Install a newer ShoshinVim release", RunE: func(cmd *cobra.Command, args []string) error {
 		return distribution.Update(cmd.Context(), version, func(s string) error { return Confirm(cmd.InOrStdin(), cmd.ErrOrStderr(), s) }, cmd.OutOrStdout())
 	}}
-	uninstall := &cobra.Command{Use: "uninstall", Short: "Uninstall only the receipt-owned application", RunE: func(cmd *cobra.Command, args []string) error {
+	uninstall := &cobra.Command{Use: "uninstall", Short: "Remove the shoshinvim executable the installer put in place", RunE: func(cmd *cobra.Command, args []string) error {
 		return distribution.Uninstall(func(s string) error { return Confirm(cmd.InOrStdin(), cmd.ErrOrStderr(), s) }, cmd.OutOrStdout())
 	}}
 	completion := &cobra.Command{Use: "completion [bash|zsh|fish|powershell]", Short: "Generate shell completions", Args: cobra.ExactArgs(1), RunE: func(cmd *cobra.Command, args []string) error {
