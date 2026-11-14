@@ -83,7 +83,11 @@ func languageDetail(l engine.Language, mason bool) string {
 	for _, n := range needs {
 		if !seen[n] {
 			seen[n] = true
-			names = append(names, engine.RuntimeName(n))
+			name := engine.RuntimeName(n)
+			if v := l.Server.Versions[n]; v != "" {
+				name += " " + v
+			}
+			names = append(names, name)
 		}
 	}
 	if len(names) > 0 {

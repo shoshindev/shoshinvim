@@ -38,6 +38,9 @@ type LanguageServer struct {
 	Basic     string   `json:"basic,omitempty"`
 	Always    string   `json:"always,omitempty"`
 	Note      string   `json:"note,omitempty"` // Where to get it when Mason has no package.
+	// Versions names the versions of a needed runtime the server starts with, when not
+	// every version works: {"java": "25 or later"}.
+	Versions map[string]string `json:"versions,omitempty"`
 }
 
 // Formatter is the conform.nvim formatter for a language; languages without one are
@@ -61,7 +64,7 @@ func (l Language) Name() string {
 
 // RuntimeName is how the interface names a runtime a language needs.
 func RuntimeName(id string) string {
-	names := map[string]string{"node": "Node.js", "python3": "Python", "go": "Go", "cargo": "Rust (rustup)", "java": "Java 25+", "dotnet": ".NET SDK", "ruby": "Ruby", "elixir": "Elixir", "zig": "Zig", "terraform": "Terraform"}
+	names := map[string]string{"node": "Node.js", "python3": "Python", "go": "Go", "cargo": "Rust (rustup)", "java": "Java", "dotnet": ".NET SDK", "ruby": "Ruby", "elixir": "Elixir", "zig": "Zig", "terraform": "Terraform"}
 	if n, ok := names[id]; ok {
 		return n
 	}
@@ -74,7 +77,7 @@ var runtimes = map[string]Dependency{
 	"python3":   {ID: "python3", Purpose: "Run Python-based language tools", Instruction: "Install Python 3 with your package manager."},
 	"go":        {ID: "go", Purpose: "Go toolchain; gopls and goimports are built with it", Instruction: "Install Go from https://go.dev/dl or your package manager."},
 	"cargo":     {ID: "cargo", Purpose: "Rust toolchain for rust-analyzer and rustfmt", Instruction: "Install Rust with rustup (https://rustup.rs); it also provides rustfmt."},
-	"java":      {ID: "java", Purpose: "Java 25 or later for Java and Kotlin tools", Instruction: "Install a JDK 25 or later (for example: brew install openjdk)."},
+	"java":      {ID: "java", Purpose: "Java for Java and Kotlin tools", Instruction: "Install a JDK of the version each server needs (for example: brew install openjdk, or openjdk@21). Java tools use the JDK that JAVA_HOME names, otherwise java on your PATH."},
 	"dotnet":    {ID: "dotnet", Purpose: ".NET SDK for csharp-ls", Instruction: "Install the .NET SDK from https://dotnet.microsoft.com/download."},
 	"ruby":      {ID: "ruby", Purpose: "Ruby for ruby-lsp", Instruction: "Install Ruby 3 or later (for example with rbenv or your package manager)."},
 	"elixir":    {ID: "elixir", Purpose: "Elixir for ElixirLS", Instruction: "Install Elixir from https://elixir-lang.org/install.html."},
@@ -254,6 +257,7 @@ func MasonProvides(s State) map[string]bool {
 func languageDependencies(s State) []Dependency {
 	var list []Dependency
 	needs := map[string]bool{}
+	versions := map[string][]string{} // Runtime: the versions each server needs, such as "25 or later for jdtls".
 	mason := Value(s, "tools.provider", "system") == "mason"
 	for _, l := range chosenLanguages(s) {
 		instruction := "Install " + l.Server.Command + " yourself, or select tools.provider=mason"
@@ -263,6 +267,9 @@ func languageDependencies(s State) []Dependency {
 		list = append(list, Dependency{ID: l.Server.Command, Purpose: l.Label + " language intelligence", Instruction: instruction})
 		for _, r := range l.Server.Needs {
 			needs[r] = true
+			if v := l.Server.Versions[r]; v != "" {
+				versions[r] = append(versions[r], v+" for "+l.Server.Command)
+			}
 		}
 		if f := l.Formatter; f != nil && Value(s, "formatting.provider", "native") == "conform" {
 			list = append(list, Dependency{ID: f.Command, Purpose: l.Label + " formatting"})
@@ -278,6 +285,9 @@ func languageDependencies(s State) []Dependency {
 		d, ok := runtimes[id]
 		if id == "npm" {
 			d, ok = Dependency{ID: "npm", Purpose: "Mason installs JavaScript-based tools with npm"}, true
+		}
+		if ok && len(versions[id]) > 0 {
+			d.Purpose = RuntimeName(id) + " " + strings.Join(versions[id], "; ")
 		}
 		if ok {
 			list = append(list, d)

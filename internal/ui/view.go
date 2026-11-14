@@ -73,20 +73,34 @@ func (m *Model) showDiff() {
 }
 
 func (m *Model) showHealth() {
+	// The viewer cuts lines wider than itself, so long purposes and instructions wrap,
+	// indented under the tool's name.
 	var b strings.Builder
-	for _, d := range m.dependencies() {
-		if d.Status == "present" {
-			fmt.Fprintf(&b, "%s %s  %s\n  %s\n\n", m.th.Ok("✓"), m.th.Bold(d.ID), m.th.Dim(d.Purpose), m.th.Dim(d.Path))
-		} else {
-			fmt.Fprintf(&b, "%s %s  %s\n", m.th.Warn("!"), m.th.Bold(d.ID), m.th.Dim(d.Purpose))
-			if d.Instruction != "" {
-				fmt.Fprintf(&b, "  %s\n", d.Instruction)
+	w := m.viewer.Width() - 1
+	add := func(text, first, rest string) {
+		for i, part := range wrap(text, w-len(rest)) {
+			if i == 0 {
+				part = first + part
+			} else {
+				part = rest + part
 			}
-			b.WriteString("\n")
+			b.WriteString(part + "\n")
 		}
 	}
-	b.WriteString(m.th.Dim("Missing tools never block saving. Installing runtimes such as Node.js or ripgrep is up to you."))
-	m.openViewer("Dependencies", b.String())
+	for _, d := range m.dependencies() {
+		if d.Status == "present" {
+			add(m.th.Ok("✓")+" "+m.th.Bold(d.ID)+"  "+m.th.Dim(d.Purpose), "", "  ")
+			add(m.th.Dim(d.Path), "  ", "  ")
+		} else {
+			add(m.th.Warn("!")+" "+m.th.Bold(d.ID)+"  "+m.th.Dim(d.Purpose), "", "  ")
+			if d.Instruction != "" {
+				add(d.Instruction, "  ", "  ")
+			}
+		}
+		b.WriteString("\n")
+	}
+	add(m.th.Dim("Missing tools never block saving. Installing runtimes such as Node.js or ripgrep is up to you."), "", "")
+	m.openViewer("Dependencies", strings.TrimSuffix(b.String(), "\n"))
 }
 
 const helpText = `Moving through the setup

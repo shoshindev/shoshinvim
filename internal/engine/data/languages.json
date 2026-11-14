@@ -579,6 +579,9 @@
       "needs": [
         "java"
       ],
+      "versions": {
+        "java": "25 or later"
+      },
       "filetypes": [
         "java"
       ],
@@ -609,6 +612,9 @@
       "needs": [
         "java"
       ],
+      "versions": {
+        "java": "21 or earlier"
+      },
       "filetypes": [
         "kotlin"
       ],

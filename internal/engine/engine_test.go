@@ -751,3 +751,19 @@ func TestWithNeovimReportsTheChosenNeovim(t *testing.T) {
 		t.Fatalf("an unusable chosen Neovim is reported as %+v", d)
 	}
 }
+
+// A runtime that only some versions of works for a server names those versions in the
+// review: one JDK cannot start both jdtls and kotlin-language-server.
+func TestRuntimeVersionsReachTheReview(t *testing.T) {
+	s := NewState()
+	s.Values["language.java.lsp"], s.Values["language.kotlin.lsp"] = true, true
+	for _, d := range languageDependencies(s) {
+		if d.ID == "java" {
+			if want := "Java 25 or later for jdtls; 21 or earlier for kotlin-language-server"; d.Purpose != want {
+				t.Fatalf("got %q, want %q", d.Purpose, want)
+			}
+			return
+		}
+	}
+	t.Fatal("Java is not listed as a runtime")
+}
