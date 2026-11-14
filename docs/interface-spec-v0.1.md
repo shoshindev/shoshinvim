@@ -6,7 +6,7 @@
 - Audience: the developer implementing the standalone terminal application
 - Product line: **Build a Neovim you understand, one decision at a time.**
 - Feature scope: [configuration catalog](configuration-catalog.md)
-- Interface direction: keyboard-first terminal UI with the feel of Claude Code and Grok Build — selectable menus, quiet hints, a command palette — without a chat transcript
+- Interface direction: keyboard-first terminal UI with the feel of Grok Build — selectable menus, quiet hints, a command palette — without a chat transcript
 - Implementation: `internal/ui` (`steps.go` holds every section, question and recommendation; `model.go`, `view.go` and `jobs.go` hold state, rendering and background work; `plain.go` is line mode)
 
 This document specifies behavior and presentation, not production code. ShoshinVim is a deterministic local application. It borrows the look and keyboard grammar of modern coding-agent TUIs without requiring an AI model, cloud service, account, or autonomous tool use.
@@ -545,8 +545,6 @@ Record wrong turns, hesitation at recommendations, understanding of status tags,
 
 Interaction references, refreshed on 2026-09-28:
 
-- [Claude Code interactive mode](https://code.claude.com/docs/en/interactive-mode) — keyboard-first input, selectable prompts, command discovery.
-- [Claude Code commands](https://code.claude.com/docs/en/commands) — slash-command palette and focused viewers.
 - [Grok Build overview](https://docs.x.ai/build/overview) — fullscreen terminal experience and restrained status display.
 - [Grok Build keyboard shortcuts](https://docs.x.ai/build/keyboard-shortcuts) — cancellation and terminal fallbacks.
 
