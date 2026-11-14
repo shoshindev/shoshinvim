@@ -424,6 +424,65 @@ func TestShortcutRowsFitTheTerminal(t *testing.T) {
 	}
 }
 
+func TestOptionDescriptionsWrapInsteadOfCutting(t *testing.T) {
+	m := newModel(t)
+	press(m, "enter", "enter") // Start, accept the Editor form.
+	for m.question().id != "coding.pairs" {
+		press(m, "enter")
+	}
+	for _, width := range []int{72, 80, 100} {
+		m.Update(tea.WindowSizeMsg{Width: width, Height: 36})
+		text := screenText(m)
+		if strings.Contains(text, "…") {
+			t.Fatalf("width %d: something is cut off:\n%s", width, text)
+		}
+		for _, line := range strings.Split(m.View().Content, "\n") {
+			if w := ansi.StringWidth(line); w > width {
+				t.Fatalf("width %d: line of width %d: %q", width, w, ansi.Strip(line))
+			}
+		}
+		if width > 80 {
+			continue // The section list shares these lines.
+		}
+		joined := strings.Join(strings.Fields(text), " ")
+		for _, o := range m.question().options {
+			if !strings.Contains(joined, o.detail) {
+				t.Fatalf("width %d: description of %s is not shown whole:\n%s", width, o.label, text)
+			}
+		}
+	}
+}
+
+func TestDependencyScreenWrapsToTheViewer(t *testing.T) {
+	m := newModel(t)
+	m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	t.Setenv("PATH", t.TempDir()) // Every tool is missing, so every instruction shows.
+	m.draft.Values["language.java.lsp"], m.draft.Values["language.kotlin.lsp"] = true, true
+	m.showHealth()
+	content := m.viewer.GetContent()
+	for _, line := range strings.Split(content, "\n") {
+		if w := ansi.StringWidth(line); w > m.viewer.Width() {
+			t.Fatalf("line of width %d in a viewer of width %d: %q", w, m.viewer.Width(), ansi.Strip(line))
+		}
+	}
+	// Lines may break after a hyphen, as in kotlin-language-server.
+	joined := strings.ReplaceAll(strings.Join(strings.Fields(ansi.Strip(content)), " "), "- ", "-")
+	for _, want := range []string{"java Java 25 or later for jdtls; 21 or earlier for kotlin-language-server", "otherwise java on your PATH.", "is up to you."} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("%q is not shown whole:\n%s", want, ansi.Strip(content))
+		}
+	}
+}
+
+func TestLanguagesNameTheJavaTheyNeed(t *testing.T) {
+	for _, l := range engine.Languages() {
+		want := map[string]string{"java": "needs Java 25 or later", "kotlin": "needs Java 21 or earlier"}[l.ID]
+		if got := languageDetail(l, true); want != "" && !strings.HasSuffix(got, want) {
+			t.Fatalf("%s: %q does not end with %q", l.ID, got, want)
+		}
+	}
+}
+
 func TestDependenciesReportTheChosenNeovim(t *testing.T) {
 	m := newModel(t)
 	// PATH has a Neovim, but --nvim names one that does not exist.

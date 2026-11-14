@@ -73,20 +73,34 @@ func (m *Model) showDiff() {
 }
 
 func (m *Model) showHealth() {
+	// The viewer cuts lines wider than itself, so long purposes and instructions wrap,
+	// indented under the tool's name.
 	var b strings.Builder
-	for _, d := range m.dependencies() {
-		if d.Status == "present" {
-			fmt.Fprintf(&b, "%s %s  %s\n  %s\n\n", m.th.Ok("✓"), m.th.Bold(d.ID), m.th.Dim(d.Purpose), m.th.Dim(d.Path))
-		} else {
-			fmt.Fprintf(&b, "%s %s  %s\n", m.th.Warn("!"), m.th.Bold(d.ID), m.th.Dim(d.Purpose))
-			if d.Instruction != "" {
-				fmt.Fprintf(&b, "  %s\n", d.Instruction)
+	w := m.viewer.Width() - 1
+	add := func(text, first, rest string) {
+		for i, part := range wrap(text, w-len(rest)) {
+			if i == 0 {
+				part = first + part
+			} else {
+				part = rest + part
 			}
-			b.WriteString("\n")
+			b.WriteString(part + "\n")
 		}
 	}
-	b.WriteString(m.th.Dim("Missing tools never block saving. Installing runtimes such as Node.js or ripgrep is up to you."))
-	m.openViewer("Dependencies", b.String())
+	for _, d := range m.dependencies() {
+		if d.Status == "present" {
+			add(m.th.Ok("✓")+" "+m.th.Bold(d.ID)+"  "+m.th.Dim(d.Purpose), "", "  ")
+			add(m.th.Dim(d.Path), "  ", "  ")
+		} else {
+			add(m.th.Warn("!")+" "+m.th.Bold(d.ID)+"  "+m.th.Dim(d.Purpose), "", "  ")
+			if d.Instruction != "" {
+				add(d.Instruction, "  ", "  ")
+			}
+		}
+		b.WriteString("\n")
+	}
+	add(m.th.Dim("Missing tools never block saving. Installing runtimes such as Node.js or ripgrep is up to you."), "", "")
+	m.openViewer("Dependencies", strings.TrimSuffix(b.String(), "\n"))
 }
 
 const helpText = `Moving through the setup
@@ -377,8 +391,8 @@ func (m *Model) questionContent(cw, h int) []string {
 // It compresses in steps when the list does not fit, keeping the cursor visible.
 func (m *Model) optionLines(q question, cw, h int) []string {
 	type block struct {
-		heading, label, detail string
-		plugin                 []string
+		heading, label string
+		detail, plugin []string
 	}
 	blocks := make([]block, len(q.options))
 	swatchColumn := 0
@@ -413,15 +427,17 @@ func (m *Model) optionLines(q question, cw, h int) []string {
 		if i == 0 || o.group != q.options[i-1].group {
 			b.heading = o.group
 		}
+		// Descriptions and where an option comes from are never cut off; long lines wrap.
 		if o.detail != "" {
-			b.detail = pad + m.th.Dim(ansi.Truncate(o.detail, max(10, cw-len(pad)), "…"))
+			for _, part := range wrap(o.detail, cw-len(pad)) {
+				b.detail = append(b.detail, pad+m.th.Dim(part))
+			}
 		}
 		line := pluginLine(o.plugin)
 		if line == "" {
 			line = sourceLine(o.source)
 		}
 		if line != "" {
-			// Where an option comes from is never cut off; long lines wrap instead.
 			for _, part := range wrap(line, cw-len(pad)) {
 				b.plugin = append(b.plugin, pad+m.th.Blue(part))
 			}
@@ -443,9 +459,7 @@ func (m *Model) optionLines(q question, cw, h int) []string {
 			}
 			lines = append(lines, b.label)
 			if mode < 2 || i == m.cursor {
-				if b.detail != "" {
-					lines = append(lines, b.detail)
-				}
+				lines = append(lines, b.detail...)
 				lines = append(lines, b.plugin...)
 			}
 			if mode == 0 && i < len(blocks)-1 {
@@ -795,7 +809,9 @@ func (m *Model) menuLines(items []menuItem, cw, h int) []string {
 			}
 			lines = append(lines, pointer+num+label)
 			if item.detail != "" && (all || selected) {
-				lines = append(lines, "     "+m.th.Dim(ansi.Truncate(item.detail, max(10, cw-5), "…")))
+				for _, part := range wrap(item.detail, cw-5) {
+					lines = append(lines, "     "+m.th.Dim(part))
+				}
 			}
 		}
 		return lines, focus

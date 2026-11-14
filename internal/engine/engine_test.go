@@ -415,15 +415,21 @@ func TestGoldenProfiles(t *testing.T) {
 	}
 }
 
-// fakeNeovim is an executable that records each invocation and claims to be Neovim.
+// fakeNeovim is an executable that records each invocation and claims to be Neovim,
+// with the version of the Neovim on PATH when there is one, so a plan reviewed with
+// that Neovim does not go stale just because the versions differ.
 func fakeNeovim(t *testing.T) (bin, marker string) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
 		t.Skip("uses a POSIX shell script as a stand-in executable")
 	}
+	version := "NVIM v0.12.5"
+	if _, v, err := Neovim(context.Background(), ""); err == nil {
+		version = v
+	}
 	dir := t.TempDir()
 	bin, marker = filepath.Join(dir, "nvim"), filepath.Join(dir, "invocations")
-	script := "#!/bin/sh\necho \"$@\" >> '" + marker + "'\necho 'NVIM v0.12.5'\n"
+	script := "#!/bin/sh\necho \"$@\" >> '" + marker + "'\necho '" + version + "'\n"
 	if err := os.WriteFile(bin, []byte(script), 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -744,4 +750,20 @@ func TestWithNeovimReportsTheChosenNeovim(t *testing.T) {
 	if d := WithNeovim(deps(), "", errors.New("Neovim 0.12+ required")); d[0].Path != "" || d[0].Status != "missing" || d[0].Instruction == "" || d[1].Status != "present" {
 		t.Fatalf("an unusable chosen Neovim is reported as %+v", d)
 	}
+}
+
+// A runtime that only some versions of works for a server names those versions in the
+// review: one JDK cannot start both jdtls and kotlin-language-server.
+func TestRuntimeVersionsReachTheReview(t *testing.T) {
+	s := NewState()
+	s.Values["language.java.lsp"], s.Values["language.kotlin.lsp"] = true, true
+	for _, d := range languageDependencies(s) {
+		if d.ID == "java" {
+			if want := "Java 25 or later for jdtls; 21 or earlier for kotlin-language-server"; d.Purpose != want {
+				t.Fatalf("got %q, want %q", d.Purpose, want)
+			}
+			return
+		}
+	}
+	t.Fatal("Java is not listed as a runtime")
 }

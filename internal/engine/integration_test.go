@@ -715,6 +715,11 @@ vim.cmd('qa!')`
 				"+lua vim.defer_fn(function() dofile("+LuaString(filepath.Join(tmp, "check.lua"))+") end, 200)")
 			cmd.Dir = tmp
 			cmd.Env = append(os.Environ(), "XDG_STATE_HOME="+filepath.Join(tmp, "state"), "XDG_CACHE_HOME="+filepath.Join(tmp, "cache"), "NVIM_APPNAME=")
+			// kotlin-language-server fails to start on the Java 25 that jdtls needs, so it
+			// can be given its own JDK, as a user with both languages would through JAVA_HOME.
+			if home := os.Getenv("SHOSHINVIM_KOTLIN_JAVA_HOME"); home != "" && c.name == "language kotlin" {
+				cmd.Env = append(cmd.Env, "JAVA_HOME="+home, "PATH="+filepath.Join(home, "bin")+string(os.PathListSeparator)+os.Getenv("PATH"))
+			}
 			out, _ := cmd.CombinedOutput()
 			text := strings.ReplaceAll(string(out), "\r", "\n")
 			if !strings.Contains(text, "RESULT ok") {

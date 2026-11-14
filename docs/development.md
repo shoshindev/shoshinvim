@@ -10,7 +10,7 @@ goreleaser check
 goreleaser release --snapshot --clean --skip=publish,announce,validate
 ```
 
-The real-Neovim suite downloads every offered plugin, theme, parser and language tool and checks each choice by what it does: `SHOSHINVIM_INTEGRATION=1 go test ./internal/engine/`. Languages whose runtime is missing are skipped; `SHOSHINVIM_ALL_LANGUAGES=1` makes that a failure. The **Real Neovim** workflow (`.github/workflows/integration.yml`) runs it on Linux with every runtime installed, weekly, on demand, and on pull requests labeled `integration`.
+The real-Neovim suite downloads every offered plugin, theme, parser and language tool and checks each choice by what it does: `SHOSHINVIM_INTEGRATION=1 go test ./internal/engine/`. Languages whose runtime is missing are skipped; `SHOSHINVIM_ALL_LANGUAGES=1` makes that a failure. The **Real Neovim** workflow (`.github/workflows/integration.yml`) runs it on Linux with every runtime installed, weekly, on demand, and on pull requests labeled `integration`. Kotlin's case runs on the JDK that `SHOSHINVIM_KOTLIN_JAVA_HOME` names (Java 21 in the workflow), because kotlin-language-server fails to start on the Java 25 that jdtls needs.
 
 `scripts/editor-smoke.py` drives the real Neovim UI through MessagePack RPC against a separately installed target with Tokyo Night and a TypeScript language server, such as one accepting every recommendation. It requires Python `msgpack`, plus Pillow and fontTools for macOS screenshots, and never installs dependencies. Its `workspace.png` and `shortcuts.png` are the README's two editor images; pass a Nerd Font with `--font` when the target uses icons. The Lua integration script checks real language-server responses and formatting separately.
 
