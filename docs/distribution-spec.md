@@ -2,12 +2,12 @@
 
 > Staged implementation: see [current alpha coverage and release gates](implementation-status.md). This specification includes planned capabilities; a listed plugin or installation channel does not imply released support.
 
-- Status: planned release and installation contract
+- Status: release and installation contract; v0.1.0 ships the shell installer and direct archives for macOS and Linux
 - Product binary: `shoshinvim`
 - Scope: standalone terminal application; Neovim is a target and validation dependency, not the host process
 - Snapshot: 2026-09-28
 
-No release currently exists. Commands in this document are the required future interface and must not be advertised as live until the corresponding signed release assets are published.
+v0.1.0 is published with the shell installer and the four macOS and Linux archives. The other channels in this document are planned and must not be advertised as live until their release assets are published.
 
 ## 1. Decision
 
@@ -22,9 +22,9 @@ The installation channels are:
 
 `curl | sh` is the primary onboarding command. The direct archive is for people who want to check each file themselves.
 
-## 2. Planned install commands
+## 2. Install commands
 
-After the canonical release repository and assets exist, the quick-start command is:
+The quick-start command is:
 
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf \

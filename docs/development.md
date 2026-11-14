@@ -18,7 +18,7 @@ The real-Neovim suite downloads every offered plugin, theme, parser and language
 
 ## Releasing
 
-Pushing a `v*` tag runs `.github/workflows/release.yml`. It runs CI on every platform, then GoReleaser builds the archives and `SHA256SUMS`, attaches the shell installer and records build attestations in a draft release. The `release` environment accepts only `v*` tags. Check the draft's files, then publish it. The installer and `shoshinvim update` read GitHub's latest release, which skips prereleases, so a tag with a suffix such as `-rc.1` is invisible to them.
+Pushing a `v*` tag runs `.github/workflows/release.yml`. It runs CI on every platform, then GoReleaser builds the archives and `SHA256SUMS`, attaches the shell installer and records build attestations in a draft release. The `release` environment accepts only `v*` tags. Check the draft's files, then publish it. The installer and `shoshinvim update` read GitHub's latest release, which skips prereleases, so a tag with a suffix such as `-rc.1` is invisible to them. Published releases are immutable, so a broken release is fixed with a new version rather than replaced files.
 
 ## Licenses
 
