@@ -13,15 +13,14 @@ No release currently exists. Commands in this document are the required future i
 
 ShoshinVim should ship as a self-contained native executable with prebuilt release archives.
 
-The recommended installation strategy is:
+The installation channels are:
 
-1. **Homebrew tap** `[RECOMMENDED for macOS and Homebrew users]` — clean upgrades, ownership, and uninstall.
-2. **HTTPS shell installer** `[RECOMMENDED quick start for macOS/Linux]` — lowest-friction bootstrap on a bare system.
-3. **Direct release archive** `[RECOMMENDED for verification/offline/manual environments]` — explicit artifact and checksum handling.
-4. **PowerShell installer** `[RECOMMENDED quick start for Windows]`.
-5. Additional native package channels as the project matures.
+1. **HTTPS shell installer** `[RECOMMENDED quick start for macOS/Linux]` — lowest-friction bootstrap on a bare system.
+2. **Direct release archive** `[RECOMMENDED for verification/offline/manual environments]` — explicit artifact and checksum handling.
+3. **PowerShell installer** `[Windows, once Windows has been tested on a real machine]`.
+4. Additional native package channels as the project matures. There is no first-party Homebrew tap.
 
-`curl | sh` is therefore a good primary onboarding command, but not a sufficient distribution strategy by itself.
+`curl | sh` is the primary onboarding command. The direct archive is for people who want to check each file themselves.
 
 ## 2. Planned install commands
 
@@ -30,18 +29,6 @@ After the canonical release repository and assets exist, the quick-start command
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf \
   https://github.com/shoshindev/shoshinvim/releases/latest/download/shoshinvim-installer.sh | sh
-```
-
-Homebrew:
-
-```sh
-brew install shoshindev/tap/shoshinvim
-```
-
-Windows PowerShell:
-
-```powershell
-irm https://github.com/shoshindev/shoshinvim/releases/latest/download/shoshinvim-installer.ps1 | iex
 ```
 
 Every quick command must be accompanied by:
@@ -58,7 +45,7 @@ Each tagged release publishes:
 
 - one archive per supported platform and architecture;
 - `shoshinvim-installer.sh`;
-- `shoshinvim-installer.ps1`;
+- `shoshinvim-installer.ps1`, once Windows is in the release;
 - `SHA256SUMS`;
 - build-provenance attestations;
 - software bill of materials when release tooling supports it reliably;
@@ -73,7 +60,7 @@ Initial targets:
 | macOS | Intel (`x86_64`) | Required while CI/toolchain support remains practical |
 | Linux glibc | `x86_64` | Required |
 | Linux glibc | `aarch64` | Required |
-| Windows | `x86_64` | Required |
+| Windows | `x86_64` | Add after the app and the PowerShell installer pass on a real Windows machine |
 | Windows | `aarch64` | Add when the dependency/toolchain matrix is verified |
 | Linux musl | `x86_64`, `aarch64` | Add after runtime and terminal testing |
 | NixOS | supported package/flake | Do not route through the generic shell installer |
@@ -156,17 +143,11 @@ The installer itself cannot require GitHub CLI, but it may verify an attestation
 
 ### Homebrew
 
-Maintain a `shoshindev/homebrew-tap` repository and publish a fully qualified formula:
-
-```sh
-brew install shoshindev/tap/shoshinvim
-```
-
-The formula installs prebuilt verified release archives, declares checksums, installs completions/man pages, and supports normal `brew upgrade` and `brew uninstall` flows.
+There is no first-party Homebrew tap. The shell installer covers macOS, and `shoshinvim update` handles upgrades for it.
 
 ### Windows
 
-Start with the PowerShell release installer. Add WinGet and/or Scoop manifests after release automation, upgrade behavior, and Windows terminal testing are stable.
+Windows is not in the release until the app and the PowerShell installer (`scripts/shoshinvim-installer.ps1`, kept in the repository) have been tested on a real Windows machine. Then the PowerShell installer comes first; WinGet and/or Scoop manifests follow once release automation, upgrade behavior and Windows terminal testing are stable.
 
 ### Linux ecosystems
 
@@ -192,7 +173,6 @@ The implementation choice remains separate from the user-facing install contract
 
 | Install source | Update behavior |
 | --- | --- |
-| Homebrew | Print and optionally invoke `brew upgrade shoshindev/tap/shoshinvim` after confirmation. |
 | Script installer | Fetch metadata, show current/target versions and release notes, then download and atomically replace after verification. |
 | Direct/manual archive | Show the exact release URL and verification steps; do not assume ownership. |
 | Source install | Print the version-pinned source update command. |
@@ -213,7 +193,7 @@ It never removes:
 - language servers, formatters, linters, parsers, debuggers, or runtimes;
 - user-owned Lua.
 
-For package-manager installs, ShoshinVim prints the manager's uninstall command instead of deleting manager-owned files.
+For any other install, ShoshinVim names the executable's path and leaves its removal to whatever installed it.
 
 ## 10. First run and target discovery
 
@@ -237,8 +217,6 @@ The first run does not install plugins or tools merely because the application i
 Distribution is ready when:
 
 - a clean macOS or Linux user can install one verified binary without a compiler or root privileges;
-- Homebrew install, upgrade, and uninstall work through the tap;
-- Windows has a verified PowerShell path;
 - checksums fail closed when an archive is modified;
 - release artifacts identify their version and target consistently;
 - `shoshinvim --version` matches the release tag;
@@ -252,7 +230,5 @@ Distribution is ready when:
 
 - [dist installer documentation](https://axodotdev.github.io/cargo-dist/book/install.html)
 - [dist shell installer behavior and caveats](https://axodotdev.github.io/cargo-dist/book/installers/shell.html)
-- [dist Homebrew publishing](https://axodotdev.github.io/cargo-dist/book/installers/homebrew.html)
-- [Homebrew tap installation and trust](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap)
 - [GitHub releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)
 - [GitHub artifact attestations](https://docs.github.com/en/actions/concepts/security/artifact-attestations)

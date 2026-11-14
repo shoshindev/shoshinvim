@@ -70,12 +70,8 @@ func owned(path string) (Receipt, error) {
 	}
 	return r, nil
 }
-func ownerAdvice(path string, out io.Writer, verb string) {
-	if strings.Contains(path, "/Cellar/") || strings.Contains(path, "/Caskroom/") {
-		fmt.Fprintf(out, "Use: brew %s shoshindev/tap/shoshinvim\n", verb)
-	} else {
-		fmt.Fprintf(out, "This executable is manually, source, or package-manager installed: %s\nUse its original installation owner. Releases: https://github.com/%s/releases\nSource update: go install github.com/%s/cmd/shoshinvim@<release-tag>\n", path, Repository, Repository)
-	}
+func ownerAdvice(path string, out io.Writer) {
+	fmt.Fprintf(out, "This executable is manually, source, or package-manager installed: %s\nUse its original installation owner. Releases: https://github.com/%s/releases\nSource update: go install github.com/%s/cmd/shoshinvim@<release-tag>\n", path, Repository, Repository)
 }
 func Uninstall(confirm func(string) error, out io.Writer) error {
 	path, err := executable()
@@ -84,7 +80,7 @@ func Uninstall(confirm func(string) error, out io.Writer) error {
 	}
 	_, err = owned(path)
 	if err != nil {
-		ownerAdvice(path, out, "uninstall")
+		ownerAdvice(path, out)
 		return nil
 	}
 	if err = confirm("Remove application " + path + " and receipt " + ReceiptPath() + "? Generated Neovim configurations, backups and tools remain."); err != nil {
@@ -220,7 +216,7 @@ func Update(ctx context.Context, current string, confirm func(string) error, out
 	}
 	receipt, err := owned(path)
 	if err != nil {
-		ownerAdvice(path, out, "upgrade")
+		ownerAdvice(path, out)
 		return nil
 	}
 	if err = confirm("Check GitHub for the latest stable ShoshinVim release?"); err != nil {

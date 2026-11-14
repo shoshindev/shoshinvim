@@ -1,6 +1,6 @@
 # Using ShoshinVim
 
-How the setup works, where it writes, and the command-line interface. The [README](../README.md) covers what ShoshinVim is and how to build it.
+How the setup works, where it writes, and the command-line interface. The [README](../README.md) covers what ShoshinVim is and how to install it.
 
 ## Targets
 
@@ -19,17 +19,17 @@ With the recommended kickstart.nvim shortcuts, press **Space** and pause inside 
 ## CLI
 
 ```sh
-./bin/shoshinvim doctor
-./bin/shoshinvim inspect --output json
-./bin/shoshinvim plan --profile rich-ide --out review.json   # scripted preset; a profile replaces earlier values
-./bin/shoshinvim plan --state desired-state.json --include-external --out install-review.json
-./bin/shoshinvim apply --plan review.json
-./bin/shoshinvim apply --plan install-review.json --yes
-./bin/shoshinvim retry
-./bin/shoshinvim rollback --transaction <id>
-./bin/shoshinvim completion zsh
-./bin/shoshinvim update
-./bin/shoshinvim uninstall
+shoshinvim doctor
+shoshinvim inspect --output json
+shoshinvim plan --profile rich-ide --out review.json   # scripted preset; a profile replaces earlier values
+shoshinvim plan --state desired-state.json --include-external --out install-review.json
+shoshinvim apply --plan review.json
+shoshinvim apply --plan install-review.json --yes
+shoshinvim retry
+shoshinvim rollback --transaction <id>
+shoshinvim completion zsh
+shoshinvim update
+shoshinvim uninstall
 ```
 
 Plans bind the target identity, catalog, Neovim version, exact file contents/hashes and external actions. `apply` rebuilds the plan with the Neovim you choose (`--nvim`, the `neovim` preference, or PATH); a plan reviewed with a different Neovim is rejected without running the program it names, because a plan's digest is a checksum, not a signature. `--yes` is accepted only with an exported plan. A stale plan is rejected. `--include-external` authorizes the action list in that plan; inspect it before applying. Exporting refuses to overwrite an existing file.

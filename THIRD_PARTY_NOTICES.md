@@ -46,7 +46,7 @@ The basic language server recipes in `internal/engine/data/languages.json` are a
 
 ## Go modules in the shoshinvim executable
 
-The license of every module compiled into the macOS, Linux and Windows release builds.
+The license of every module compiled into the macOS, Linux and Windows builds.
 
 ### charm.land/bubbles/v2 v2.2.1
 

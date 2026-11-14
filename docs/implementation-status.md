@@ -15,14 +15,14 @@ The product acceptance goal is a short, intuitive setup that creates a cohesive 
 | Saving | Target identity, hashes, unmanaged/drift blocking, advisory lock, verified backup journal, staged replacements, verification, persisted-state commit, rollback/archive recovery | Injected phase failures, initial-write recovery, stale/tampered plans, symlink and lock tests; complete power-loss/disk-full platform matrix remains a release gate |
 | Acquisition | Pinned Git revisions, staged download, Mason adapter running inside the user's chosen Neovim, data directory derived from the target (the one its launch command uses), cancellation, progress receipts, retry without local rewrites | Isolated real downloads plus cancellation tests; registry/tool downloads can execute third-party install code only after approval |
 | CLI | doctor, inspect, plan, apply, rollback, retry, update, uninstall, shell completions, man pages | Exported plan revalidation with the user's `--nvim`/PATH Neovim (a plan naming another Neovim is rejected without executing it); updater/installer tests use local fixtures, not public production releases |
-| Packaging | GoReleaser OSS archives/checksums, POSIX/PowerShell installer templates, Homebrew formula generator, GitHub provenance workflow | Local archive and checksum validation; release remains a draft until platform and clean-machine gates pass |
+| Packaging | GoReleaser OSS archives/checksums for macOS and Linux, POSIX installer, GitHub provenance workflow; the PowerShell installer waits for a Windows release | Local archive and checksum validation; release remains a draft until platform and clean-machine gates pass |
 
 ## Release gates still open
 
 - Keep the weekly Linux **Real Neovim** workflow green; consider macOS and Windows runs of it, since parser compilation and the language tools have only been exercised on macOS and Linux.
 - Run clean-machine end-to-end installation, upgrade, uninstall, rollback and crash-recovery scenarios on each platform. The five-platform CI matrix covers unit and model tests only; they and cross compilation do not prove platform runtime behavior.
-- Test PowerShell installer and executable replacement behavior on Windows. The updater reports a replacement failure without discarding the previous binary; a running-executable handoff needs Windows verification.
-- Configure the protected GitHub `release` environment; publish a first verified draft release, attestations and a separately reviewed Homebrew tap. No production installation channel has been published.
+- Before Windows joins the release, test the app, the PowerShell installer and executable replacement on a real Windows machine. The updater reports a replacement failure without discarding the previous binary; a running-executable handoff needs Windows verification.
+- The GitHub `release` environment accepts only `v*` tags. Publish a first verified draft release with attestations. No production installation channel has been published.
 - Complete broader terminal usability/accessibility sessions, including screen readers, below-minimum terminals, long Unicode paths, and signal/panic behavior on each platform.
 - Expand curated option validation, profile/catalog migrations, dependency probe evidence and comparative metadata. Unknown schema/catalog versions are rejected today.
 - Run the interface specification's usability tests with first-time users; the guided setup has only been exercised by automated and developer tests.

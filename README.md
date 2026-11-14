@@ -63,9 +63,32 @@ The languages are TypeScript and JavaScript, HTML, CSS, JSON, Svelte, Lua, Pytho
 
 ## Try it
 
-ShoshinVim is a development alpha and has no release yet. Build it from source with Go 1.27.1; it needs Neovim 0.12 or later.
+ShoshinVim is a development alpha. It runs on macOS (Apple Silicon and Intel) and on Linux with glibc (x86_64 and ARM64), and it needs Neovim 0.12 or later.
 
-<!-- After the first release, the installer and Homebrew commands from docs/distribution-spec.md go here. -->
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/shoshindev/shoshinvim/releases/latest/download/shoshinvim-installer.sh | sh
+```
+
+The installer puts one executable in `~/.local/bin` (or `$XDG_BIN_HOME`) after checking it against the release's `SHA256SUMS`. It doesn't use sudo, edit your shell profile or start anything. [Read the installer](scripts/shoshinvim-installer.sh) before you run it. To pin a version or choose the folder:
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/shoshindev/shoshinvim/releases/download/v0.1.0/shoshinvim-installer.sh \
+  | sh -s -- --version v0.1.0 --install-dir "$HOME/bin"
+```
+
+To install by hand, download your platform's archive and `SHA256SUMS` from [Releases](https://github.com/shoshindev/shoshinvim/releases), check the archive, unpack it and put `shoshinvim` on your PATH:
+
+```sh
+shasum -a 256 -c SHA256SUMS --ignore-missing
+tar -xzf shoshinvim_0.1.0_aarch64-apple-darwin.tar.gz
+xattr -d com.apple.quarantine shoshinvim   # macOS only: lets an archive downloaded in a browser run
+```
+
+With the GitHub CLI, `gh attestation verify <archive> --repo shoshindev/shoshinvim` confirms that this repository's release workflow built the archive.
+
+If you used the installer, `shoshinvim update` installs a newer release after showing its notes, and `shoshinvim uninstall` removes the executable. Neither touches your Neovim configuration, plugins or tools.
+
+Windows is not in the release yet because it hasn't been tested on a real Windows machine. There, or to build from source, use Go 1.27.1:
 
 ```sh
 git clone https://github.com/shoshindev/shoshinvim.git
@@ -76,7 +99,7 @@ go build -trimpath -o bin/shoshinvim ./cmd/shoshinvim
 To try it next to an existing LazyVim, NvChad or personal configuration, give it its own name:
 
 ```sh
-NVIM_APPNAME=shoshin-demo ./bin/shoshinvim   # walk through the sections, then review and save
+NVIM_APPNAME=shoshin-demo shoshinvim   # walk through the sections, then review and save
 NVIM_APPNAME=shoshin-demo nvim
 ```
 

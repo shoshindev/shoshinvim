@@ -14,11 +14,15 @@ The real-Neovim suite downloads every offered plugin, theme, parser and language
 
 `scripts/editor-smoke.py` drives the real Neovim UI through MessagePack RPC against a separately installed target with Tokyo Night and a TypeScript language server, such as one accepting every recommendation. It requires Python `msgpack`, plus Pillow and fontTools for macOS screenshots, and never installs dependencies. Its `workspace.png` and `shortcuts.png` are the README's two editor images; pass a Nerd Font with `--font` when the target uses icons. The Lua integration script checks real language-server responses and formatting separately.
 
-Cross compilation and local snapshot archives cover macOS ARM64/x86_64, Linux ARM64/x86_64, and Windows x86_64. CI is configured to run on each platform. Public installation channels are **not yet released**. The shell/PowerShell installers, Homebrew formula generator, checksums and draft-release provenance workflow are release infrastructure; do not advertise their remote installation URLs until release verification passes.
+`make cross` builds for macOS ARM64/x86_64, Linux ARM64/x86_64 and Windows x86_64, and CI runs on each of them. Releases ship only the four macOS and Linux archives. Windows stays out until the app and `scripts/shoshinvim-installer.ps1` have been tested on a real Windows machine.
+
+## Releasing
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`. It runs CI on every platform, then GoReleaser builds the archives and `SHA256SUMS`, attaches the shell installer and records build attestations in a draft release. The `release` environment accepts only `v*` tags. Check the draft's files, then publish it. The installer and `shoshinvim update` read GitHub's latest release, which skips prereleases, so a tag with a suffix such as `-rc.1` is invisible to them.
 
 ## Licenses
 
-`THIRD_PARTY_NOTICES.md` lists the material ShoshinVim adapts and the license of every Go module compiled into the five release builds. It is generated; after changing dependencies, rewrite it and commit the result. CI fails when it is out of date.
+`THIRD_PARTY_NOTICES.md` lists the material ShoshinVim adapts and the license of every Go module compiled into the macOS, Linux and Windows builds. It is generated; after changing dependencies, rewrite it and commit the result. CI fails when it is out of date.
 
 ```sh
 make notices              # python3 scripts/third-party-notices.py
