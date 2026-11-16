@@ -51,4 +51,21 @@ The review screen needs Neovim; without it, that screen is left as it is.
 
 Headless Chrome can keep running after it writes the file; stop it once the PNG appears.
 
+## App icon
+
+`docs/assets/icon/` holds the app icon in the iPhone and macOS style: an ensō, the Zen brush circle, around a block cursor, in the interface's pink and blue. The cursor has the proportions of one character cell in SF Mono, the macOS Terminal font. Every file comes in a light and a dark version:
+
+| Files | Use |
+|---|---|
+| `icon-light.svg`, `icon-dark.svg` and their PNGs | The rounded icon with transparent corners, for web pages and avatars |
+| `icon-light-small.svg`, `icon-dark-small.svg` | A simpler, heavier drawing for 16 and 32 pixel sizes, where the brush detail is lost |
+| `ios-light.png`, `ios-dark.png` | The 1024 pixel iPhone master: a full square with no transparency, because iOS rounds the corners itself |
+| `macos-light.icns`, `macos-dark.icns` | The macOS icon file, which holds every size from 16 to 1024 pixels; sizes up to 32 points use the small drawing |
+
+`scripts/app-icon.py` draws all of them. It needs macOS with Google Chrome, which turns the SVG files into PNG, and stops Chrome itself after each image:
+
+```sh
+python3 scripts/app-icon.py
+```
+
 See [implementation status and remaining gates](implementation-status.md), [interface specification](interface-spec-v0.1.md), [configuration catalog](configuration-catalog.md), and [distribution specification](distribution-spec.md).
